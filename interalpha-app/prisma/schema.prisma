@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  clerkId       String         @unique
+  email         String         @unique
+  name          String?
+  phone         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  clientes      Cliente[]
+  ordensServico OrdemServico[]
+  pagamentos    Pagamento[]
+
+  @@map("users")
+}
+
+model Cliente {
+  id            String         @id @default(cuid())
+  nome          String
+  email         String
+  telefone      String?
+  documento     String         @unique
+  tipoDocumento String
+  cep           String?
+  endereco      String?
+  cidade        String?
+  estado        String?
+  observacoes   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ordensServico OrdemServico[]
+
+  @@map("clientes")
+}
+
+model OrdemServico {
+  id         String      @id @default(cuid())
+  titulo     String
+  descricao  String?
+  status     String      @default("PENDENTE")
+  prioridade String      @default("MEDIA")
+  valor      Float?
+  dataInicio DateTime?
+  dataFim    DateTime?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  userId     String
+  clienteId  String
+  cliente    Cliente     @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pagamentos Pagamento[]
+
+  @@map("ordens_servico")
+}
+
+model Pagamento {
+  id              String        @id @default(cuid())
+  valor           Float
+  status          String        @default("PENDENTE")
+  metodo          String
+  stripePaymentId String?       @unique
+  descricao       String?
+  dataVencimento  DateTime?
+  dataPagamento   DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  userId          String
+  ordemServicoId  String?
+  ordemServico    OrdemServico? @relation(fields: [ordemServicoId], references: [id])
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("pagamentos")
+}
