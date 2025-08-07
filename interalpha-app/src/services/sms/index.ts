@@ -7,7 +7,7 @@ export { SMSService, getSMSService } from './sms-service';
 export { SMSNotifications, smsNotifications } from './sms-notifications';
 
 // Worker
-export { smsWorker, startSMSWorker, stopSMSWorker } from '../workers/sms-worker';
+export { smsWorker, startSMSWorker, stopSMSWorker } from '../../workers/sms-worker';
 
 // Tipos específicos para SMS
 export interface SMSTemplateData {

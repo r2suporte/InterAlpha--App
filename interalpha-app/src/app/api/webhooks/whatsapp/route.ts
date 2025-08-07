@@ -8,7 +8,13 @@ export async function POST(request: NextRequest) {
     // Verificar se é uma requisição válida do Twilio
     const signature = request.headers.get('x-twilio-signature');
     const url = request.url;
-    const body = await request.text();
+    const formData = await request.formData();
+    
+    // Converter FormData para objeto
+    const body: Record<string, any> = {};
+    formData.forEach((value, key) => {
+      body[key] = value.toString();
+    });
 
     // Validar assinatura do Twilio (opcional, mas recomendado)
     if (process.env.TWILIO_AUTH_TOKEN && signature) {

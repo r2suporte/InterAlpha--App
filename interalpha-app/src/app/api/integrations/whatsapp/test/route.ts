@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
           clientName: data.clientName || 'Cliente Teste',
           clientPhone: to,
           amount: data.amount || 100.00,
+          paymentMethod: data.paymentMethod || 'PIX',
           daysOverdue: data.daysOverdue || 5,
         });
         result = { message: 'WhatsApp de pagamento em atraso agendado com sucesso' };
@@ -126,8 +127,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}e
-xport async function GET() {
+}
+
+export async function GET() {
   try {
     // Testar conexão Twilio e obter informações
     const whatsappService = getWhatsAppService();

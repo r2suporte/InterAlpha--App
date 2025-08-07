@@ -4,7 +4,7 @@ import { Plus, Search, Wrench, Filter } from 'lucide-react'
 import { buscarOrdensServico, obterEstatisticasOrdens } from '@/app/actions/ordens-servico'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   Table, 
   TableBody, 
@@ -65,27 +65,26 @@ export default async function OrdensServicoPage({ searchParams }: OrdensServicoP
         
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-gray-400" />
-          <form action="/ordens-servico" method="GET">
-            <Select
-              name="status"
-              defaultValue={status || ''}
-              onChange={(e) => {
-                const form = e.target.form!
-                const formData = new FormData(form)
-                const params = new URLSearchParams()
-                if (q) params.set('q', q)
-                if (e.target.value) params.set('status', e.target.value)
-                window.location.href = `/ordens-servico?${params.toString()}`
-              }}
-            >
-              <option value="">Todos os status</option>
-              <option value="PENDENTE">Pendente</option>
-              <option value="EM_ANDAMENTO">Em Andamento</option>
-              <option value="CONCLUIDA">Concluída</option>
-              <option value="CANCELADA">Cancelada</option>
-            </Select>
-            {q && <input type="hidden" name="q" value={q} />}
-          </form>
+          <Select
+            defaultValue={status || ''}
+            onValueChange={(value) => {
+              const params = new URLSearchParams()
+              if (q) params.set('q', q)
+              if (value) params.set('status', value)
+              window.location.href = `/ordens-servico?${params.toString()}`
+            }}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Todos os status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todos os status</SelectItem>
+              <SelectItem value="PENDENTE">Pendente</SelectItem>
+              <SelectItem value="EM_ANDAMENTO">Em Andamento</SelectItem>
+              <SelectItem value="CONCLUIDA">Concluída</SelectItem>
+              <SelectItem value="CANCELADA">Cancelada</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

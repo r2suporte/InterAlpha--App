@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
           clientName: data.clientName || 'Cliente Teste',
           clientPhone: to,
           amount: data.amount || 100.00,
+          paymentMethod: data.paymentMethod || 'PIX',
           daysOverdue: data.daysOverdue || 5,
         });
         result = { message: 'SMS de pagamento em atraso agendado com sucesso' };

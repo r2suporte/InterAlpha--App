@@ -14,6 +14,7 @@ export {
   calendarQueue,
   accountingQueue,
   backupQueue,
+  workflowQueue,
   addJobToQueue,
   pauseQueue,
   resumeQueue,

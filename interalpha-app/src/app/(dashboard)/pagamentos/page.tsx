@@ -4,7 +4,7 @@ import { Plus, Search, CreditCard, Filter, TrendingUp, DollarSign } from 'lucide
 import { buscarPagamentos, obterEstatisticasPagamentos } from '@/app/actions/pagamentos'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   Table, 
   TableBody, 
@@ -66,53 +66,51 @@ export default async function PagamentosPage({ searchParams }: PagamentosPagePro
         
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-gray-400" />
-          <form action="/pagamentos" method="GET">
-            <Select
-              name="status"
-              defaultValue={status || ''}
-              onChange={(e) => {
-                const form = e.target.form!
-                const params = new URLSearchParams()
-                if (q) params.set('q', q)
-                if (e.target.value) params.set('status', e.target.value)
-                if (metodo) params.set('metodo', metodo)
-                window.location.href = `/pagamentos?${params.toString()}`
-              }}
-            >
-              <option value="">Todos os status</option>
-              <option value="PENDENTE">Pendente</option>
-              <option value="PAGO">Pago</option>
-              <option value="CANCELADO">Cancelado</option>
-              <option value="ESTORNADO">Estornado</option>
-            </Select>
-            {q && <input type="hidden" name="q" value={q} />}
-            {metodo && <input type="hidden" name="metodo" value={metodo} />}
-          </form>
+          <Select
+            defaultValue={status || ''}
+            onValueChange={(value) => {
+              const params = new URLSearchParams()
+              if (q) params.set('q', q)
+              if (value) params.set('status', value)
+              if (metodo) params.set('metodo', metodo)
+              window.location.href = `/pagamentos?${params.toString()}`
+            }}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Todos os status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todos os status</SelectItem>
+              <SelectItem value="PENDENTE">Pendente</SelectItem>
+              <SelectItem value="PAGO">Pago</SelectItem>
+              <SelectItem value="CANCELADO">Cancelado</SelectItem>
+              <SelectItem value="ESTORNADO">Estornado</SelectItem>
+            </SelectContent>
+          </Select>
           
-          <form action="/pagamentos" method="GET">
-            <Select
-              name="metodo"
-              defaultValue={metodo || ''}
-              onChange={(e) => {
-                const form = e.target.form!
-                const params = new URLSearchParams()
-                if (q) params.set('q', q)
-                if (status) params.set('status', status)
-                if (e.target.value) params.set('metodo', e.target.value)
-                window.location.href = `/pagamentos?${params.toString()}`
-              }}
-            >
-              <option value="">Todos os métodos</option>
-              <option value="DINHEIRO">Dinheiro</option>
-              <option value="PIX">PIX</option>
-              <option value="CARTAO_CREDITO">Cartão de Crédito</option>
-              <option value="CARTAO_DEBITO">Cartão de Débito</option>
-              <option value="TRANSFERENCIA">Transferência</option>
-              <option value="BOLETO">Boleto</option>
-            </Select>
-            {q && <input type="hidden" name="q" value={q} />}
-            {status && <input type="hidden" name="status" value={status} />}
-          </form>
+          <Select
+            defaultValue={metodo || ''}
+            onValueChange={(value) => {
+              const params = new URLSearchParams()
+              if (q) params.set('q', q)
+              if (status) params.set('status', status)
+              if (value) params.set('metodo', value)
+              window.location.href = `/pagamentos?${params.toString()}`
+            }}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Todos os métodos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todos os métodos</SelectItem>
+              <SelectItem value="DINHEIRO">Dinheiro</SelectItem>
+              <SelectItem value="PIX">PIX</SelectItem>
+              <SelectItem value="CARTAO_CREDITO">Cartão de Crédito</SelectItem>
+              <SelectItem value="CARTAO_DEBITO">Cartão de Débito</SelectItem>
+              <SelectItem value="TRANSFERENCIA">Transferência</SelectItem>
+              <SelectItem value="BOLETO">Boleto</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

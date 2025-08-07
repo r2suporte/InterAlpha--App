@@ -135,8 +135,9 @@ export class AnalyticsService {
       trend: trend.direction,
       percentage: trend.percentage,
     };
-  }  // 
-Gerar dados para gráficos de pizza/barras
+  }
+
+  // Gerar dados para gráficos de pizza/barras
   async generateChartData(
     type: 'payment-methods' | 'order-status' | 'service-types' | 'monthly-revenue',
     filters: AnalyticsFilters

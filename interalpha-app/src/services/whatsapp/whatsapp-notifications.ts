@@ -98,8 +98,9 @@ export class WhatsAppNotifications {
 
     await addJobToQueue(whatsappQueue, 'order-status-changed', whatsappData);
     console.log(`📱 WhatsApp de status alterado agendado para ${data.clientPhone}`);
-  }  /
-/ Notificação de técnico designado
+  }
+
+  // Notificação de técnico designado
   static async sendTechnicianAssigned(data: TechnicianWhatsAppData): Promise<void> {
     const message = `👨‍🔧 *InterAlpha - Técnico Designado*\n\n` +
       `Olá ${data.clientName}!\n\n` +
