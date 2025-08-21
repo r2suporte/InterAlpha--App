@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { emailNotifications } from '@/services/email/email-notifications'
 import { smsNotifications } from '@/services/sms/sms-notifications'
 import { whatsappNotifications } from '@/services/whatsapp/whatsapp-notifications'

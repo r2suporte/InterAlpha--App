@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react'
-import { excluirPagamento } from '@/app/actions/pagamentos'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 
 interface PagamentoActionsProps {
@@ -11,6 +11,7 @@ interface PagamentoActionsProps {
 }
 
 export default function PagamentoActions({ pagamentoId }: PagamentoActionsProps) {
+  const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
 
@@ -21,9 +22,23 @@ export default function PagamentoActions({ pagamentoId }: PagamentoActionsProps)
 
     setIsDeleting(true)
     try {
-      await excluirPagamento(pagamentoId)
+      const response = await fetch(`/api/pagamentos/${pagamentoId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (!response.ok) {
+        const result = await response.json()
+        throw new Error(result.error || 'Erro ao excluir pagamento')
+      }
+
+      // Recarregar a página para atualizar a lista
+      router.refresh()
     } catch (error) {
-      alert('Erro ao excluir pagamento')
+      console.error('Erro ao excluir pagamento:', error)
+      alert(error instanceof Error ? error.message : 'Erro ao excluir pagamento')
     } finally {
       setIsDeleting(false)
       setShowMenu(false)

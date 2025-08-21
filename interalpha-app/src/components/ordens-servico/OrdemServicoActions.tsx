@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react'
-import { excluirOrdemServico } from '@/app/actions/ordens-servico'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 
 interface OrdemServicoActionsProps {
@@ -11,6 +11,7 @@ interface OrdemServicoActionsProps {
 }
 
 export default function OrdemServicoActions({ ordemId }: OrdemServicoActionsProps) {
+  const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
 
@@ -21,8 +22,21 @@ export default function OrdemServicoActions({ ordemId }: OrdemServicoActionsProp
 
     setIsDeleting(true)
     try {
-      await excluirOrdemServico(ordemId)
+      const response = await fetch(`/api/ordens-servico/${ordemId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao excluir ordem de serviço')
+      }
+
+      // Recarregar a página para atualizar a lista
+      router.refresh()
     } catch (error) {
+      console.error('Erro ao excluir ordem:', error)
       alert('Erro ao excluir ordem de serviço')
     } finally {
       setIsDeleting(false)

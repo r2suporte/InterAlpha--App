@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sua Chave de Acesso - InterAlpha</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            width: 60px;
+            height: 60px;
+            background-color: #3b82f6;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .logo svg {
+            width: 30px;
+            height: 30px;
+            fill: white;
+        }
+        h1 {
+            color: #1f2937;
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        .subtitle {
+            color: #6b7280;
+            margin: 0 0 30px 0;
+        }
+        .access-key {
+            background-color: #f3f4f6;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .key-label {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+        .key-value {
+            font-size: 32px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: #1f2937;
+            letter-spacing: 4px;
+            margin: 10px 0;
+        }
+        .expiry {
+            font-size: 14px;
+            color: #ef4444;
+            margin-top: 10px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            margin: 20px 0;
+        }
+        .instructions {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        .instructions h3 {
+            margin: 0 0 10px 0;
+            color: #1e40af;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 5px 0;
+        }
+        .security-note {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .security-note strong {
+            color: #92400e;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .contact {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9fafb;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1M12 7C13.4 7 14.8 8.6 14.8 10V11.5C15.4 11.5 16 12.1 16 12.7V16.2C16 16.8 15.4 17.3 14.8 17.3H9.2C8.6 17.3 8 16.8 8 16.2V12.7C8 12.1 8.6 11.5 9.2 11.5V10C9.2 8.6 10.6 7 12 7M12 8.2C11.2 8.2 10.5 8.7 10.5 10V11.5H13.5V10C13.5 8.7 12.8 8.2 12 8.2Z"/>
+                </svg>
+            </div>
+            <h1>Sua Chave de Acesso</h1>
+            <p class="subtitle">Portal do Cliente - InterAlpha</p>
+        </div>
+
+        <p>Olá, <strong>{{clientName}}</strong>!</p>
+        
+        <p>Você solicitou uma chave de acesso para o Portal do Cliente. Use a chave abaixo para acessar suas informações:</p>
+
+        <div class="access-key">
+            <div class="key-label">Sua chave de acesso:</div>
+            <div class="key-value">{{accessKey}}</div>
+            <div class="expiry">⏰ Válida até: {{expiresAt}}</div>
+        </div>
+
+        <div style="text-align: center;">
+            <a href="{{loginUrl}}" class="button">Acessar Portal do Cliente</a>
+        </div>
+
+        <div class="instructions">
+            <h3>Como usar sua chave:</h3>
+            <ol>
+                <li>Clique no botão acima ou acesse: <a href="{{loginUrl}}">{{loginUrl}}</a></li>
+                <li>Digite sua chave de acesso no campo indicado</li>
+                <li>Clique em "Acessar Portal" para entrar</li>
+                <li>Visualize suas ordens de serviço, pagamentos e dados</li>
+            </ol>
+        </div>
+
+        <div class="security-note">
+            <strong>⚠️ Importante:</strong> Esta chave é pessoal e intransferível. Não compartilhe com terceiros. 
+            A chave expira automaticamente em 24 horas por segurança.
+        </div>
+
+        <div class="contact">
+            <strong>Precisa de ajuda?</strong><br>
+            Entre em contato conosco se tiver dúvidas ou não conseguir acessar o portal.
+        </div>
+
+        <div class="footer">
+            <p><strong>InterAlpha</strong> - Sistema de Gestão</p>
+            <p>© 2024 Todos os direitos reservados</p>
+            <p style="font-size: 12px; margin-top: 10px;">
+                Este é um email automático. Por favor, não responda a esta mensagem.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "timestamp": "2025-08-13T15:32:26.956Z",
+  "status": "CONFIGURED",
+  "checks": {
+    "environment": true,
+    "files": true,
+    "middleware": true,
+    "dashboard": true
+  }
+}

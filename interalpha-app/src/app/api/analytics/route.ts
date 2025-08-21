@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const charts = {};
+        const charts: Record<string, any> = {};
         for (const chartType of chartTypes) {
           charts[chartType] = await analyticsService.generateChartData(chartType, filters);
         }

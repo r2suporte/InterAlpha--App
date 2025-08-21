@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import PagamentoForm from '@/components/pagamentos/PagamentoForm'
 

@@ -122,7 +122,7 @@ export class WorkflowTriggers {
   // Verificar ordens urgentes que estão pendentes há muito tempo
   private static async checkUrgentOrdersOverdue(): Promise<void> {
     try {
-      const prisma = (await import('@/lib/prisma')).default;
+      const { prisma } = await import('@/lib/prisma');
       
       // Buscar ordens urgentes pendentes há mais de 2 horas
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
@@ -174,7 +174,7 @@ export class WorkflowTriggers {
   // Verificar pagamentos em atraso
   private static async checkOverduePayments(): Promise<void> {
     try {
-      const prisma = (await import('@/lib/prisma')).default;
+      const { prisma } = await import('@/lib/prisma');
       
       const today = new Date();
       today.setHours(0, 0, 0, 0);

@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   
+  // Headers CSP removidos temporariamente para debug
+  
   // Configuração específica para Webpack (usado apenas no build de produção)
   webpack: (config, { isServer }) => {
     if (isServer) {

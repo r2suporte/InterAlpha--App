@@ -1,0 +1,79 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2025-08-13T14:12:20.638Z",
+  "rto": 4,
+  "rpo": 1,
+  "scenarios": {
+    "database_failure": {
+      "priority": "critical",
+      "steps": [
+        "assess_database_status",
+        "attempt_database_restart",
+        "restore_from_backup",
+        "verify_data_integrity",
+        "resume_operations"
+      ],
+      "estimatedTime": 120
+    },
+    "application_failure": {
+      "priority": "high",
+      "steps": [
+        "assess_application_status",
+        "check_system_resources",
+        "restart_application",
+        "verify_functionality",
+        "monitor_performance"
+      ],
+      "estimatedTime": 30
+    },
+    "data_corruption": {
+      "priority": "critical",
+      "steps": [
+        "isolate_corrupted_data",
+        "assess_corruption_scope",
+        "restore_from_clean_backup",
+        "validate_restored_data",
+        "implement_data_protection"
+      ],
+      "estimatedTime": 180
+    },
+    "security_breach": {
+      "priority": "critical",
+      "steps": [
+        "isolate_affected_systems",
+        "assess_breach_scope",
+        "change_all_credentials",
+        "restore_from_clean_backup",
+        "implement_security_patches",
+        "monitor_for_threats"
+      ],
+      "estimatedTime": 240
+    },
+    "infrastructure_failure": {
+      "priority": "critical",
+      "steps": [
+        "assess_infrastructure_status",
+        "activate_backup_systems",
+        "redirect_traffic",
+        "restore_services",
+        "verify_full_functionality"
+      ],
+      "estimatedTime": 360
+    }
+  },
+  "contacts": {
+    "primary": "admin@interalpha.com",
+    "secondary": "backup-admin@interalpha.com",
+    "emergency": []
+  },
+  "backupLocations": [
+    "./backups",
+    "s3://interalpha-backups"
+  ],
+  "dependencies": [
+    "postgresql",
+    "redis",
+    "nodejs",
+    "nginx"
+  ]
+}

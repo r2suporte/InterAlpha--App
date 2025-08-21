@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Edit, Phone, Mail, MapPin, FileText, Plus } from 'lucide-react'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
@@ -74,7 +74,7 @@ export default async function ClientePage({ params }: ClientePageProps) {
     return new Date(date).toLocaleString('pt-BR')
   }
 
-  const totalValorOrdens = cliente.ordensServico.reduce((total, ordem) => {
+  const totalValorOrdens = cliente.ordensServico.reduce((total: number, ordem: any) => {
     return total + (ordem.valor || 0)
   }, 0)
 
@@ -255,7 +255,7 @@ export default async function ClientePage({ params }: ClientePageProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {cliente.ordensServico.map((ordem) => (
+                    {cliente.ordensServico.map((ordem: any) => (
                       <TableRow key={ordem.id}>
                         <TableCell>
                           <Link 

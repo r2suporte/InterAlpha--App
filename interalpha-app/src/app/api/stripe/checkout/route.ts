@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createCheckoutSession } from '@/lib/stripe'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {

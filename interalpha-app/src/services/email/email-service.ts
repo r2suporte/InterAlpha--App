@@ -3,10 +3,15 @@ import { integrationConfig } from '@/lib/integrations/config';
 import type { EmailJob } from '@/lib/integrations/types';
 
 export class EmailService {
-  private transporter: nodemailer.Transporter;
+  private transporter: nodemailer.Transporter | null = null;
 
   constructor() {
-    this.transporter = nodemailer.createTransporter({
+    // Inicialização lazy - verificar conexão apenas quando necessário
+  }
+
+  private getTransporter(): nodemailer.Transporter {
+    if (!this.transporter) {
+      this.transporter = nodemailer.createTransport({
       host: integrationConfig.email.smtp.host,
       port: integrationConfig.email.smtp.port,
       secure: integrationConfig.email.smtp.secure,
@@ -20,15 +25,14 @@ export class EmailService {
       maxMessages: 100,
       rateDelta: 1000,
       rateLimit: 5,
-    });
-
-    // Verificar configuração na inicialização
-    this.verifyConnection();
+      });
+    }
+    return this.transporter;
   }
 
   private async verifyConnection() {
     try {
-      await this.transporter.verify();
+      await this.getTransporter().verify();
       console.log('✅ Conexão SMTP verificada com sucesso');
     } catch (error) {
       console.error('❌ Erro na verificação SMTP:', error);
@@ -57,7 +61,7 @@ export class EmailService {
       };
 
       // Enviar email
-      const result = await this.transporter.sendMail(mailOptions);
+      const result = await this.getTransporter().sendMail(mailOptions);
 
       console.log(`✅ Email enviado para ${to} - MessageID: ${result.messageId}`);
 
@@ -142,7 +146,7 @@ export class EmailService {
 
   async testConnection(): Promise<boolean> {
     try {
-      await this.transporter.verify();
+      await this.getTransporter().verify();
       return true;
     } catch (error) {
       console.error('❌ Teste de conexão SMTP falhou:', error);
@@ -171,7 +175,7 @@ export class EmailService {
 
   // Método para fechar conexões (cleanup)
   async close(): Promise<void> {
-    this.transporter.close();
+    this.getTransporter().close();
     console.log('📧 Conexões SMTP fechadas');
   }
 }

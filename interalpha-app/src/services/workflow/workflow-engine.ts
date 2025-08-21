@@ -1,7 +1,7 @@
 import { addJobToQueue, emailQueue, smsQueue } from '@/lib/integrations';
 import { emailNotifications } from '@/services/email/email-notifications';
 import { smsNotifications } from '@/services/sms/sms-notifications';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 // Tipos para o sistema de workflows
 export interface WorkflowTrigger {

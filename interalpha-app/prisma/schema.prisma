@@ -8,57 +8,66 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  clerkId       String         @unique
-  email         String         @unique
-  name          String?
-  phone         String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  clientes      Cliente[]
-  ordensServico OrdemServico[]
-  pagamentos    Pagamento[]
+  id                   String                @id @default(cuid())
+  clerkId              String                @unique
+  email                String                @unique
+  name                 String?
+  phone                String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  clientes             Cliente[]
+  ordensServico        OrdemServico[]
+  pagamentos           Pagamento[]
+  calendarIntegrations CalendarIntegration[]
+  createdProducts      Product[]             @relation("ProductCreator")
+  stockMovements       StockMovement[]       @relation("StockMovements")
 
   @@map("users")
 }
 
 model Cliente {
-  id            String         @id @default(cuid())
+  id            String            @id @default(cuid())
+  numeroSequencial Int            @default(autoincrement())
   nome          String
   email         String
   telefone      String?
-  documento     String         @unique
+  documento     String            @unique
   tipoDocumento String
   cep           String?
   endereco      String?
   cidade        String?
   estado        String?
   observacoes   String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
   userId        String
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   ordensServico OrdemServico[]
+  serviceOrders ServiceOrder[]
+  accessKeys    ClientAccessKey[]
+  supportTickets SupportTicket[]  @relation("SupportTicketClient")
 
   @@map("clientes")
 }
 
 model OrdemServico {
-  id         String      @id @default(cuid())
-  titulo     String
-  descricao  String?
-  status     String      @default("PENDENTE")
-  prioridade String      @default("MEDIA")
-  valor      Float?
-  dataInicio DateTime?
-  dataFim    DateTime?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  userId     String
-  clienteId  String
-  cliente    Cliente     @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pagamentos Pagamento[]
+  id                String              @id @default(cuid())
+  titulo            String
+  descricao         String?
+  status            String              @default("PENDENTE")
+  prioridade        String              @default("MEDIA")
+  valor             Float?
+  dataInicio        DateTime?
+  dataFim           DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  userId            String
+  clienteId         String
+  cliente           Cliente             @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pagamentos        Pagamento[]
+  calendarEventSync CalendarEventSync[]
+  items             OrderItem[]
 
   @@map("ordens_servico")
 }
@@ -80,4 +89,1226 @@ model Pagamento {
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("pagamentos")
+}
+
+
+
+// ==================== AUDIT SYSTEM MODELS ====================
+
+model AuditEntry {
+  id         String    @id @default(cuid())
+  userId     String
+  userType   String    // 'client' | 'employee'
+  action     String
+  resource   String
+  resourceId String?
+  oldData    Json?
+  newData    Json?
+  result     String    @default("success") // 'success' | 'failure'
+  reason     String?
+  timestamp  DateTime  @default(now())
+  ipAddress  String
+  userAgent  String
+  sessionId  String?
+  metadata   Json?
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([action])
+  @@index([resource])
+  @@index([result])
+  @@map("audit_entries")
+}
+
+model AccessLogEntry {
+  id              String   @id @default(cuid())
+  userId          String
+  userType        String   // 'client' | 'employee'
+  action          String   // 'login' | 'logout' | 'access_denied' | 'session_expired'
+  ipAddress       String
+  userAgent       String
+  location        String?
+  success         Boolean
+  failureReason   String?
+  timestamp       DateTime @default(now())
+  sessionDuration Int?     // in seconds
+  metadata        Json?
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([action])
+  @@index([success])
+  @@index([ipAddress])
+  @@map("access_log_entries")
+}
+
+model SecurityEventEntry {
+  id          String                @id @default(cuid())
+  type        String                // SecurityEventType enum
+  severity    String                // SecuritySeverity enum
+  userId      String?
+  ipAddress   String
+  userAgent   String?
+  description String
+  details     Json
+  timestamp   DateTime              @default(now())
+  resolved    Boolean               @default(false)
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  actions     SecurityEventAction[]
+
+  @@index([type])
+  @@index([severity])
+  @@index([userId])
+  @@index([timestamp])
+  @@index([resolved])
+  @@map("security_event_entries")
+}
+
+model SecurityEventAction {
+  id              String             @id @default(cuid())
+  securityEventId String
+  action          String
+  timestamp       DateTime           @default(now())
+  automated       Boolean            @default(false)
+  details         Json?
+  securityEvent   SecurityEventEntry @relation(fields: [securityEventId], references: [id], onDelete: Cascade)
+
+  @@map("security_event_actions")
+}
+
+model AuditReport {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  generatedBy String
+  generatedAt DateTime @default(now())
+  startDate   DateTime
+  endDate     DateTime
+  filters     Json
+  summary     Json
+  data        Json
+  format      String   // 'json' | 'csv' | 'pdf'
+  downloadUrl String?
+
+  @@index([generatedBy])
+  @@index([generatedAt])
+  @@index([format])
+  @@map("audit_reports")
+}
+
+model ComplianceReport {
+  id            String              @id @default(cuid())
+  type          String              // ComplianceType enum
+  startDate     DateTime
+  endDate       DateTime
+  generatedBy   String
+  generatedAt   DateTime            @default(now())
+  status        String              // 'compliant' | 'non_compliant' | 'partial'
+  findings      ComplianceFinding[]
+  recommendations Json
+  downloadUrl   String?
+
+  @@index([type])
+  @@index([generatedBy])
+  @@index([generatedAt])
+  @@index([status])
+  @@map("compliance_reports")
+}
+
+model ComplianceFinding {
+  id                 String            @id @default(cuid())
+  complianceReportId String
+  severity           String            // 'low' | 'medium' | 'high' | 'critical'
+  category           String
+  description        String
+  evidence           Json
+  recommendation     String
+  status             String            @default("open") // 'open' | 'in_progress' | 'resolved'
+  complianceReport   ComplianceReport  @relation(fields: [complianceReportId], references: [id], onDelete: Cascade)
+
+  @@map("compliance_findings")
+}
+
+model AlertRule {
+  id               String          @id @default(cuid())
+  name             String
+  description      String
+  enabled          Boolean         @default(true)
+  conditions       Json
+  actions          Json
+  cooldownMinutes  Int             @default(60)
+  createdBy        String
+  createdAt        DateTime        @default(now())
+  lastTriggered    DateTime?
+  triggerCount     Int             @default(0)
+
+  @@index([enabled])
+  @@index([createdBy])
+  @@map("alert_rules")
+}
+
+model DataRetentionPolicy {
+  id               String    @id @default(cuid())
+  name             String
+  description      String
+  dataType         String    // 'audit_logs' | 'access_logs' | 'security_events'
+  retentionDays    Int
+  archiveAfterDays Int?
+  deleteAfterDays  Int
+  enabled          Boolean   @default(true)
+  createdBy        String
+  createdAt        DateTime  @default(now())
+  lastExecuted     DateTime?
+
+  @@index([dataType])
+  @@index([enabled])
+  @@index([createdBy])
+  @@map("data_retention_policies")
+}
+
+model AuditConfig {
+  id                    String   @id @default("default")
+  enableAuditLogging    Boolean  @default(true)
+  enableAccessLogging   Boolean  @default(true)
+  enableSecurityEvents  Boolean  @default(true)
+  logRetentionDays      Int      @default(365)
+  enableRealTimeAlerts  Boolean  @default(true)
+  alertCooldownMinutes  Int      @default(60)
+  enableAutoArchiving   Boolean  @default(false)
+  archiveAfterDays      Int      @default(90)
+  enableCompliance      Boolean  @default(true)
+  complianceTypes       Json     @default("[]")
+  enableExport          Boolean  @default(true)
+  maxExportRecords      Int      @default(100000)
+  enableAnonymization   Boolean  @default(false)
+  anonymizeAfterDays    Int      @default(730)
+  updatedBy             String
+  updatedAt             DateTime @updatedAt
+
+  @@map("audit_config")
+}
+
+model ExportJob {
+  id               String   @id @default(cuid())
+  dataTypes        Json
+  format           String   // 'json' | 'csv' | 'xlsx'
+  filters          Json
+  includeMetadata  Boolean  @default(true)
+  compression      Boolean  @default(false)
+  requestedBy      String
+  status           String   @default("pending") // 'pending' | 'processing' | 'completed' | 'failed'
+  progress         Int      @default(0)
+  createdAt        DateTime @default(now())
+  completedAt      DateTime?
+  downloadUrl      String?
+  filename         String?
+  fileSize         Int?
+  mimeType         String?
+  errorMessage     String?
+
+  @@index([requestedBy])
+  @@index([status])
+  @@index([createdAt])
+  @@map("export_jobs")
+}
+
+// ==================== ACCOUNTING INTEGRATION MODELS ====================
+
+model AccountingSystem {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // 'omie' | 'contabilizei' | 'sage' | 'generic'
+  baseUrl   String
+  apiKey    String
+  isActive  Boolean  @default(true)
+  config    Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  syncRecords AccountingSync[]
+
+  @@map("accounting_systems")
+}
+
+model AccountingSync {
+  id          String   @id @default(cuid())
+  entityType  String   // 'payment' | 'invoice' | 'expense'
+  entityId    String
+  systemId    String
+  externalId  String?
+  status      String   // 'pending' | 'success' | 'failed' | 'conflict'
+  lastSyncAt  DateTime?
+  errorMessage String?
+  retryCount  Int      @default(0)
+  nextRetryAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  system      AccountingSystem @relation(fields: [systemId], references: [id], onDelete: Cascade)
+
+  @@unique([entityType, entityId, systemId])
+  @@index([status])
+  @@index([entityType])
+  @@index([systemId])
+  @@index([nextRetryAt])
+  @@map("accounting_syncs")
+}
+
+model AccountingConflict {
+  id            String   @id @default(cuid())
+  syncId        String   @unique
+  localData     Json
+  externalData  Json
+  conflictFields Json
+  resolution    String?  // 'use_local' | 'use_external' | 'merge' | 'manual'
+  resolvedData  Json?
+  resolvedBy    String?
+  resolvedAt    DateTime?
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  @@index([resolvedBy])
+  @@index([resolvedAt])
+  @@map("accounting_conflicts")
+}
+
+model AccountingSyncLog {
+  id          String   @id @default(cuid())
+  syncId      String
+  action      String   // 'sync_started' | 'sync_completed' | 'sync_failed' | 'retry_attempted'
+  details     Json?
+  timestamp   DateTime @default(now())
+
+  @@index([syncId])
+  @@index([action])
+  @@index([timestamp])
+  @@map("accounting_sync_logs")
+}
+
+// ==================== CALENDAR INTEGRATION MODELS ====================
+
+model CalendarIntegration {
+  id                String   @id @default(cuid())
+  userId            String
+  googleCalendarId  String
+  displayName       String
+  isActive          Boolean  @default(true)
+  syncEnabled       Boolean  @default(true)
+  lastSyncAt        DateTime?
+  tokens            Json     // GoogleTokens
+  webhookId         String?
+  config            Json     @default("{}")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventSyncs        CalendarEventSync[]
+
+  @@unique([userId, googleCalendarId])
+  @@index([userId])
+  @@index([isActive])
+  @@index([syncEnabled])
+  @@map("calendar_integrations")
+}
+
+model CalendarEventSync {
+  id              String   @id @default(cuid())
+  ordemServicoId  String
+  integrationId   String
+  externalEventId String
+  status          String   // 'synced' | 'failed' | 'deleted'
+  lastSyncAt      DateTime @default(now())
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  ordemServico    OrdemServico        @relation(fields: [ordemServicoId], references: [id], onDelete: Cascade)
+  integration     CalendarIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([ordemServicoId, integrationId])
+  @@index([ordemServicoId])
+  @@index([integrationId])
+  @@index([status])
+  @@map("calendar_event_syncs")
+}
+
+model CalendarWebhook {
+  id          String   @id @default(cuid())
+  calendarId  String
+  resourceId  String
+  resourceUri String
+  token       String?
+  expiration  BigInt
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([calendarId, resourceId])
+  @@index([calendarId])
+  @@index([isActive])
+  @@map("calendar_webhooks")
+}
+
+// ==================== EMPLOYEE SYSTEM MODELS ====================
+
+model Employee {
+  id                    String                @id @default(cuid())
+  clerkId               String                @unique // ID do usuário no Clerk
+  email                 String                @unique
+  name                  String
+  role                  EmployeeRole          // Enum para roles
+  department            String?
+  phone                 String?
+  isActive              Boolean               @default(true)
+  lastLoginAt           DateTime?
+  permissions           Json                  @default("[]") // Array de permissões
+  metadata              Json                  @default("{}") // Dados adicionais
+  createdBy             String?               // ID do funcionário que criou
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  assignedOrders        ServiceOrder[]        @relation("AssignedTechnician")
+  createdOrders         ServiceOrder[]        @relation("CreatedBy")
+  technicalReports      TechnicalReport[]
+  roleAssignments       RoleAssignment[]
+  invitationsSent       EmployeeInvitation[]  @relation("InvitedBy")
+  invitationsReceived   EmployeeInvitation[]  @relation("InvitedEmployee")
+  
+  // Communication relations
+  sentMessages          Message[]             @relation("MessageSender")
+  receivedMessages      Message[]             @relation("MessageRecipient")
+  createdChatRooms      ChatRoom[]            @relation("ChatRoomCreator")
+  chatParticipations    ChatParticipant[]     @relation("ChatParticipant")
+  createdTickets        SupportTicket[]       @relation("TicketCreator")
+  assignedTickets       SupportTicket[]       @relation("TicketAssignee")
+  ticketMessages        TicketMessage[]       @relation("TicketMessageSender")
+  managedDepartments    Department[]          @relation("DepartmentManager")
+  departmentMembership  Department[]          @relation("EmployeeDepartment")
+  communicationPrefs    CommunicationPreferences? @relation("CommunicationPreferences")
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@map("employees")
+}
+
+model Service {
+  id                String         @id @default(cuid())
+  name              String
+  description       String?
+  category          String?
+  estimatedDuration Int?           // em horas
+  basePrice         Float?
+  isActive          Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  serviceOrders     ServiceOrder[]
+
+  @@index([category])
+  @@index([isActive])
+  @@map("services")
+}
+
+model ServiceOrder {
+  id                    String                @id @default(cuid())
+  clientId              String
+  serviceId             String
+  assignedTechnicianId  String?
+  createdById           String
+  title                 String
+  description           String?
+  status                String                @default("ASSIGNED") // 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PENDING_PARTS'
+  priority              String                @default("MEDIUM")   // 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  scheduledDate         DateTime
+  location              String?
+  estimatedValue        Float?
+  finalValue            Float?
+  startedAt             DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  client                Cliente               @relation(fields: [clientId], references: [id])
+  service               Service               @relation(fields: [serviceId], references: [id])
+  assignedTechnician    Employee?             @relation("AssignedTechnician", fields: [assignedTechnicianId], references: [id])
+  createdBy             Employee              @relation("CreatedBy", fields: [createdById], references: [id])
+  technicalReports      TechnicalReport[]
+
+  @@index([clientId])
+  @@index([serviceId])
+  @@index([assignedTechnicianId])
+  @@index([status])
+  @@index([priority])
+  @@index([scheduledDate])
+  @@map("service_orders")
+}
+
+model TechnicalReport {
+  id               String       @id @default(cuid())
+  serviceOrderId   String
+  technicianId     String
+  description      String
+  workPerformed    String
+  partsUsed        Json         @default("[]")
+  timeSpent        Int          // em minutos
+  clientSignature  String?      // base64 da assinatura
+  photos           Json         @default("[]")
+  recommendations  String?
+  status           String       @default("DRAFT") // 'DRAFT' | 'COMPLETED' | 'APPROVED'
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  
+  serviceOrder     ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+  technician       Employee     @relation(fields: [technicianId], references: [id])
+
+  @@index([serviceOrderId])
+  @@index([technicianId])
+  @@index([status])
+  @@map("technical_reports")
+}
+
+model Role {
+  id              String           @id @default(cuid())
+  name            String           @unique
+  displayName     String
+  description     String?
+  permissions     Json             @default("[]")
+  isSystem        Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  assignments     RoleAssignment[]
+
+  @@index([name])
+  @@index([isSystem])
+  @@map("roles")
+}
+
+model RoleAssignment {
+  id         String   @id @default(cuid())
+  employeeId String
+  roleId     String
+  assignedBy String?
+  assignedAt DateTime @default(now())
+  expiresAt  DateTime?
+  isActive   Boolean  @default(true)
+  
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, roleId])
+  @@index([employeeId])
+  @@index([roleId])
+  @@index([isActive])
+  @@map("role_assignments")
+}
+
+model EmployeeInvitation {
+  id               String    @id @default(cuid())
+  email            String
+  name             String
+  role             String
+  department       String?
+  invitedById      String
+  invitedEmployeeId String?
+  token            String    @unique
+  status           String    @default("PENDING") // 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED'
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  
+  invitedBy        Employee  @relation("InvitedBy", fields: [invitedById], references: [id])
+  invitedEmployee  Employee? @relation("InvitedEmployee", fields: [invitedEmployeeId], references: [id])
+
+  @@index([email])
+  @@index([token])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("employee_invitations")
+}
+
+model ClientAccessKey {
+  id        String    @id @default(cuid())
+  clientId  String
+  key       String    @unique
+  isActive  Boolean   @default(true)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  
+  client    Cliente   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([key])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@map("client_access_keys")
+}
+
+// ==================== NOTIFICATION SYSTEM MODELS ====================
+
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String
+  type        String    // NotificationType enum
+  title       String
+  message     String
+  data        Json      @default("{}")
+  read        Boolean   @default(false)
+  priority    String    @default("medium") // 'low' | 'medium' | 'high' | 'urgent'
+  category    String    @default("general") // NotificationCategory enum
+  actionUrl   String?
+  actionLabel String?
+  expiresAt   DateTime?
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([type])
+  @@index([read])
+  @@index([priority])
+  @@index([category])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@map("notifications")
+}
+
+model NotificationPreferences {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  emailEnabled  Boolean  @default(true)
+  smsEnabled    Boolean  @default(false)
+  pushEnabled   Boolean  @default(true)
+  inAppEnabled  Boolean  @default(true)
+  categories    Json     @default("{}")
+  quietHours    Json     @default("{}")
+  frequency     String   @default("immediate") // 'immediate' | 'hourly' | 'daily' | 'weekly'
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@map("notification_preferences")
+}
+
+model NotificationTemplate {
+  id            String   @id @default(cuid())
+  type          String   @unique
+  name          String
+  subject       String
+  emailTemplate String
+  smsTemplate   String
+  pushTemplate  String
+  inAppTemplate String
+  variables     Json     @default("[]")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([type])
+  @@index([isActive])
+  @@map("notification_templates")
+}
+
+model NotificationQueue {
+  id          String    @id @default(cuid())
+  userId      String
+  type        String    // NotificationType enum
+  channel     String    // 'email' | 'sms' | 'push' | 'in_app'
+  status      String    @default("pending") // 'pending' | 'processing' | 'sent' | 'failed' | 'cancelled'
+  priority    String    @default("medium") // NotificationPriority enum
+  scheduledAt DateTime  @default(now())
+  sentAt      DateTime?
+  failedAt    DateTime?
+  retryCount  Int       @default(0)
+  maxRetries  Int       @default(3)
+  data        Json      @default("{}")
+  error       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([channel])
+  @@index([scheduledAt])
+  @@index([priority])
+  @@map("notification_queue")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String
+  keys      Json     // { p256dh: string, auth: string }
+  userAgent String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, endpoint])
+  @@index([userId])
+  @@index([isActive])
+  @@map("push_subscriptions")
+}
+
+model PushNotificationLog {
+  id                String   @id @default(cuid())
+  userId            String
+  title             String
+  body              String
+  data              Json     @default("{}")
+  subscriptionCount Int      @default(0)
+  sentAt            DateTime @default(now())
+
+  @@index([userId])
+  @@index([sentAt])
+  @@map("push_notification_logs")
+}
+
+model NotificationChannel {
+  id        String   @id @default(cuid())
+  type      String   @unique // 'email' | 'sms' | 'push' | 'in_app'
+  enabled   Boolean  @default(true)
+  config    Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type])
+  @@index([enabled])
+  @@map("notification_channels")
+}
+// ==================== COMMUNICATION SYSTEM MODELS ====================
+
+model Message {
+  id               String             @id @default(cuid())
+  senderId         String
+  senderName       String
+  senderRole       String?
+  recipientId      String?
+  recipientName    String?
+  departmentId     String?
+  departmentName   String?
+  subject          String?
+  content          String
+  messageType      MessageType
+  priority         MessagePriority    @default(NORMAL)
+  status           MessageStatus      @default(SENT)
+  parentMessageId  String?
+  threadId         String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  readAt           DateTime?
+  metadata         Json?
+
+  // Relacionamentos
+  sender           Employee?          @relation("MessageSender", fields: [senderId], references: [id])
+  recipient        Employee?          @relation("MessageRecipient", fields: [recipientId], references: [id])
+  department       Department?        @relation(fields: [departmentId], references: [id])
+  attachments      MessageAttachment[]
+  parentMessage    Message?           @relation("MessageThread", fields: [parentMessageId], references: [id])
+  replies          Message[]          @relation("MessageThread")
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([departmentId])
+  @@index([messageType])
+  @@index([status])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+model MessageAttachment {
+  id           String   @id @default(cuid())
+  messageId    String
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  url          String
+  uploadedAt   DateTime @default(now())
+
+  message      Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("message_attachments")
+}
+
+model ChatRoom {
+  id           String              @id @default(cuid())
+  name         String
+  description  String?
+  type         ChatRoomType
+  departmentId String?
+  createdBy    String
+  lastActivity DateTime            @default(now())
+  isActive     Boolean             @default(true)
+  settings     Json                // ChatRoomSettings
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  // Relacionamentos
+  department   Department?         @relation(fields: [departmentId], references: [id])
+  creator      Employee            @relation("ChatRoomCreator", fields: [createdBy], references: [id])
+  participants ChatParticipant[]
+
+  @@index([type])
+  @@index([departmentId])
+  @@index([createdBy])
+  @@index([isActive])
+  @@map("chat_rooms")
+}
+
+model ChatParticipant {
+  id          String          @id @default(cuid())
+  chatRoomId  String
+  userId      String
+  userName    String
+  userRole    String
+  joinedAt    DateTime        @default(now())
+  lastSeen    DateTime?
+  permissions Json            // ChatPermissions
+  isActive    Boolean         @default(true)
+
+  // Relacionamentos
+  chatRoom    ChatRoom        @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  user        Employee        @relation("ChatParticipant", fields: [userId], references: [id])
+
+  @@unique([chatRoomId, userId])
+  @@index([chatRoomId])
+  @@index([userId])
+  @@index([isActive])
+  @@map("chat_participants")
+}
+
+model SupportTicket {
+  id             String                  @id @default(cuid())
+  ticketNumber   String                  @unique
+  clientId       String?
+  clientName     String?
+  employeeId     String?
+  employeeName   String?
+  subject        String
+  description    String
+  category       TicketCategory
+  priority       MessagePriority         @default(NORMAL)
+  status         TicketStatus            @default(OPEN)
+  assignedTo     String?
+  assignedToName String?
+  departmentId   String?
+  tags           String[]
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  resolvedAt     DateTime?
+  closedAt       DateTime?
+  metadata       Json?
+
+  // Relacionamentos
+  client         Cliente?                @relation("SupportTicketClient", fields: [clientId], references: [id])
+  employee       Employee?               @relation("TicketCreator", fields: [employeeId], references: [id])
+  assignedToUser Employee?               @relation("TicketAssignee", fields: [assignedTo], references: [id])
+  department     Department?             @relation(fields: [departmentId], references: [id])
+  attachments    TicketAttachment[]
+  messages       TicketMessage[]
+
+  @@index([clientId])
+  @@index([employeeId])
+  @@index([assignedTo])
+  @@index([departmentId])
+  @@index([status])
+  @@index([category])
+  @@index([priority])
+  @@index([createdAt])
+  @@map("support_tickets")
+}
+
+model TicketAttachment {
+  id           String        @id @default(cuid())
+  ticketId     String
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  url          String
+  uploadedAt   DateTime      @default(now())
+
+  ticket       SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("ticket_attachments")
+}
+
+model TicketMessage {
+  id           String                  @id @default(cuid())
+  ticketId     String
+  senderId     String
+  senderName   String
+  content      String
+  isInternal   Boolean                 @default(false)
+  createdAt    DateTime                @default(now())
+  attachments  TicketMessageAttachment[]
+
+  // Relacionamentos
+  ticket       SupportTicket           @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender       Employee                @relation("TicketMessageSender", fields: [senderId], references: [id])
+
+  @@index([ticketId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("ticket_messages")
+}
+
+model TicketMessageAttachment {
+  id           String        @id @default(cuid())
+  messageId    String
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  url          String
+  uploadedAt   DateTime      @default(now())
+
+  message      TicketMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("ticket_message_attachments")
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  managerId   String?
+  managerName String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  manager        Employee?       @relation("DepartmentManager", fields: [managerId], references: [id])
+  employees      Employee[]      @relation("EmployeeDepartment")
+  messages       Message[]
+  chatRooms      ChatRoom[]
+  supportTickets SupportTicket[]
+
+  @@index([managerId])
+  @@index([isActive])
+  @@map("departments")
+}
+
+model CommunicationPreferences {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  emailNotifications    Boolean  @default(true)
+  pushNotifications     Boolean  @default(true)
+  smsNotifications      Boolean  @default(false)
+  notificationTypes     Json     // { directMessages: boolean, departmentMessages: boolean, etc }
+  quietHours            Json?    // { enabled: boolean, startTime: string, endTime: string }
+  autoReply             Json?    // { enabled: boolean, message: string, startDate?: Date, endDate?: Date }
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relacionamentos
+  user                  Employee @relation("CommunicationPreferences", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("communication_preferences")
+}
+
+// ==================== COMMUNICATION ENUMS ====================
+
+enum MessageType {
+  DIRECT
+  DEPARTMENT
+  BROADCAST
+  SUPPORT_TICKET
+  SYSTEM
+}
+
+enum MessagePriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  ARCHIVED
+}
+
+enum ChatRoomType {
+  DIRECT
+  DEPARTMENT
+  PROJECT
+  SUPPORT
+  GENERAL
+}
+
+enum TicketCategory {
+  TECHNICAL
+  BILLING
+  GENERAL
+  COMPLAINT
+  FEATURE_REQUEST
+  BUG_REPORT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CLIENT
+  WAITING_INTERNAL
+  RESOLVED
+  CLOSED
+  CANCELLED
+}
+// PRODUCT MANAGEMENT MODELS
+
+model Product {
+  id          String   @id @default(cuid())
+  partNumber  String   @unique
+  description String
+  costPrice   Float
+  salePrice   Float
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  
+  // Campos de estoque
+  quantity    Int      @default(0)
+  minStock    Int      @default(0)
+  maxStock    Int?
+  stockUnit   String   @default("UN")
+  
+  // Categoria
+  categoryId  String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String
+  
+  // Relacionamentos
+  creator        User              @relation("ProductCreator", fields: [createdBy], references: [id])
+  category       ProductCategory?  @relation(fields: [categoryId], references: [id])
+  orderItems     OrderItem[]
+  stockMovements StockMovement[]
+  
+  // Índices para performance
+  @@index([partNumber])
+  @@index([description])
+  @@index([isActive])
+  @@index([createdAt])
+  @@index([costPrice])
+  @@index([salePrice])
+  @@index([createdBy])
+  @@index([quantity])
+  @@index([quantity, minStock])
+  @@index([categoryId])
+  @@map("products")
+}
+
+model ProductCategory {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  color       String?   // Para UI
+  icon        String?   // Para UI
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relacionamentos
+  products    Product[]
+  
+  // Índices
+  @@index([name])
+  @@index([isActive])
+  @@map("product_categories")
+}
+
+model StockMovement {
+  id          String              @id @default(cuid())
+  productId   String
+  type        StockMovementType
+  quantity    Int
+  reason      String
+  reference   String?             // ID da ordem, nota fiscal, etc
+  userId      String
+  createdAt   DateTime            @default(now())
+  
+  // Relacionamentos
+  product     Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user        User                @relation("StockMovements", fields: [userId], references: [id])
+  
+  // Índices para performance
+  @@index([productId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([userId])
+  @@index([reference])
+  @@map("stock_movements")
+}
+
+enum StockMovementType {
+  IN          // Entrada de estoque
+  OUT         // Saída de estoque
+  ADJUSTMENT  // Ajuste manual
+  TRANSFER    // Transferência entre locais
+  LOSS        // Perda/Avaria
+  RETURN      // Devolução
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  productId  String
+  quantity   Int
+  unitPrice  Float
+  totalPrice Float
+  createdAt  DateTime @default(now())
+  
+  // Relacionamentos
+  order      OrdemServico @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
+  
+  // Índices para performance
+  @@index([orderId])
+  @@index([productId])
+  @@index([createdAt])
+  @@map("order_items")
+}
+
+// Estender User model para incluir produtos criados
+// (Adicionar ao model User existente)
+// createdProducts Product[] @relation("ProductCreator")
+
+// Estender OrdemServico model para incluir itens
+// (Adicionar ao model OrdemServico existente)  
+// items OrderItem[]
+
+enum EmployeeRole {
+  ATENDENTE
+  TECNICO
+  SUPERVISOR_TECNICO
+  GERENTE_ADM
+  GERENTE_FINANCEIRO
+  ADMIN
+}
+// ==================== ORDEM DE SERVIÇO APPLE MODELS ====================
+
+model OrdemServicoApple {
+  id                                String                      @id @default(cuid())
+  numeroSequencial                 Int                         @default(autoincrement())
+  numero                           String                      @unique
+  
+  // Status e Controle
+  status                           String                      @default("Recebido") // 'Recebido' | 'Diagnosticando' | 'Aguardando Peças' | 'Em Reparo' | 'Testando' | 'Concluído' | 'Entregue' | 'Cancelado'
+  prioridade                       String                      @default("Normal") // 'Baixa' | 'Normal' | 'Alta' | 'Urgente'
+  
+  // Cliente
+  clienteNome                      String
+  clienteEmail                     String
+  clienteTelefone                  String?
+  clienteEndereco                  String?
+  
+  // Dispositivo Apple
+  dispositivoModelo                String
+  dispositivoNumeroSerie           String
+  dispositivoCapacidade            String?
+  dispositivoCor                   String?
+  dispositivoImei                  String?
+  dispositivoVersaoiOS             String?
+  dispositivoEstadoFisico          String                      @default("Bom") // 'Excelente' | 'Bom' | 'Regular' | 'Ruim'
+  dispositivoAcessorios            String[]                    @default([])
+  
+  // Problema Relatado
+  problemaDescricao                String
+  problemaSintomas                 String[]                    @default([])
+  problemaFrequencia               String                      @default("Às vezes") // 'Sempre' | 'Frequentemente' | 'Às vezes' | 'Raramente'
+  problemaCondicoes                String?
+  problemaTentativasReparo         String?
+  
+  // Garantia
+  garantiaTipo                     String                      @default("Fora de Garantia") // 'Garantia Apple' | 'Garantia InterAlpha' | 'Fora de Garantia'
+  garantiaPeriodo                  Int                         @default(90) // em dias
+  garantiaDataInicio               DateTime                    @default(now())
+  garantiaDataFim                  DateTime
+  garantiaCondicoes                String[]                    @default([])
+  garantiaCoberturas               String[]                    @default([])
+  garantiaExclusoes                String[]                    @default([])
+  // Campos específicos para Garantia Apple
+  garantiaDataCompraDispositivo    DateTime?
+  garantiaStatusGarantiaApple      String? // 'Ativa' | 'Expirada' | 'Não verificada'
+  garantiaNumeroSerieApple         String?
+  // Campos específicos para Garantia InterAlpha
+  garantiaServicoInterAlpha        Json? // { numeroOS, dataServico, tipoServico, tecnicoResponsavel }
+  
+  // Valores
+  valorPecas                       Float                       @default(0)
+  valorMaoDeObra                   Float                       @default(0)
+  valorTotal                       Float                       @default(0)
+  desconto                         Float?                      @default(0)
+  
+  // Observações Especiais
+  observacoesBackupNecessario      Boolean                     @default(false)
+  observacoesSenhaIdApple          String?
+  observacoesDadosImportantes      String[]                    @default([])
+  observacoesRestricoes            String[]                    @default([])
+  observacoesRecomendacoes         String[]                    @default([])
+  observacoesGerais                String?
+  
+  // Datas
+  dataRecebimento                  DateTime                    @default(now())
+  dataPrevisao                     DateTime?
+  dataConclusao                    DateTime?
+  dataEntrega                      DateTime?
+  
+  // Controle
+  tecnicoResponsavel               String?
+  criadoPor                        String
+  atualizadoPor                    String
+  createdAt                        DateTime                    @default(now())
+  updatedAt                        DateTime                    @updatedAt
+  
+  // Relacionamentos
+  acoes                            AcaoReparoApple[]
+  pecasSubstituidas                PecaSubstituidaApple[]
+
+  @@map("ordens_servico_apple")
+}
+
+model AcaoReparoApple {
+  id                    String              @id @default(cuid())
+  ordemServicoAppleId   String
+  descricao             String
+  tecnico               String
+  dataHora              DateTime            @default(now())
+  tempo                 Int                 // em minutos
+  resultado             String              @default("Sucesso") // 'Sucesso' | 'Falha' | 'Parcial'
+  observacoes           String?
+  createdAt             DateTime            @default(now())
+  
+  ordemServico          OrdemServicoApple   @relation(fields: [ordemServicoAppleId], references: [id], onDelete: Cascade)
+
+  @@map("acoes_reparo_apple")
+}
+
+model PecaSubstituidaApple {
+  id                    String              @id @default(cuid())
+  ordemServicoAppleId   String
+  codigo                String
+  nome                  String
+  categoria             String              @default("Outro") // 'Tela' | 'Bateria' | 'Camera' | 'Alto-falante' | 'Microfone' | 'Conector' | 'Placa' | 'Outro'
+  preco                 Float
+  fornecedor            String
+  garantia              Int                 @default(90) // em dias
+  numeroSerie           String?
+  createdAt             DateTime            @default(now())
+  
+  ordemServico          OrdemServicoApple   @relation(fields: [ordemServicoAppleId], references: [id], onDelete: Cascade)
+
+  @@map("pecas_substituidas_apple")
 }

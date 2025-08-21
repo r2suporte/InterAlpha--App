@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Edit, Calendar, DollarSign, CreditCard, FileText } from 'lucide-react'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import StatusPagamentoBadge from '@/components/pagamentos/StatusPagamentoBadge'

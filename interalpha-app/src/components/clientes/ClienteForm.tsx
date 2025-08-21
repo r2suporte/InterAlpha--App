@@ -7,11 +7,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { fetchCEP, formatCEP, formatPhone, isValidCPF, isValidCNPJ } from '@/lib/utils'
+import { fetchCEP, formatCEP, formatPhone } from '@/lib/utils'
+import { isValidCPF, isValidCNPJ } from '@/lib/utils/document-validation'
+import { DocumentValidationDialog } from './DocumentValidationDialog'
 
 interface ClienteFormProps {
   cliente?: {
     id: string
+    numeroSequencial?: number
     nome: string
     email: string
     telefone?: string | null
@@ -29,6 +32,13 @@ interface ClienteFormProps {
 export default function ClienteForm({ cliente, isEditing = false }: ClienteFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [formData, setFormData] = useState({
+    nome: cliente?.nome || '',
+    email: cliente?.email || '',
+    telefone: cliente?.telefone || '',
+    documento: cliente?.documento || '',
+    tipoDocumento: cliente?.tipoDocumento || 'CPF',
+  })
   const [cepData, setCepData] = useState({
     endereco: cliente?.endereco || '',
     cidade: cliente?.cidade || '',
@@ -81,24 +91,41 @@ export default function ClienteForm({ cliente, isEditing = false }: ClienteFormP
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleDocumentValidated = (data: any) => {
+    setFormData(prev => ({
+      ...prev,
+      documento: data.documento,
+      tipoDocumento: data.tipoDocumento,
+      nome: data.nome || prev.nome
+    }))
+    
+    if (data.endereco) {
+      setCepData({
+        endereco: `${data.endereco.logradouro}, ${data.endereco.numero}`,
+        cidade: data.endereco.municipio,
+        estado: data.endereco.uf
+      })
+    }
+  }
+
+  const handleSubmit = async (submitFormData: FormData) => {
     setIsSubmitting(true)
     setErrors({})
 
     try {
-      if (!validateForm(formData)) {
+      if (!validateForm(submitFormData)) {
         return
       }
 
       // Adicionar dados do CEP ao FormData
-      formData.set('endereco', cepData.endereco)
-      formData.set('cidade', cepData.cidade)
-      formData.set('estado', cepData.estado)
+      submitFormData.set('endereco', cepData.endereco)
+      submitFormData.set('cidade', cepData.cidade)
+      submitFormData.set('estado', cepData.estado)
 
       if (isEditing && cliente) {
-        await atualizarCliente(cliente.id, formData)
+        await atualizarCliente(cliente.id, submitFormData)
       } else {
-        await criarCliente(formData)
+        await criarCliente(submitFormData)
       }
     } catch (error) {
       setErrors({ submit: error instanceof Error ? error.message : 'Erro ao salvar cliente' })
@@ -115,14 +142,27 @@ export default function ClienteForm({ cliente, isEditing = false }: ClienteFormP
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Nome */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* ID do Cliente */}
         <div className="space-y-2">
+          <Label htmlFor="clienteId">ID do Cliente</Label>
+          <Input
+            id="clienteId"
+            name="clienteId"
+            value={cliente?.numeroSequencial ? `#${cliente.numeroSequencial.toString().padStart(6, '0')}` : 'Será gerado automaticamente'}
+            readOnly
+            className="bg-gray-50 text-gray-600 cursor-not-allowed"
+          />
+        </div>
+
+        {/* Nome */}
+        <div className="md:col-span-2 space-y-2">
           <Label htmlFor="nome">Nome *</Label>
           <Input
             id="nome"
             name="nome"
-            defaultValue={cliente?.nome}
+            value={formData.nome}
+            onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
             placeholder="Nome completo"
             className={errors.nome ? 'border-red-500' : ''}
           />
@@ -130,6 +170,9 @@ export default function ClienteForm({ cliente, isEditing = false }: ClienteFormP
             <p className="text-sm text-red-600">{errors.nome}</p>
           )}
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Email */}
         <div className="space-y-2">
@@ -138,7 +181,8 @@ export default function ClienteForm({ cliente, isEditing = false }: ClienteFormP
             id="email"
             name="email"
             type="email"
-            defaultValue={cliente?.email}
+            value={formData.email}
+            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
             placeholder="email@exemplo.com"
             className={errors.email ? 'border-red-500' : ''}
           />
@@ -153,39 +197,36 @@ export default function ClienteForm({ cliente, isEditing = false }: ClienteFormP
           <Input
             id="telefone"
             name="telefone"
-            defaultValue={cliente?.telefone || ''}
-            placeholder="(11) 99999-9999"
+            value={formData.telefone}
             onChange={(e) => {
-              e.target.value = formatPhone(e.target.value)
+              const formatted = formatPhone(e.target.value)
+              setFormData(prev => ({ ...prev, telefone: formatted }))
             }}
+            placeholder="(11) 99999-9999"
           />
         </div>
 
-        {/* Tipo de Documento */}
-        <div className="space-y-2">
-          <Label htmlFor="tipoDocumento">Tipo de Documento *</Label>
-          <Select
-            id="tipoDocumento"
-            name="tipoDocumento"
-            defaultValue={cliente?.tipoDocumento || 'CPF'}
-          >
-            <option value="CPF">CPF</option>
-            <option value="CNPJ">CNPJ</option>
-          </Select>
-        </div>
-
-        {/* Documento */}
-        <div className="space-y-2">
-          <Label htmlFor="documento">Documento *</Label>
-          <Input
-            id="documento"
-            name="documento"
-            defaultValue={cliente?.documento}
-            placeholder="000.000.000-00"
-            className={errors.documento ? 'border-red-500' : ''}
-          />
+        {/* Documento com Validação */}
+        <div className="md:col-span-2 space-y-2">
+          <Label>Documento *</Label>
+          <div className="flex gap-2">
+            <Input
+              name="documento"
+              value={formData.documento}
+              onChange={(e) => setFormData(prev => ({ ...prev, documento: e.target.value }))}
+              placeholder={formData.tipoDocumento === 'CPF' ? '000.000.000-00' : '00.000.000/0000-00'}
+              className={errors.documento ? 'border-red-500' : ''}
+            />
+            <input type="hidden" name="tipoDocumento" value={formData.tipoDocumento} />
+            <DocumentValidationDialog onDocumentValidated={handleDocumentValidated} />
+          </div>
           {errors.documento && (
             <p className="text-sm text-red-600">{errors.documento}</p>
+          )}
+          {formData.documento && (
+            <p className="text-sm text-gray-600">
+              Tipo: {formData.tipoDocumento}
+            </p>
           )}
         </div>
 

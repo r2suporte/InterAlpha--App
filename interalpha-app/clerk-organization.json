@@ -1,0 +1,16 @@
+{
+  "object": "organization",
+  "id": "org_31I3ehfUoT7DDA8wLFk0BsmE6X4",
+  "name": "IT Alpha",
+  "slug": "it-alpha-1755197856",
+  "image_url": "https://img.clerk.com/eyJ0eXBlIjoiZGVmYXVsdCIsImlpZCI6Imluc18zMHBRa3lqeUowdVNCWkxlN3d4VzZuQ2Nta0oiLCJyaWQiOiJvcmdfMzFJM2VoZlVvVDdEREE4d0xGazBCc21FNlg0IiwiaW5pdGlhbHMiOiJJIn0",
+  "has_image": false,
+  "members_count": 0,
+  "max_allowed_memberships": 5,
+  "admin_delete_enabled": true,
+  "public_metadata": {},
+  "private_metadata": {},
+  "created_by": "",
+  "created_at": 1755197856907,
+  "updated_at": 1755197856907
+}

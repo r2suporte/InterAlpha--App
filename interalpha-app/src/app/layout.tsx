@@ -19,7 +19,10 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+        publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+        organizationId="org_31I3ehfUoT7DDA8wLFk0BsmE6X4"
+      >
       <html lang="pt-BR">
         <body className={interClassName}>
           <AppProviders>

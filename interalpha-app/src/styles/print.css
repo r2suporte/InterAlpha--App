@@ -1,0 +1,177 @@
+/* Estilos específicos para impressão de Ordens de Serviço */
+
+@media print {
+  /* Reset básico para impressão */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Configuração da página */
+  @page {
+    size: A4;
+    margin: 1cm;
+  }
+
+  /* Ocultar elementos desnecessários */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Layout para impressão */
+  body {
+    font-size: 12pt;
+    line-height: 1.4;
+    color: #000;
+    background: white;
+  }
+
+  /* Cabeçalhos */
+  h1 {
+    font-size: 18pt;
+    margin-bottom: 10pt;
+  }
+
+  h2 {
+    font-size: 16pt;
+    margin-bottom: 8pt;
+  }
+
+  h3 {
+    font-size: 14pt;
+    margin-bottom: 6pt;
+    background-color: #f5f5f5 !important;
+    padding: 4pt;
+  }
+
+  /* Tabelas */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10pt;
+  }
+
+  th, td {
+    border: 1pt solid #000;
+    padding: 4pt;
+    text-align: left;
+  }
+
+  th {
+    background-color: #f0f0f0 !important;
+    font-weight: bold;
+  }
+
+  /* Quebras de página */
+  .page-break {
+    page-break-before: always;
+  }
+
+  .no-break {
+    page-break-inside: avoid;
+  }
+
+  /* Assinaturas */
+  .signature-area {
+    border-bottom: 1pt solid #000;
+    height: 40pt;
+    margin-bottom: 5pt;
+  }
+
+  /* Bordas e divisores */
+  .border-section {
+    border: 1pt solid #000;
+    padding: 8pt;
+    margin-bottom: 10pt;
+  }
+
+  /* Grid para impressão */
+  .print-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20pt;
+  }
+
+  .print-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15pt;
+  }
+
+  /* Badges e status */
+  .badge {
+    border: 1pt solid #000;
+    padding: 2pt 4pt;
+    font-size: 10pt;
+    display: inline-block;
+  }
+
+  /* Valores monetários */
+  .currency {
+    font-weight: bold;
+    text-align: right;
+  }
+
+  /* Observações importantes */
+  .important-note {
+    background-color: #ffffcc !important;
+    border: 1pt solid #ffcc00;
+    padding: 6pt;
+    margin: 6pt 0;
+  }
+
+  /* Footer */
+  .print-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 10pt;
+    border-top: 1pt solid #000;
+    padding-top: 5pt;
+  }
+
+  /* Evitar quebras indesejadas */
+  .keep-together {
+    page-break-inside: avoid;
+  }
+
+  /* Espaçamento específico */
+  .print-spacing {
+    margin-bottom: 15pt;
+  }
+
+  /* Lista de itens */
+  ul, ol {
+    margin: 5pt 0;
+    padding-left: 15pt;
+  }
+
+  li {
+    margin-bottom: 2pt;
+  }
+
+  /* Texto pequeno */
+  .small-text {
+    font-size: 10pt;
+  }
+
+  /* Destaque */
+  .highlight {
+    background-color: #ffff99 !important;
+    padding: 2pt;
+  }
+}
+
+/* Estilos para visualização na tela (pré-visualização) */
+@media screen {
+  .print-preview {
+    max-width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    background: white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    padding: 1cm;
+  }
+}

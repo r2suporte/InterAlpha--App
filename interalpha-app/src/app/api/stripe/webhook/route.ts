@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { constructWebhookEvent } from '@/lib/stripe'
-import prisma from '@/lib/prisma'
-import { headers } from 'next/headers'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text()
-    const headersList = await headers()
-    const signature = headersList.get('stripe-signature')
+    const signature = request.headers.get('stripe-signature')
 
     if (!signature) {
       return NextResponse.json(

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { CheckCircle, ArrowRight, Receipt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 interface PagamentoSucessoPageProps {
   searchParams: Promise<{ session_id?: string }>

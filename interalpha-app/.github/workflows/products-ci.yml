@@ -1,0 +1,406 @@
+name: Products Module CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/app/api/produtos/**'
+      - 'src/services/*product*'
+      - 'src/services/*stock*'
+      - 'src/services/*category*'
+      - 'src/components/produtos/**'
+      - 'src/components/ordens/**'
+      - 'prisma/schema.prisma'
+      - 'tests/**/*product*'
+      - 'tests/**/*stock*'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'src/app/api/produtos/**'
+      - 'src/services/*product*'
+      - 'src/services/*stock*'
+      - 'src/services/*category*'
+      - 'src/components/produtos/**'
+      - 'src/components/ordens/**'
+      - 'prisma/schema.prisma'
+      - 'tests/**/*product*'
+      - 'tests/**/*stock*'
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+  REDIS_VERSION: '7'
+
+jobs:
+  # Job de testes unitários
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: interalpha_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup test database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/interalpha_test
+        run: |
+          npx prisma migrate deploy
+          npx prisma db seed
+
+      - name: Run unit tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/interalpha_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          NODE_ENV: test
+        run: |
+          npm run test:unit -- --coverage --testPathPattern="(product|stock|category|ordem)"
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unit-tests
+          name: products-unit-tests
+
+  # Job de testes de integração
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: interalpha_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup test database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/interalpha_test
+        run: |
+          npx prisma migrate deploy
+          npx prisma db seed
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/interalpha_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          NODE_ENV: test
+        run: |
+          npm run test:integration -- --testPathPattern="(product|stock|category|ordem)"
+
+  # Job de testes E2E
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: interalpha_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Setup test database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/interalpha_test
+        run: |
+          npx prisma migrate deploy
+          npx prisma db seed
+
+      - name: Build application
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/interalpha_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+        run: npm run build
+
+      - name: Run E2E tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/interalpha_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+        run: |
+          npm run test:e2e -- --project=chromium
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-test-results
+          path: test-results/
+          retention-days: 7
+
+  # Job de análise de código
+  code-analysis:
+    name: Code Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: |
+          npx eslint src/app/api/produtos/ src/services/*product* src/services/*stock* src/components/produtos/ --format json --output-file eslint-report.json || true
+
+      - name: Run TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Run Prettier check
+        run: npx prettier --check "src/**/*.{ts,tsx}" "tests/**/*.{ts,tsx}"
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=interalpha-products
+            -Dsonar.organization=interalpha
+            -Dsonar.sources=src/app/api/produtos,src/services,src/components/produtos
+            -Dsonar.tests=tests/
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.eslint.reportPaths=eslint-report.json
+
+  # Job de build e deploy
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, e2e-tests, code-analysis]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+        run: npm run build
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma migrate deploy
+
+      - name: Deploy to staging
+        if: github.ref == 'refs/heads/develop'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          npx vercel --token $VERCEL_TOKEN --scope $VERCEL_ORG_ID
+          npx vercel --prod --token $VERCEL_TOKEN --scope $VERCEL_ORG_ID
+
+      - name: Deploy to production
+        if: github.ref == 'refs/heads/main'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          npx vercel --token $VERCEL_TOKEN --scope $VERCEL_ORG_ID --prod
+
+      - name: Warm up cache
+        if: github.ref == 'refs/heads/main'
+        env:
+          PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
+        run: |
+          curl -f "$PRODUCTION_URL/api/produtos?warmup=true" || echo "Cache warm-up failed"
+
+      - name: Run smoke tests
+        if: github.ref == 'refs/heads/main'
+        env:
+          PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
+        run: |
+          npm run test:smoke -- --baseURL="$PRODUCTION_URL"
+
+  # Job de notificação
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [build-and-deploy]
+    if: always()
+    
+    steps:
+      - name: Notify Slack on success
+        if: needs.build-and-deploy.result == 'success'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#deployments'
+          text: '✅ Products module deployed successfully to production!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack on failure
+        if: needs.build-and-deploy.result == 'failure'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#deployments'
+          text: '❌ Products module deployment failed!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Job de rollback automático
+  auto-rollback:
+    name: Auto Rollback
+    runs-on: ubuntu-latest
+    needs: [build-and-deploy]
+    if: failure()
+    
+    steps:
+      - name: Rollback deployment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          # Obter deployment anterior
+          PREVIOUS_DEPLOYMENT=$(npx vercel ls --token $VERCEL_TOKEN --scope $VERCEL_ORG_ID | grep -v "$(git rev-parse HEAD)" | head -1 | awk '{print $1}')
+          
+          # Promover deployment anterior
+          if [ ! -z "$PREVIOUS_DEPLOYMENT" ]; then
+            npx vercel promote $PREVIOUS_DEPLOYMENT --token $VERCEL_TOKEN --scope $VERCEL_ORG_ID
+            echo "Rollback completed to deployment: $PREVIOUS_DEPLOYMENT"
+          else
+            echo "No previous deployment found for rollback"
+          fi
+
+      - name: Notify rollback
+        uses: 8398a7/action-slack@v3
+        with:
+          status: warning
+          channel: '#deployments'
+          text: '⚠️ Auto rollback executed for products module!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

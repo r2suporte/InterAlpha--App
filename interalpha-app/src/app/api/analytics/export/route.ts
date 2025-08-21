@@ -1,3 +1,5 @@
+'use client'
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getAnalyticsService } from '@/services/analytics/analytics-service';
 import { getReportExportService } from '@/services/analytics/report-export-service';
