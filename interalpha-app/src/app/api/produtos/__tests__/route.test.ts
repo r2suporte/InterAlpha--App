@@ -1,20 +1,20 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from '@jest/globals'
 import { GET, POST } from '../route'
 import { ProductService } from '@/lib/services/product-service'
 import { NextRequest } from 'next/server'
 
 // Mock das dependências
-vi.mock('@clerk/nextjs/server', () => ({
-  auth: vi.fn()
+jest.mock('@clerk/nextjs/server', () => ({
+  auth: jest.fn()
 }))
 
-vi.mock('@/lib/services/product-service', () => ({
+jest.mock('@/lib/services/product-service', () => ({
   ProductService: {
-    getProducts: vi.fn()
+    getProducts: jest.fn()
   }
 }))
 
-const mockAuth = vi.mocked(await import('@clerk/nextjs/server')).auth
+const mockAuth = jest.mocked(await import('@clerk/nextjs/server')).auth
 
 describe('/api/produtos', () => {
   beforeEach(() => {
@@ -48,7 +48,7 @@ describe('/api/produtos', () => {
         }
       }
 
-      vi.mocked(ProductService.getProducts).mockResolvedValue(mockResult)
+      jest.mocked(ProductService.getProducts).mockResolvedValue(mockResult)
 
       const request = new NextRequest('http://localhost/api/produtos')
       const response = await GET(request)
@@ -73,7 +73,7 @@ describe('/api/produtos', () => {
         }
       }
 
-      vi.mocked(ProductService.getProducts).mockResolvedValue(mockResult)
+      jest.mocked(ProductService.getProducts).mockResolvedValue(mockResult)
 
       const request = new NextRequest('http://localhost/api/produtos?search=test&page=2&limit=10')
       const response = await GET(request)
@@ -101,7 +101,7 @@ describe('/api/produtos', () => {
         }
       }
 
-      vi.mocked(ProductService.getProducts).mockResolvedValue(mockResult)
+      jest.mocked(ProductService.getProducts).mockResolvedValue(mockResult)
 
       const request = new NextRequest('http://localhost/api/produtos?isActive=true')
       await GET(request)
@@ -126,7 +126,7 @@ describe('/api/produtos', () => {
         }
       }
 
-      vi.mocked(ProductService.getProducts).mockResolvedValue(mockResult)
+      jest.mocked(ProductService.getProducts).mockResolvedValue(mockResult)
 
       const request = new NextRequest('http://localhost/api/produtos?limit=200')
       await GET(request)
@@ -139,7 +139,7 @@ describe('/api/produtos', () => {
     })
 
     it('should handle service errors gracefully', async () => {
-      vi.mocked(ProductService.getProducts).mockRejectedValue(
+      jest.mocked(ProductService.getProducts).mockRejectedValue(
         new Error('Database connection failed')
       )
 
@@ -168,7 +168,7 @@ describe('/api/produtos', () => {
         }
       }
 
-      vi.mocked(ProductService.getProducts).mockResolvedValue(mockResult)
+      jest.mocked(ProductService.getProducts).mockResolvedValue(mockResult)
 
       const request = new NextRequest('http://localhost/api/produtos')
       const response = await GET(request)
@@ -192,7 +192,7 @@ describe('/api/produtos', () => {
         }
       }
 
-      vi.mocked(ProductService.getProducts).mockResolvedValue(mockResult)
+      jest.mocked(ProductService.getProducts).mockResolvedValue(mockResult)
 
       const requestBody = {
         search: 'advanced search',
@@ -240,7 +240,7 @@ describe('/api/produtos', () => {
         }
       }
 
-      vi.mocked(ProductService.getProducts).mockResolvedValue(mockResult)
+      jest.mocked(ProductService.getProducts).mockResolvedValue(mockResult)
 
       const request = new NextRequest('http://localhost/api/produtos', {
         method: 'POST',

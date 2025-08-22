@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi } from '@jest/globals'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import PriceCalculator from '../PriceCalculator'
 
@@ -12,7 +12,7 @@ describe('PriceCalculator', () => {
   })
 
   it('should calculate margin correctly', async () => {
-    const onPricesChange = vi.fn()
+    const onPricesChange = jest.fn()
     
     render(
       <PriceCalculator 

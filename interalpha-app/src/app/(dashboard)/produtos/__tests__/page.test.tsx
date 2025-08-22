@@ -1,13 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from '@jest/globals'
 import { render, screen } from '@testing-library/react'
 import ProdutosPage from '../page'
 
 // Mock dos componentes
-vi.mock('@/components/produtos/ProductsStats', () => ({
+jest.mock('@/components/produtos/ProductsStats', () => ({
   default: () => <div data-testid="products-stats">ProductsStats</div>
 }))
 
-vi.mock('@/components/produtos/ProductsTable', () => ({
+jest.mock('@/components/produtos/ProductsTable', () => ({
   default: () => <div data-testid="products-table">ProductsTable</div>
 }))
 

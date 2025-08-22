@@ -1,101 +1,38 @@
-# Fase 1: Implementação - Padronização para Jest
+# Fase 1: Remoção do Vitest e Padronização para Jest
 
 ## Status Atual
-Após a remoção da dependência do Vitest, ainda temos diversos problemas nos testes que precisam ser corrigidos. A padronização para Jest está em andamento, mas requer correções adicionais.
+Após a remoção do Vitest e padronização para Jest, os testes ainda estão falhando, mas com problemas mais específicos e identificáveis. Isso indica que estamos no caminho certo, pois os erros agora são mais focados em problemas reais de implementação em vez de conflitos de framework.
 
 ## Problemas Identificados
 
-### 1. Testes com Referências a Vitest
-Mesmo após remover a dependência, alguns testes ainda possuem:
-- Referências a `vi.mock` e `vi.fn`
-- Importações de `vitest`
+### 1. Problemas de Ambiente e Configuração
+- `ReferenceError: Request is not defined` em testes de API routes
+- Erros de parsing em arquivos que usam sintaxe não padrão
+- Problemas com ambientes de teste para componentes React
 
-### 2. Problemas de Sintaxe
-- Uso incorreto de `await` em funções síncronas
-- Código gerado automaticamente com referências a `_vitest`
+### 2. Problemas de Mock
+- `TypeError: Cannot read properties of undefined (reading 'mockResolvedValue')` 
+- Problemas com mocks de funções Prisma
+- Erros em mocks do Clerk
+- Problemas com mocks de módulos do sistema (fs, etc.)
 
-### 3. Problemas de Mock
-- Mocks mal configurados com `jest.Mock`
-- Problemas com funções do Prisma não sendo mockadas corretamente
+### 3. Problemas com Funções Ausentes
+- `TypeError: (0 , _productutils.enrichProductWithCalculations) is not a function`
+- Funções esperadas mas não implementadas
 
-### 4. Problemas de Ambiente
-- `ReferenceError: Request is not defined`
-- Funções ausentes em módulos (`enrichProductWithCalculations`)
+### 4. Problemas de Renderização
+- `Invalid hook call` em testes de componentes
+- Erros de seletores em testes de UI
+- Problemas com hooks do React (`useState`, `useEffect`, etc.)
 
-## Plano de Correção
+## Plano de Ação
 
-### Etapa 1: Corrigir Referências a Vitest
+### Etapa 1: Corrigir Problemas de Ambiente (Prioridade Alta)
 
-#### 1.1. Atualizar testes com `vi.mock`
-Converter referências de `vi.mock` para `jest.mock`:
-
+#### 1.1. Configurar ambiente JSDOM para Next.js
 ```javascript
-// Antes (Vitest)
-vi.mock('@/components/produtos/ProductsStats', () => ({
-  default: () => <div data-testid="products-stats">ProductsStats</div>
-}))
-
-// Depois (Jest)
-jest.mock('@/components/produtos/ProductsStats', () => ({
-  __esModule: true,
-  default: () => <div data-testid="products-stats">ProductsStats</div>
-}))
-```
-
-#### 1.2. Atualizar testes com `vi.fn()`
-Converter referências de `vi.fn()` para `jest.fn()`:
-
-```javascript
-// Antes (Vitest)
-global.fetch = vi.fn()
-
-// Depois (Jest)
-global.fetch = jest.fn()
-```
-
-### Etapa 2: Corrigir Problemas de Sintaxe
-
-#### 2.1. Corrigir uso incorreto de `await`
-Remover `await` de funções síncronas:
-
-```javascript
-// Antes (com erro)
-const { existsSync } = vi.mocked(await import('fs'))
-
-// Depois (corrigido)
-const { existsSync } = require('fs')
-// ou
-const fs = require('fs')
-const { existsSync } = fs
-```
-
-### Etapa 3: Corrigir Problemas de Mock
-
-#### 3.1. Corrigir mocks do Prisma
-Atualizar mocks do Prisma para usar `jest.fn()` corretamente:
-
-```javascript
-// Antes (com erro)
-;(prisma.ordemServico.findUnique as jest.Mock).mockResolvedValue(mockOrdemCompleta)
-
-// Depois (corrigido)
-jest.spyOn(prisma.ordemServico, 'findUnique').mockResolvedValue(mockOrdemCompleta)
-```
-
-#### 3.2. Corrigir funções ausentes
-Para funções como `enrichProductWithCalculations` que estão faltando, precisamos:
-
-1. Verificar se existem nos arquivos originais
-2. Criar mocks apropriados se necessário
-3. Corrigir importações
-
-### Etapa 4: Corrigir Problemas de Ambiente
-
-#### 4.1. Problema do `Request is not defined`
-Adicionar polyfills necessários no `jest.setup.js`:
-
-```javascript
-// Adicionar ao jest.setup.js
+// Atualizar jest.setup.js
+// Adicionar polyfills para Request, Response e outras APIs do Next.js
 Object.defineProperty(globalThis, 'Request', {
   value: class Request {
     constructor(input, init) {
@@ -108,8 +45,164 @@ Object.defineProperty(globalThis, 'Request', {
   enumerable: true,
   configurable: true
 })
+
+Object.defineProperty(globalThis, 'Response', {
+  value: class Response {
+    constructor(body, init) {
+      this.body = body
+      this.status = init?.status || 200
+      this.statusText = init?.statusText || 'OK'
+      this.headers = new Map()
+    }
+    
+    json() {
+      return Promise.resolve(JSON.parse(this.body))
+    }
+    
+    text() {
+      return Promise.resolve(this.body)
+    }
+  },
+  writable: true,
+  enumerable: true,
+  configurable: true
+})
+```
+
+#### 1.2. Corrigir problemas de hooks do React
+```javascript
+// Adicionar ao jest.setup.js
+// Mock completo do React para evitar Invalid hook call
+jest.mock('react', () => ({
+  ...jest.requireActual('react'),
+  useState: jest.fn(),
+  useEffect: jest.fn(),
+  useContext: jest.fn(),
+  useRef: jest.fn(),
+  useCallback: jest.fn(),
+  useMemo: jest.fn(),
+  useReducer: jest.fn(),
+  useImperativeHandle: jest.fn(),
+  useLayoutEffect: jest.fn(),
+  useDebugValue: jest.fn(),
+  useDeferredValue: jest.fn(),
+  useTransition: jest.fn(),
+  useId: jest.fn(),
+  useSyncExternalStore: jest.fn(),
+  useInsertionEffect: jest.fn(),
+  useOptimistic: jest.fn(),
+  useActionState: jest.fn(),
+}))
+```
+
+### Etapa 2: Corrigir Problemas de Mock (Prioridade Alta)
+
+#### 2.1. Corrigir mocks do Prisma
+```javascript
+// Exemplo de correção para testes do prisma
+// Substituir:
+;(prisma.ordemServico.findUnique as jest.Mock).mockResolvedValue(mockOrdemCompleta)
+
+// Por:
+jest.spyOn(prisma.ordemServico, 'findUnique').mockResolvedValue(mockOrdemCompleta)
+```
+
+#### 2.2. Corrigir mocks do Clerk
+```javascript
+// Atualizar mock do Clerk em jest.setup.js
+jest.mock('@clerk/nextjs/server', () => ({
+  auth: () => ({
+    userId: 'test-user-id',
+    sessionId: 'test-session-id',
+    orgId: 'test-org-id',
+    orgRole: 'admin',
+    orgSlug: 'test-org',
+    orgPermissions: [],
+    has: jest.fn().mockReturnValue(true),
+    hasPermission: jest.fn().mockReturnValue(true),
+    hasRole: jest.fn().mockReturnValue(true),
+  }),
+  // Adicionar outros mocks necessários
+}))
+```
+
+#### 2.3. Corrigir mocks de módulos do sistema
+```javascript
+// Corrigir mocks de fs e outros módulos do sistema
+jest.mock('fs', () => ({
+  existsSync: jest.fn(),
+  readFileSync: jest.fn(),
+  writeFileSync: jest.fn(),
+  unlinkSync: jest.fn(),
+  mkdirSync: jest.fn(),
+  readdirSync: jest.fn(),
+  statSync: jest.fn(),
+  promises: {
+    readFile: jest.fn(),
+    writeFile: jest.fn(),
+    unlink: jest.fn(),
+    mkdir: jest.fn(),
+    readdir: jest.fn(),
+    stat: jest.fn(),
+  }
+}))
+```
+
+### Etapa 3: Corrigir Problemas de Funções Ausentes (Prioridade Média)
+
+#### 3.1. Implementar funções faltando
+```typescript
+// Criar ou corrigir função enrichProductWithCalculations
+// Em src/lib/utils/product-utils.ts
+export function enrichProductWithCalculations(product: any) {
+  // Implementar lógica de cálculo de margem, lucro, etc.
+  return {
+    ...product,
+    profitMargin: calculateProfitMargin(product.costPrice, product.salePrice),
+    profit: calculateProfit(product.costPrice, product.salePrice),
+    // Outros cálculos necessários
+  }
+}
+
+function calculateProfitMargin(costPrice: number, salePrice: number): number {
+  if (costPrice <= 0) return 0
+  return ((salePrice - costPrice) / costPrice) * 100
+}
+
+function calculateProfit(costPrice: number, salePrice: number): number {
+  return salePrice - costPrice
+}
+```
+
+### Etapa 4: Corrigir Problemas de Renderização (Prioridade Média)
+
+#### 4.1. Corrigir testes de componentes
+```typescript
+// Exemplo de correção para testes de componentes
+// Em vez de:
+render(<Component />)
+
+// Usar:
+render(
+  <ClerkProvider>
+    <Component />
+  </ClerkProvider>
+)
+```
+
+#### 4.2. Corrigir seletores de teste
+```typescript
+// Em vez de procurar por texto exato:
+expect(screen.getByText('50%')).toBeInTheDocument()
+
+// Usar seletores mais flexíveis:
+expect(screen.getByText(/50%/i)).toBeInTheDocument()
+// ou
+expect(screen.getByRole('status', { name: /margem/i })).toBeInTheDocument()
 ```
 
 ## Implementação
 
-Vamos começar corrigindo os problemas mais críticos e seguir uma abordagem sistemática para resolver os testes.
+### Passo 1: Atualizar jest.setup.js com polyfills e mocks
+
+Vamos começar atualizando o arquivo jest.setup.js com os polyfills e mocks necessários:

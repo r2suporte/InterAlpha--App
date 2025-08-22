@@ -1,17 +1,17 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from '@jest/globals'
 import { ProductService } from '../product-service'
 import { PrismaClient } from '@prisma/client'
 
 // Mock do Prisma
-vi.mock('@prisma/client', () => ({
-  PrismaClient: vi.fn(() => ({
+jest.mock('@prisma/client', () => ({
+  PrismaClient: jest.fn(() => ({
     product: {
-      create: vi.fn(),
-      findUnique: vi.fn(),
-      findMany: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-      count: vi.fn()
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn()
     }
   }))
 }))

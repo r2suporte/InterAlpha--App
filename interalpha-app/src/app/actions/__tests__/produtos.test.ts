@@ -1,33 +1,33 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from '@jest/globals'
 import { createProduct, updateProduct, deleteProduct, validatePartNumber } from '../produtos'
 import { ProductService } from '@/lib/services/product-service'
 
 // Mock das dependências
-vi.mock('@clerk/nextjs/server', () => ({
-  auth: vi.fn()
+jest.mock('@clerk/nextjs/server', () => ({
+  auth: jest.fn()
 }))
 
-vi.mock('next/navigation', () => ({
-  redirect: vi.fn()
+jest.mock('next/navigation', () => ({
+  redirect: jest.fn()
 }))
 
-vi.mock('next/cache', () => ({
-  revalidatePath: vi.fn()
+jest.mock('next/cache', () => ({
+  revalidatePath: jest.fn()
 }))
 
-vi.mock('@/lib/services/product-service', () => ({
+jest.mock('@/lib/services/product-service', () => ({
   ProductService: {
-    createProduct: vi.fn(),
-    updateProduct: vi.fn(),
-    deleteProduct: vi.fn(),
-    getProductById: vi.fn(),
-    isPartNumberAvailable: vi.fn()
+    createProduct: jest.fn(),
+    updateProduct: jest.fn(),
+    deleteProduct: jest.fn(),
+    getProductById: jest.fn(),
+    isPartNumberAvailable: jest.fn()
   }
 }))
 
-const mockAuth = vi.mocked(await import('@clerk/nextjs/server')).auth
-const mockRedirect = vi.mocked(await import('next/navigation')).redirect
-const mockRevalidatePath = vi.mocked(await import('next/cache')).revalidatePath
+const mockAuth = jest.mocked(await import('@clerk/nextjs/server')).auth
+const mockRedirect = jest.mocked(await import('next/navigation')).redirect
+const mockRevalidatePath = jest.mocked(await import('next/cache')).revalidatePath
 
 describe('Product Server Actions', () => {
   beforeEach(() => {
@@ -51,7 +51,7 @@ describe('Product Server Actions', () => {
       formData.append('costPrice', '50.00')
       formData.append('salePrice', '75.00')
 
-      vi.mocked(ProductService.createProduct).mockResolvedValue(mockProduct as any)
+      jest.mocked(ProductService.createProduct).mockResolvedValue(mockProduct as any)
 
       await createProduct(formData)
 
@@ -102,7 +102,7 @@ describe('Product Server Actions', () => {
       formData.append('costPrice', '50.00')
       formData.append('salePrice', '75.00')
 
-      vi.mocked(ProductService.createProduct).mockRejectedValue(
+      jest.mocked(ProductService.createProduct).mockRejectedValue(
         new Error('Part number já existe')
       )
 
@@ -134,8 +134,8 @@ describe('Product Server Actions', () => {
       formData.append('costPrice', '60.00')
       formData.append('salePrice', '90.00')
 
-      vi.mocked(ProductService.getProductById).mockResolvedValue(mockCurrentProduct as any)
-      vi.mocked(ProductService.updateProduct).mockResolvedValue(mockUpdatedProduct as any)
+      jest.mocked(ProductService.getProductById).mockResolvedValue(mockCurrentProduct as any)
+      jest.mocked(ProductService.updateProduct).mockResolvedValue(mockUpdatedProduct as any)
 
       await updateProduct('product-1', formData)
 
@@ -158,7 +158,7 @@ describe('Product Server Actions', () => {
       formData.append('costPrice', '50.00')
       formData.append('salePrice', '75.00')
 
-      vi.mocked(ProductService.getProductById).mockResolvedValue(null)
+      jest.mocked(ProductService.getProductById).mockResolvedValue(null)
 
       await updateProduct('non-existent', formData)
 
@@ -176,8 +176,8 @@ describe('Product Server Actions', () => {
         description: 'Produto para excluir'
       }
 
-      vi.mocked(ProductService.getProductById).mockResolvedValue(mockProduct as any)
-      vi.mocked(ProductService.deleteProduct).mockResolvedValue(undefined)
+      jest.mocked(ProductService.getProductById).mockResolvedValue(mockProduct as any)
+      jest.mocked(ProductService.deleteProduct).mockResolvedValue(undefined)
 
       await deleteProduct('product-1')
 
@@ -192,8 +192,8 @@ describe('Product Server Actions', () => {
         partNumber: 'TEST-001'
       }
 
-      vi.mocked(ProductService.getProductById).mockResolvedValue(mockProduct as any)
-      vi.mocked(ProductService.deleteProduct).mockRejectedValue(
+      jest.mocked(ProductService.getProductById).mockResolvedValue(mockProduct as any)
+      jest.mocked(ProductService.deleteProduct).mockRejectedValue(
         new Error('Produto não pode ser excluído pois está sendo usado em ordens de serviço')
       )
 
@@ -207,7 +207,7 @@ describe('Product Server Actions', () => {
 
   describe('validatePartNumber', () => {
     it('should return valid for available part number', async () => {
-      vi.mocked(ProductService.isPartNumberAvailable).mockResolvedValue(true)
+      jest.mocked(ProductService.isPartNumberAvailable).mockResolvedValue(true)
 
       const result = await validatePartNumber('NEW-001')
 
@@ -219,7 +219,7 @@ describe('Product Server Actions', () => {
     })
 
     it('should return invalid for existing part number', async () => {
-      vi.mocked(ProductService.isPartNumberAvailable).mockResolvedValue(false)
+      jest.mocked(ProductService.isPartNumberAvailable).mockResolvedValue(false)
 
       const result = await validatePartNumber('EXISTING-001')
 
@@ -248,7 +248,7 @@ describe('Product Server Actions', () => {
     })
 
     it('should exclude specific product when validating', async () => {
-      vi.mocked(ProductService.isPartNumberAvailable).mockResolvedValue(true)
+      jest.mocked(ProductService.isPartNumberAvailable).mockResolvedValue(true)
 
       await validatePartNumber('TEST-001', 'product-1')
 

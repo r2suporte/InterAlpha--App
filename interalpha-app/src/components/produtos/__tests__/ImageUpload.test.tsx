@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from '@jest/globals'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import ImageUpload from '../ImageUpload'
 
 // Mock fetch
-global.fetch = vi.fn()
+global.fetch = jest.fn()
 
 describe('ImageUpload', () => {
   beforeEach(() => {
@@ -24,7 +24,7 @@ describe('ImageUpload', () => {
   })
 
   it('should validate file type', async () => {
-    const onImageChange = vi.fn()
+    const onImageChange = jest.fn()
     render(<ImageUpload onImageChange={onImageChange} />)
     
     const fileInput = screen.getByRole('button', { name: /selecionar arquivo/i })
@@ -66,12 +66,12 @@ describe('ImageUpload', () => {
       }
     }
     
-    vi.mocked(fetch).mockResolvedValueOnce({
+    jest.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockResponse)
     } as Response)
     
-    const onImageChange = vi.fn()
+    const onImageChange = jest.fn()
     render(<ImageUpload onImageChange={onImageChange} />)
     
     const fileInput = screen.getByRole('button', { name: /selecionar arquivo/i })
@@ -99,7 +99,7 @@ describe('ImageUpload', () => {
       error: 'Upload failed'
     }
     
-    vi.mocked(fetch).mockResolvedValueOnce({
+    jest.mocked(fetch).mockResolvedValueOnce({
       ok: false,
       json: () => Promise.resolve(mockResponse)
     } as Response)
@@ -119,11 +119,11 @@ describe('ImageUpload', () => {
   })
 
   it('should remove image', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
+    jest.mocked(fetch).mockResolvedValueOnce({
       ok: true
     } as Response)
     
-    const onImageChange = vi.fn()
+    const onImageChange = jest.fn()
     render(
       <ImageUpload 
         initialImageUrl="/test-image.jpg" 
@@ -148,7 +148,7 @@ describe('ImageUpload', () => {
       }
     }
     
-    vi.mocked(fetch).mockResolvedValueOnce({
+    jest.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockResponse)
     } as Response)

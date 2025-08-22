@@ -44,7 +44,7 @@
   - Implementar filtros por período e categorias
   - _Requisitos: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 7. Implementar sincronização com sistemas contábeis
+- [x] 7. Implementar sincronização com sistemas contábeis
   - Criar adaptadores para diferentes sistemas contábeis
   - Implementar sincronização automática de pagamentos e faturas
   - Adicionar sistema de resolução de conflitos de dados
@@ -52,7 +52,7 @@
   - Implementar reprocessamento manual para falhas
   - _Requisitos: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 8. Integrar com Google Calendar
+- [x] 8. Integrar com Google Calendar
   - Configurar OAuth2 com Google: `new google.auth.OAuth2(clientId, clientSecret, redirectUrl)`
   - Implementar autenticação e refresh de tokens automático
   - Criar serviço para CRUD de eventos: `calendar.events.insert/update/delete`

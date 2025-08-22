@@ -1,27 +1,27 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from '@jest/globals'
 import { ImageService } from '../image-service'
 
 // Mock do sistema de arquivos
-vi.mock('fs', () => ({
-  existsSync: vi.fn()
+jest.mock('fs', () => ({
+  existsSync: jest.fn()
 }))
 
-vi.mock('fs/promises', () => ({
-  writeFile: vi.fn(),
-  unlink: vi.fn(),
-  mkdir: vi.fn(),
-  stat: vi.fn(),
-  readdir: vi.fn(),
-  readFile: vi.fn()
+jest.mock('fs/promises', () => ({
+  writeFile: jest.fn(),
+  unlink: jest.fn(),
+  mkdir: jest.fn(),
+  stat: jest.fn(),
+  readdir: jest.fn(),
+  readFile: jest.fn()
 }))
 
 // Mock do Sharp
-vi.mock('sharp', () => ({
-  default: vi.fn(() => ({
-    metadata: vi.fn(),
-    resize: vi.fn().mockReturnThis(),
-    jpeg: vi.fn().mockReturnThis(),
-    toBuffer: vi.fn()
+jest.mock('sharp', () => ({
+  default: jest.fn(() => ({
+    metadata: jest.fn(),
+    resize: jest.fn().mockReturnThis(),
+    jpeg: jest.fn().mockReturnThis(),
+    toBuffer: jest.fn()
   }))
 }))
 
@@ -97,14 +97,14 @@ describe('ImageService', () => {
 
       // Mock Sharp
       const mockSharp = {
-        metadata: vi.fn().mockResolvedValue(mockMetadata),
-        resize: vi.fn().mockReturnThis(),
-        jpeg: vi.fn().mockReturnThis(),
-        toBuffer: vi.fn().mockResolvedValue(mockOptimizedBuffer)
+        metadata: jest.fn().mockResolvedValue(mockMetadata),
+        resize: jest.fn().mockReturnThis(),
+        jpeg: jest.fn().mockReturnThis(),
+        toBuffer: jest.fn().mockResolvedValue(mockOptimizedBuffer)
       }
 
       vi.doMock('sharp', () => ({
-        default: vi.fn(() => mockSharp)
+        default: jest.fn(() => mockSharp)
       }))
 
       const result = await ImageService.optimizeImage(mockBuffer)
@@ -136,13 +136,13 @@ describe('ImageService', () => {
       const mockThumbnailBuffer = Buffer.from('thumbnail data')
 
       const mockSharp = {
-        resize: vi.fn().mockReturnThis(),
-        jpeg: vi.fn().mockReturnThis(),
-        toBuffer: vi.fn().mockResolvedValue(mockThumbnailBuffer)
+        resize: jest.fn().mockReturnThis(),
+        jpeg: jest.fn().mockReturnThis(),
+        toBuffer: jest.fn().mockResolvedValue(mockThumbnailBuffer)
       }
 
       vi.doMock('sharp', () => ({
-        default: vi.fn(() => mockSharp)
+        default: jest.fn(() => mockSharp)
       }))
 
       const result = await ImageService.generateThumbnail(mockBuffer)
@@ -167,7 +167,7 @@ describe('ImageService', () => {
 
   describe('imageExists', () => {
     it('should return true for existing image', () => {
-      const { existsSync } = vi.mocked(await import('fs'))
+      const { existsSync } = jest.mocked(await import('fs'))
       existsSync.mockReturnValue(true)
 
       const result = ImageService.imageExists('test.jpg')
@@ -176,7 +176,7 @@ describe('ImageService', () => {
     })
 
     it('should return false for non-existing image', () => {
-      const { existsSync } = vi.mocked(await import('fs'))
+      const { existsSync } = jest.mocked(await import('fs'))
       existsSync.mockReturnValue(false)
 
       const result = ImageService.imageExists('nonexistent.jpg')
@@ -191,8 +191,8 @@ describe('ImageService', () => {
       Object.defineProperty(file, 'size', { value: 1024 })
 
       // Mock file operations
-      const { existsSync } = vi.mocked(await import('fs'))
-      const { writeFile, mkdir } = vi.mocked(await import('fs/promises'))
+      const { existsSync } = jest.mocked(await import('fs'))
+      const { writeFile, mkdir } = jest.mocked(await import('fs/promises'))
       
       existsSync.mockReturnValue(false)
       writeFile.mockResolvedValue(undefined)
@@ -200,14 +200,14 @@ describe('ImageService', () => {
 
       // Mock Sharp
       const mockSharp = {
-        metadata: vi.fn().mockResolvedValue({ width: 800, height: 600 }),
-        resize: vi.fn().mockReturnThis(),
-        jpeg: vi.fn().mockReturnThis(),
-        toBuffer: vi.fn().mockResolvedValue(Buffer.from('optimized'))
+        metadata: jest.fn().mockResolvedValue({ width: 800, height: 600 }),
+        resize: jest.fn().mockReturnThis(),
+        jpeg: jest.fn().mockReturnThis(),
+        toBuffer: jest.fn().mockResolvedValue(Buffer.from('optimized'))
       }
 
       vi.doMock('sharp', () => ({
-        default: vi.fn(() => mockSharp)
+        default: jest.fn(() => mockSharp)
       }))
 
       const result = await ImageService.processImageUpload(file, 'product-123')
