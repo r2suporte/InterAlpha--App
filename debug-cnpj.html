@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug CNPJ InputMask</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        input {
+            padding: 8px;
+            font-size: 16px;
+            width: 300px;
+            margin: 5px 0;
+        }
+        .info {
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
+        .debug {
+            background: #e8f4fd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Debug CNPJ InputMask</h1>
+    
+    <div class="test-section">
+        <h2>Teste 1: Input Normal (sem máscara)</h2>
+        <input type="text" id="normal" placeholder="Digite um CNPJ: 12345678000190">
+        <div class="info">
+            <strong>Valor:</strong> <span id="normal-value"></span><br>
+            <strong>Comprimento:</strong> <span id="normal-length"></span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Teste 2: Simulação InputMask CPF</h2>
+        <input type="text" id="cpf-mask" placeholder="Digite CPF">
+        <div class="info">
+            <strong>Máscara:</strong> 000.000.000-00<br>
+            <strong>Valor:</strong> <span id="cpf-value"></span><br>
+            <strong>Comprimento:</strong> <span id="cpf-length"></span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Teste 3: Simulação InputMask CNPJ</h2>
+        <input type="text" id="cnpj-mask" placeholder="Digite CNPJ">
+        <div class="info">
+            <strong>Máscara:</strong> 00.000.000/0000-00<br>
+            <strong>Valor:</strong> <span id="cnpj-value"></span><br>
+            <strong>Comprimento:</strong> <span id="cnpj-length"></span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Teste 4: Transição Dinâmica CPF → CNPJ</h2>
+        <input type="text" id="dynamic-mask" placeholder="Digite CPF ou CNPJ">
+        <div class="info">
+            <strong>Máscara Atual:</strong> <span id="dynamic-current-mask">000.000.000-00</span><br>
+            <strong>Valor:</strong> <span id="dynamic-value"></span><br>
+            <strong>Comprimento:</strong> <span id="dynamic-length"></span><br>
+            <strong>Dígitos Limpos:</strong> <span id="dynamic-clean"></span>
+        </div>
+    </div>
+
+    <div class="debug" id="debug-log">
+        <strong>Log de Debug:</strong><br>
+    </div>
+
+    <script>
+        function log(message) {
+            const debugLog = document.getElementById('debug-log');
+            debugLog.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+        }
+
+        // Função applyMask copiada do componente
+        function applyMask(inputValue, maskPattern) {
+            log(`applyMask chamada: inputValue="${inputValue}", mask="${maskPattern}"`);
+            
+            // Remove todos os caracteres não numéricos
+            const cleanValue = inputValue.replace(/\D/g, '');
+            log(`cleanValue: "${cleanValue}" (${cleanValue.length} dígitos)`);
+            
+            // Conta quantos dígitos a máscara espera
+            const expectedDigits = maskPattern.replace(/[^09]/g, '').length;
+            log(`expectedDigits: ${expectedDigits}`);
+            
+            // Para CPF/CNPJ dinâmico, permite até 14 dígitos (máximo do CNPJ)
+            let maxDigits = expectedDigits;
+            if (expectedDigits === 11 && cleanValue.length > 11) {
+                maxDigits = 14; // Permite transição para CNPJ
+                log(`Transição detectada: maxDigits alterado para ${maxDigits}`);
+            }
+            
+            // Limita o valor limpo ao número máximo de dígitos permitidos
+            const limitedValue = cleanValue.slice(0, maxDigits);
+            log(`limitedValue: "${limitedValue}" (${limitedValue.length} dígitos)`);
+            
+            // Se temos mais dígitos do que a máscara atual suporta,
+            // aplica apenas os dígitos que cabem na máscara atual
+            const valueForMask = limitedValue.slice(0, expectedDigits);
+            log(`valueForMask: "${valueForMask}" (${valueForMask.length} dígitos)`);
+            
+            // Aplica a máscara
+            let maskedValue = '';
+            let valueIndex = 0;
+            
+            for (let i = 0; i < maskPattern.length && valueIndex < valueForMask.length; i++) {
+                const maskChar = maskPattern[i];
+                
+                if (maskChar === '0' || maskChar === '9') {
+                    // Caractere de máscara para dígito
+                    maskedValue += valueForMask[valueIndex];
+                    valueIndex++;
+                } else {
+                    // Caractere literal da máscara
+                    maskedValue += maskChar;
+                }
+            }
+            
+            log(`maskedValue final: "${maskedValue}"`);
+            log('---');
+            return maskedValue;
+        }
+
+        function getMascaraCpfCnpj(valor) {
+            const cleanValue = valor.replace(/\D/g, '');
+            if (cleanValue.length <= 11) {
+                return '000.000.000-00'; // Máscara CPF
+            } else {
+                return '00.000.000/0000-00'; // Máscara CNPJ
+            }
+        }
+
+        // Teste 1: Input normal
+        document.getElementById('normal').addEventListener('input', function(e) {
+            const value = e.target.value;
+            document.getElementById('normal-value').textContent = value;
+            document.getElementById('normal-length').textContent = value.length;
+        });
+
+        // Teste 2: CPF com máscara fixa
+        document.getElementById('cpf-mask').addEventListener('input', function(e) {
+            const maskedValue = applyMask(e.target.value, '000.000.000-00');
+            e.target.value = maskedValue;
+            document.getElementById('cpf-value').textContent = maskedValue;
+            document.getElementById('cpf-length').textContent = maskedValue.length;
+        });
+
+        // Teste 3: CNPJ com máscara fixa
+        document.getElementById('cnpj-mask').addEventListener('input', function(e) {
+            const maskedValue = applyMask(e.target.value, '00.000.000/0000-00');
+            e.target.value = maskedValue;
+            document.getElementById('cnpj-value').textContent = maskedValue;
+            document.getElementById('cnpj-length').textContent = maskedValue.length;
+        });
+
+        // Teste 4: Máscara dinâmica
+        document.getElementById('dynamic-mask').addEventListener('input', function(e) {
+            const currentMask = getMascaraCpfCnpj(e.target.value);
+            const maskedValue = applyMask(e.target.value, currentMask);
+            e.target.value = maskedValue;
+            
+            document.getElementById('dynamic-current-mask').textContent = currentMask;
+            document.getElementById('dynamic-value').textContent = maskedValue;
+            document.getElementById('dynamic-length').textContent = maskedValue.length;
+            document.getElementById('dynamic-clean').textContent = e.target.value.replace(/\D/g, '');
+        });
+
+        log('Página carregada. Teste digitando nos campos acima.');
+    </script>
+</body>
+</html>

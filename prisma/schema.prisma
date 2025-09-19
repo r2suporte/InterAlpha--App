@@ -1,0 +1,115 @@
+// 🌐 Schema Prisma para Supabase PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 👤 Modelo de Usuário (integrado com Supabase Auth)
+model User {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String         @unique @db.VarChar(255)
+  name          String         @db.VarChar(255)
+  role          String?        @default("user") @db.VarChar(50)
+  phone         String?        @db.VarChar(20)
+  avatarUrl     String?        @map("avatar_url") @db.Text
+  isActive      Boolean?       @default(true) @map("is_active")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime       @default(now()) @map("updated_at") @db.Timestamptz
+  
+  // Relacionamentos
+  clientesCriados       Cliente[]      @relation("ClienteCreatedBy")
+  ordensServicoTecnico  OrdemServico[] @relation("OrdemServicoTecnico")
+  ordensServicoCriadas  OrdemServico[] @relation("OrdemServicoCreatedBy")
+  pagamentosCriados     Pagamento[]    @relation("PagamentoCreatedBy")
+
+  @@map("users")
+}
+
+// 🏢 Modelo de Cliente
+model Cliente {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome        String         @db.VarChar(255)
+  email       String?        @db.VarChar(255)
+  telefone    String?        @db.VarChar(20)
+  endereco    String?        @db.Text
+  cidade      String?        @db.VarChar(100)
+  estado      String?        @db.VarChar(2)
+  cep         String?        @db.VarChar(10)
+  cpfCnpj     String?        @map("cpf_cnpj") @db.VarChar(20)
+  tipoPessoa  String?        @default("fisica") @map("tipo_pessoa") @db.VarChar(10)
+  observacoes String?        @db.Text
+  isActive    Boolean?       @default(true) @map("is_active")
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime       @default(now()) @map("updated_at") @db.Timestamptz
+  createdBy   String?        @map("created_by") @db.Uuid
+  
+  // Relacionamentos
+  ordensServico OrdemServico[]
+  createdByUser User?         @relation("ClienteCreatedBy", fields: [createdBy], references: [id])
+
+  @@map("clientes")
+}
+
+// 🔧 Modelo de Ordem de Serviço
+model OrdemServico {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  numeroOs       String      @unique @map("numero_os") @db.VarChar(20)
+  clienteId      String      @map("cliente_id") @db.Uuid
+  titulo         String      @db.VarChar(255)
+  descricao      String?     @db.Text
+  status         String      @default("aberta") @db.VarChar(20) // aberta, em_andamento, aguardando_peca, concluida, cancelada
+  prioridade     String      @default("media") @db.VarChar(10)  // baixa, media, alta, urgente
+  tecnicoId      String?     @map("tecnico_id") @db.Uuid
+  valorServico   Decimal?    @default(0) @map("valor_servico") @db.Decimal(10,2)
+  valorPecas     Decimal?    @default(0) @map("valor_pecas") @db.Decimal(10,2)
+  valorTotal     Decimal?    @map("valor_total") @db.Decimal(10,2)
+  dataAbertura   DateTime    @default(now()) @map("data_abertura") @db.Timestamptz
+  dataInicio     DateTime?   @map("data_inicio") @db.Timestamptz
+  dataConclusao  DateTime?   @map("data_conclusao") @db.Timestamptz
+  observacoes    String?     @db.Text
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime    @default(now()) @map("updated_at") @db.Timestamptz
+  createdBy      String?     @map("created_by") @db.Uuid
+  
+  // Relacionamentos
+  cliente        Cliente     @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  tecnico        User?       @relation("OrdemServicoTecnico", fields: [tecnicoId], references: [id])
+  createdByUser  User?       @relation("OrdemServicoCreatedBy", fields: [createdBy], references: [id])
+  pagamentos     Pagamento[]
+
+  @@map("ordens_servico")
+}
+
+// 💳 Modelo de Pagamento
+model Pagamento {
+  id                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ordemServicoId        String        @map("ordem_servico_id") @db.Uuid
+  valor                 Decimal       @db.Decimal(10,2)
+  metodoPagamento       String?       @default("dinheiro") @map("metodo_pagamento") @db.VarChar(20)
+  status                String?       @default("pendente") @db.VarChar(20) // pendente, processando, aprovado, rejeitado, cancelado
+  dataPagamento         DateTime?     @map("data_pagamento") @db.Timestamptz
+  dataVencimento        DateTime?     @map("data_vencimento") @db.Timestamptz
+  observacoes           String?       @db.Text
+  stripePaymentIntentId String?       @map("stripe_payment_intent_id") @db.VarChar(255)
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime      @default(now()) @map("updated_at") @db.Timestamptz
+  createdBy             String?       @map("created_by") @db.Uuid
+  
+  // Relacionamentos
+  ordemServico          OrdemServico  @relation(fields: [ordemServicoId], references: [id])
+  createdByUser         User?         @relation("PagamentoCreatedBy", fields: [createdBy], references: [id])
+
+  @@map("pagamentos")
+}
+
+// 📊 Extensões do Supabase (Opcional)
+// Estas extensões podem ser habilitadas no Supabase para funcionalidades avançadas:
+// - uuid-ossp: Para geração de UUIDs
+// - pgcrypto: Para criptografia
+// - pg_stat_statements: Para análise de performance
+// - timescaledb: Para dados de time-series (se necessário)
