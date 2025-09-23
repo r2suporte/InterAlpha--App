@@ -1,0 +1,52 @@
+[
+  {
+    "id": "TC001",
+    "title": "test_secure_authentication_with_role_based_access_control",
+    "description": "Verify that the authentication system using Supabase Auth correctly authenticates users and enforces role-based access control for different user roles."
+  },
+  {
+    "id": "TC002",
+    "title": "test_crud_operations_for_service_orders",
+    "description": "Validate the creation, retrieval, update, and deletion of service orders with multiple statuses, priorities, and client approvals."
+  },
+  {
+    "id": "TC003",
+    "title": "test_client_management_with_cpf_cnpj_validation",
+    "description": "Ensure that client registration and management correctly validate CPF and CNPJ identifiers and allow proper client data handling."
+  },
+  {
+    "id": "TC004",
+    "title": "test_client_portal_access_and_order_tracking",
+    "description": "Test that clients can securely access their dedicated portal to track service order statuses and approve services online."
+  },
+  {
+    "id": "TC005",
+    "title": "test_apple_equipment_registration_and_warranty_status",
+    "description": "Verify the registration and management of Apple equipment including historical data and warranty status tracking."
+  },
+  {
+    "id": "TC006",
+    "title": "test_financial_system_payment_processing_and_reporting",
+    "description": "Validate the financial system's ability to process multiple payment methods, generate financial metrics, and produce accurate reports."
+  },
+  {
+    "id": "TC007",
+    "title": "test_parts_and_inventory_management_with_cost_control",
+    "description": "Ensure parts and inventory management correctly tracks parts usage, stock levels, and cost control per service order."
+  },
+  {
+    "id": "TC008",
+    "title": "test_automatic_email_notifications_and_whatsapp_integration",
+    "description": "Verify that the system sends automatic email notifications on status changes and correctly integrates with WhatsApp messaging."
+  },
+  {
+    "id": "TC009",
+    "title": "test_api_endpoint_ordens_servico",
+    "description": "Test the /api/ordens-servico endpoint for correct handling of service order CRUD operations with proper authentication and authorization."
+  },
+  {
+    "id": "TC010",
+    "title": "test_api_endpoint_portal_login",
+    "description": "Validate the /api/portal/login endpoint to ensure secure client login and session management for portal access."
+  }
+]

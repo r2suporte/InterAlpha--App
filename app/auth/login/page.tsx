@@ -34,7 +34,7 @@ export default function LoginPage() {
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('*')
-          .eq('supabaseId', data.user.id)
+          .eq('email', data.user.email)
           .single()
 
         if (userError && userError.code === 'PGRST116') {
@@ -42,9 +42,9 @@ export default function LoginPage() {
           const { error: insertError } = await supabase
             .from('users')
             .insert({
-              supabaseId: data.user.id,
               email: data.user.email!,
-              name: data.user.user_metadata?.name || null,
+              name: data.user.user_metadata?.name || data.user.email!.split('@')[0],
+              role: 'user'
             })
 
           if (insertError) {
@@ -52,7 +52,14 @@ export default function LoginPage() {
           }
         }
 
-        router.push('/dashboard')
+        // Redirecionar baseado no role do usuário
+        if (userData?.role === 'admin') {
+          router.push('/dashboard')
+        } else if (userData?.role === 'technician') {
+          router.push('/dashboard')
+        } else {
+          router.push('/portal/cliente/dashboard')
+        }
       }
     } catch (err) {
       setError('Erro inesperado. Tente novamente.')

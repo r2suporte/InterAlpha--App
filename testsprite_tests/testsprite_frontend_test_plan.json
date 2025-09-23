@@ -1,0 +1,514 @@
+[
+  {
+    "id": "TC001",
+    "title": "User Login with Valid Credentials",
+    "description": "Verify that users can log in successfully using correct credentials via Supabase Auth with proper role-based access control.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login page."
+      },
+      {
+        "type": "action",
+        "description": "Enter valid username/email and password."
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the user is authenticated and redirected to the dashboard according to their role."
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "User Login with Invalid Credentials",
+    "description": "Verify that login fails gracefully when invalid username/email or password is used, with appropriate error messages displayed.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login page."
+      },
+      {
+        "type": "action",
+        "description": "Enter invalid username/email and/or password."
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that login is rejected and an informative error message is displayed."
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Role-Based Access Control Enforcement",
+    "description": "Verify that users can access only the features and data permitted by their assigned roles according to RBAC and Row Level Security policies.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as an admin user."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify full system access including user, orders, finances, and admin functions."
+      },
+      {
+        "type": "action",
+        "description": "Log out and log in as a technician."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access limited to technician's own orders and relevant features; restricted access to admin panels and finance."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to access restricted API endpoints directly according to roles."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that unauthorized access is blocked."
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Client Registration with Valid CPF/CNPJ",
+    "description": "Verify successful registration of a new client when valid CPF or CNPJ is provided and all required fields are completed.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as an attendant."
+      },
+      {
+        "type": "action",
+        "description": "Navigate to new client registration page/form."
+      },
+      {
+        "type": "action",
+        "description": "Enter valid client information including valid CPF and/or CNPJ."
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration form."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the client is successfully created and visible in the client list."
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Client Registration with Invalid CPF/CNPJ",
+    "description": "Verify that invalid CPF or CNPJ input is rejected with proper validation error messages during client registration.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as an attendant."
+      },
+      {
+        "type": "action",
+        "description": "Navigate to new client registration form."
+      },
+      {
+        "type": "action",
+        "description": "Enter client data with invalid CPF or CNPJ."
+      },
+      {
+        "type": "action",
+        "description": "Submit the form."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the system shows validation errors and does not create the client."
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Creation of Service Order with Required Details",
+    "description": "Verify that service orders can be created by an attendant with valid client and equipment data including multiple status options and priorities.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as an attendant."
+      },
+      {
+        "type": "action",
+        "description": "Navigate to order creation page."
+      },
+      {
+        "type": "action",
+        "description": "Input valid client, equipment, service details, status, and priority."
+      },
+      {
+        "type": "action",
+        "description": "Submit the service order creation form."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the service order is successfully saved and visible in the order list with correct details."
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Service Order Status Transition Verification",
+    "description": "Verify valid status transitions for service orders through the lifecycle including created, diagnosis, approval, repair, and delivery statuses.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as a technician."
+      },
+      {
+        "type": "action",
+        "description": "Access an existing service order."
+      },
+      {
+        "type": "action",
+        "description": "Update status step-by-step through all valid states."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify status updates are accepted only for valid transitions and reflected correctly in UI and APIs."
+      },
+      {
+        "type": "action",
+        "description": "Attempt invalid status transitions."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the system prevents invalid transitions with appropriate error messages."
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Service Order Approval by Client via Portal",
+    "description": "Verify that clients can log in to the portal to view their service orders and approve requested services online.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as a client through the portal."
+      },
+      {
+        "type": "action",
+        "description": "Navigate to the orders page and select an order pending approval."
+      },
+      {
+        "type": "action",
+        "description": "Review order details and approve or reject the service."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the approval status is updated and visible in both client portal and internal system dashboard."
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Equipment Registration and Warranty Status Validation",
+    "description": "Verify that Apple equipment (iPhone, iPad, Mac, Apple Watch) can be registered with detailed information and warranty status is tracked correctly.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as an attendant."
+      },
+      {
+        "type": "action",
+        "description": "Navigate to the equipment registration page."
+      },
+      {
+        "type": "action",
+        "description": "Enter all required equipment details, including type, serial number, and warranty information."
+      },
+      {
+        "type": "action",
+        "description": "Submit the equipment registration form."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify equipment is properly stored and warranty status is accurately displayed on equipment detail pages and linked service orders."
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Inventory Management with Parts Usage and Cost Tracking",
+    "description": "Verify that parts can be added, updated, and subtracted from inventory stock correctly and associated with service orders with accurate cost tracking.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as inventory manager or admin."
+      },
+      {
+        "type": "action",
+        "description": "Add new parts to inventory with supplier and cost information."
+      },
+      {
+        "type": "action",
+        "description": "Associate parts usage with specific service orders."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify stock levels update accordingly and costs are reflected in financial reports."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to use parts exceeding available stock."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify system prevents stock from going negative and shows warning."
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Financial Transactions and Report Generation",
+    "description": "Verify the system records multiple forms of payments and generates accurate financial reports, including profitability and expense tracking.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as financial manager."
+      },
+      {
+        "type": "action",
+        "description": "Record various financial transactions with different payment methods."
+      },
+      {
+        "type": "action",
+        "description": "Generate financial reports for a given period."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify reports reflect correct transactions, income, expenses, and profitability metrics."
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Dashboard Metrics and Alerts Display",
+    "description": "Verify that the administrative dashboard loads and displays accurate metrics, graphs, financial highlights and alerts in real-time.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as admin, director, or manager."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify dashboard shows correct KPIs, charts, alerts and updates on system status and key performance indicators."
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Automated Email Notifications on Status Changes",
+    "description": "Verify that the system sends automatic emails to clients and staff notifying them of order status changes and important updates.",
+    "category": "integration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as technician and update a service order status."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that an email notification is triggered and received by the client and relevant team members."
+      },
+      {
+        "type": "action",
+        "description": "Simulate email server failure or network issues."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify error handling is performed and retry mechanisms are triggered if applicable."
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Performance under High Load",
+    "description": "Verify the system can support up to 300% growth in order volume and maintain response time below 2 seconds and uptime above 99.5%.",
+    "category": "performance",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Simulate concurrent usage with increased number of orders and users up to 3x baseline."
+      },
+      {
+        "type": "assertion",
+        "description": "Measure average response time for key API calls and UI actions to verify they remain under 2 seconds."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify system uptime remains above 99.5% during stress."
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Mobile Device Functionality and Responsiveness",
+    "description": "Verify that the application is fully accessible and functional on various mobile devices with responsive UI and correct feature accessibility.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Access the application on multiple mobile devices and screen sizes."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the UI renders correctly, navigation is intuitive, and all key features (login, order creation, portal access) work as expected."
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Security - Data Encryption and Sensitive Data Protection",
+    "description": "Verify that sensitive data including personal client information and payment details are encrypted and stored securely, and access is properly restricted.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Inspect database storage and transmission of sensitive data."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify encryption is applied in storage and during communication."
+      },
+      {
+        "type": "action",
+        "description": "Attempt unauthorized access to sensitive data via API or UI."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access is denied and logged."
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Report Export Functionality",
+    "description": "Verify that reports (financial, sales, stock, performance) can be generated and exported correctly in supported formats.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as a manager or director."
+      },
+      {
+        "type": "action",
+        "description": "Navigate to reports section and generate various reports."
+      },
+      {
+        "type": "action",
+        "description": "Export the reports to available formats such as CSV or PDF."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify exported files contain accurate data consistent with displayed reports."
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Handling of Invalid API Requests and Error Responses",
+    "description": "Verify that the backend API endpoints handle invalid, malformed or unauthorized requests gracefully with appropriate error responses and status codes.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send requests with invalid data or missing payloads to API endpoints like /api/ordens-servico and /api/clientes."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify APIs respond with proper HTTP error codes and descriptive error messages."
+      },
+      {
+        "type": "action",
+        "description": "Send API requests with insufficient permissions according to user role."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access is denied with 403 Forbidden or similar response."
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Backup and Recovery Process Verification",
+    "description": "Verify that the system performs regular backups and that recovery procedures restore the system to a consistent state without data loss.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Trigger backup process or simulate scheduled backup."
+      },
+      {
+        "type": "action",
+        "description": "Simulate data loss or corruption."
+      },
+      {
+        "type": "action",
+        "description": "Perform restoration from backup."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that data is restored accurately and system operates normally after recovery."
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "User Interface Accessibility Compliance",
+    "description": "Verify that UI components conform to accessibility standards using Radix UI accessible components and that users with disabilities can navigate and use features.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Use screen readers and keyboard navigation to traverse main app flows."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all interactive elements are accessible, labeled properly, and usable without mouse."
+      }
+    ]
+  }
+]

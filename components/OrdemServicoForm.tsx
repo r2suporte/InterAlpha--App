@@ -6,6 +6,7 @@ import { OrdemServicoFormData, StatusOrdemServico, PrioridadeOrdemServico, TipoS
 import { EquipamentoApple } from '../types/equipamentos'
 import { formatarMoeda } from '../types/financeiro'
 import PecasOrdemServico from './PecasOrdemServico'
+import { useTechnicians } from '../hooks/use-technicians'
 
 interface OrdemServicoFormProps {
   ordemServico?: OrdemServicoFormData
@@ -55,6 +56,9 @@ export default function OrdemServicoForm({
   const [equipamentosDisponiveis, setEquipamentosDisponiveis] = useState<EquipamentoApple[]>([])
   const [carregando, setCarregando] = useState(false)
   const [erros, setErros] = useState<Record<string, string>>({})
+
+  // Hook para buscar técnicos
+  const { technicians, loading: loadingTechnicians, getActiveTechnicians } = useTechnicians()
 
   // Simular dados de equipamentos
   useEffect(() => {
@@ -321,6 +325,33 @@ export default function OrdemServicoForm({
               </select>
               {erros.equipamento_id && (
                 <p className="mt-1 text-sm text-red-600">{erros.equipamento_id}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Técnico Responsável *
+              </label>
+              <select
+                value={formData.tecnico_id}
+                onChange={(e) => handleInputChange('tecnico_id', e.target.value)}
+                disabled={readonly || loadingTechnicians}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 ${
+                  erros.tecnico_id ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
+                <option value="">Selecione um técnico</option>
+                {getActiveTechnicians().map(technician => (
+                  <option key={technician.id} value={technician.id}>
+                    {technician.name} ({technician.role === 'supervisor_tecnico' ? 'Supervisor' : 'Técnico'})
+                  </option>
+                ))}
+              </select>
+              {erros.tecnico_id && (
+                <p className="mt-1 text-sm text-red-600">{erros.tecnico_id}</p>
+              )}
+              {loadingTechnicians && (
+                <p className="mt-1 text-sm text-gray-500">Carregando técnicos...</p>
               )}
             </div>
 

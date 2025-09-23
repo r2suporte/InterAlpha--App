@@ -48,6 +48,7 @@ import {
   LoaderIcon,
   MoreVerticalIcon,
   PlusIcon,
+  Trash2Icon,
   TrendingUpIcon,
 } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
@@ -401,6 +402,23 @@ export function DataTable({
         const newIndex = dataIds.indexOf(over.id)
         return arrayMove(data, oldIndex, newIndex)
       })
+    }
+  }
+
+  function handleRemoveSelected() {
+    const selectedRows = table.getFilteredSelectedRowModel().rows
+    const selectedIds = selectedRows.map(row => row.original.id)
+    
+    if (selectedIds.length === 0) {
+      toast.error("Nenhum item selecionado para remover")
+      return
+    }
+
+    // Confirmar antes de remover
+    if (window.confirm(`Tem certeza que deseja remover ${selectedIds.length} item(s) selecionado(s)?`)) {
+      setData(prevData => prevData.filter(item => !selectedIds.includes(item.id)))
+      setRowSelection({}) // Limpar seleção após remoção
+      toast.success(`${selectedIds.length} item(s) removido(s) com sucesso`)
     }
   }
 

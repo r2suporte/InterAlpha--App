@@ -32,7 +32,7 @@ CREATE INDEX IF NOT EXISTS idx_ordens_servico_cliente_portal ON ordens_servico(c
 CREATE TABLE IF NOT EXISTS cliente_portal_sessoes (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   cliente_portal_id UUID NOT NULL REFERENCES clientes_portal(id) ON DELETE CASCADE,
-  token_sessao TEXT NOT NULL UNIQUE,
+  session_token TEXT NOT NULL UNIQUE,
   ip_address INET,
   user_agent TEXT,
   expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS cliente_portal_sessoes (
 
 -- Índices para sessões
 CREATE INDEX IF NOT EXISTS idx_cliente_portal_sessoes_cliente ON cliente_portal_sessoes(cliente_portal_id);
-CREATE INDEX IF NOT EXISTS idx_cliente_portal_sessoes_token ON cliente_portal_sessoes(token_sessao);
+CREATE INDEX IF NOT EXISTS idx_cliente_portal_sessoes_token ON cliente_portal_sessoes(session_token);
 CREATE INDEX IF NOT EXISTS idx_cliente_portal_sessoes_expires ON cliente_portal_sessoes(expires_at);
 
 -- Criar tabela de comunicações com o cliente

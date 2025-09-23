@@ -1,12 +1,14 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Plus, Search, Filter, Edit, Trash2, Package, DollarSign, TrendingUp, AlertTriangle } from 'lucide-react'
+import { Plus, Search, Filter, Edit, Trash2, Package, DollarSign, TrendingUp, AlertTriangle, MapPin, Calendar, User, Hash } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { DataField } from '@/components/ui/data-display'
+import { StatusBadge } from '@/components/ui/status-badge'
 import PecaForm from '@/components/PecaForm'
 import { 
   Peca, 
@@ -228,21 +230,7 @@ export default function PecasPage() {
     }).format(valor)
   }
 
-  const getStatusBadge = (status: StatusPeca) => {
-    const colors = {
-      disponivel: 'bg-green-100 text-green-800',
-      baixo_estoque: 'bg-yellow-100 text-yellow-800',
-      sem_estoque: 'bg-red-100 text-red-800',
-      descontinuada: 'bg-gray-100 text-gray-800',
-      em_pedido: 'bg-blue-100 text-blue-800'
-    }
-    
-    return (
-      <Badge className={colors[status]}>
-        {STATUS_PECA_LABELS[status]}
-      </Badge>
-    )
-  }
+
 
   if (mostrarFormulario) {
     return (
@@ -408,11 +396,22 @@ export default function PecasPage() {
                     <tr key={peca.id} className="border-b hover:bg-gray-50">
                       <td className="py-3 px-4">
                         <div className="font-medium">{peca.part_number}</div>
-                        <div className="text-sm text-gray-500">{peca.codigo_fornecedor}</div>
+                        <DataField 
+                          label="Código Fornecedor"
+                          icon="hash" 
+                          value={peca.codigo_fornecedor} 
+                          className="text-sm"
+                        />
                       </td>
                       <td className="py-3 px-4">
                         <div className="font-medium">{peca.nome}</div>
                         <div className="text-sm text-gray-500 max-w-xs truncate">{peca.descricao}</div>
+                        <DataField 
+                          label="Localização"
+                          icon="mapPin" 
+                          value={peca.localizacao_estoque} 
+                          className="text-sm mt-1"
+                        />
                       </td>
                       <td className="py-3 px-4">
                         <Badge variant="outline">
@@ -438,7 +437,13 @@ export default function PecasPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        {getStatusBadge(peca.status)}
+                        <StatusBadge 
+                          status={peca.status === 'disponivel' ? 'success' : 
+                                 peca.status === 'baixo_estoque' ? 'warning' :
+                                 peca.status === 'sem_estoque' ? 'error' :
+                                 peca.status === 'em_pedido' ? 'pending' : 'info'}
+                          text={STATUS_PECA_LABELS[peca.status]}
+                        />
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">

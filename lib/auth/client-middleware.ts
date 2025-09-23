@@ -30,7 +30,6 @@ export async function verifyClienteToken(request: NextRequest): Promise<ClienteA
       .from('cliente_portal_sessoes')
       .select('*')
       .eq('token_sessao', token)
-      .eq('ativo', true)
       .gte('expires_at', new Date().toISOString())
       .single()
 

@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { DataField } from "@/components/ui/data-display"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { 
   FileText, 
   Download, 
@@ -19,7 +21,9 @@ import {
   Wrench, 
   DollarSign,
   BarChart3,
-  Filter
+  Filter,
+  Activity,
+  Clock
 } from "lucide-react"
 
 export default function RelatoriosPage() {
@@ -97,18 +101,7 @@ export default function RelatoriosPage() {
     alert(`Gerando relatório: ${tipoRelatorio}\nPeríodo: ${dataInicio} a ${dataFim}`)
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Concluído":
-        return "bg-green-100 text-green-800"
-      case "Processando":
-        return "bg-yellow-100 text-yellow-800"
-      case "Erro":
-        return "bg-red-100 text-red-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
+
 
   return (
     <SidebarProvider>
@@ -252,17 +245,19 @@ export default function RelatoriosPage() {
                     {relatoriosRecentes.map((relatorio, index) => (
                       <div key={index} className="p-3 border rounded-lg">
                         <div className="flex items-start justify-between">
-                          <div className="flex-1">
+                          <div className="flex-1 space-y-2">
                             <h4 className="font-medium text-sm">{relatorio.nome}</h4>
-                            <p className="text-xs text-muted-foreground">
-                              {relatorio.data}
-                            </p>
-                            <Badge 
-                              variant="secondary" 
-                              className={`mt-1 text-xs ${getStatusColor(relatorio.status)}`}
-                            >
-                              {relatorio.status}
-                            </Badge>
+                            <DataField
+                              label="Data"
+                              value={relatorio.data}
+                              icon="calendar"
+                              className="text-xs"
+                            />
+                            <StatusBadge 
+                              status={relatorio.status === "Concluído" ? "success" : "processing"}
+                              text={relatorio.status}
+                              size="sm"
+                            />
                           </div>
                           <Button size="sm" variant="ghost">
                             <Download className="h-4 w-4" />
@@ -280,19 +275,22 @@ export default function RelatoriosPage() {
                   <CardTitle>Estatísticas</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Relatórios este mês:</span>
-                      <span className="font-medium">12</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Mais gerado:</span>
-                      <span className="font-medium">Financeiro</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Último acesso:</span>
-                      <span className="font-medium">Hoje</span>
-                    </div>
+                  <div className="space-y-4">
+                    <DataField
+                      label="Relatórios este mês"
+                      value="12"
+                      icon="barChart3"
+                    />
+                    <DataField
+                      label="Mais gerado"
+                      value="Financeiro"
+                      icon="trendingUp"
+                    />
+                    <DataField
+                      label="Último acesso"
+                      value="Hoje"
+                      icon="clock"
+                    />
                   </div>
                 </CardContent>
               </Card>

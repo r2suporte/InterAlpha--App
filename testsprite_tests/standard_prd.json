@@ -1,0 +1,274 @@
+{
+  "meta": {
+    "project": "InterAlpha App",
+    "date": "2025-09-13",
+    "prepared_by": "Equipe de Desenvolvimento InterAlpha"
+  },
+  "product_overview": "InterAlpha App is a comprehensive service order management system tailored for authorized Apple technical service centers. It streamlines workflow from equipment intake to customer delivery, integrating client portals, financial management, and advanced reporting to optimize operational efficiency and customer transparency.",
+  "core_goals": [
+    "Reduce order processing time by 40% to improve operational efficiency",
+    "Enhance customer satisfaction with NPS score above 8.0 through transparent communication",
+    "Automate 90% of financial and billing processes for better financial control",
+    "Maintain 100% compliance with Apple service standards",
+    "Support 300% growth in service order volume for scalability",
+    "Enable complete mobile access for users",
+    "Integrate with Apple systems and parts suppliers",
+    "Provide advanced analytics to aid decision-making"
+  ],
+  "key_features": [
+    "Role-based authentication and authorization with Supabase Auth and secure JWT sessions",
+    "Full client management including CPF/CNPJ validation, dedicated client portal, and service history",
+    "Comprehensive Apple equipment management with serial and IMEI tracking, warranty status, and repair history",
+    "Service order system with creation, editing, status tracking, priority control, client approvals, and audit history",
+    "Client portal offering real-time order tracking, budget approvals, service communication, and digital documents",
+    "Parts and inventory control with supplier integration and automatic cost calculations",
+    "Integrated financial system supporting multiple payment methods (cash, PIX, credit/debit cards, bank transfer, boleto) and Stripe integration",
+    "Administrative dashboard featuring active order overview, performance metrics, financial graphs, and productivity indicators",
+    "Reporting system with client, order, financial, and performance reports, offering Excel exports",
+    "Automated multi-channel communication system via email, SMS, and WhatsApp with customizable templates and delivery tracking"
+  ],
+  "user_flow_summary": [
+    "User logs in through secure role-based authentication.",
+    "Receptionist registers new clients and equipment upon device intake.",
+    "Receptionist creates a new service order with details about the equipment and required service on the platform.",
+    "Technicians access assigned orders, update status, and record repair details and parts used.",
+    "Supervisor reviews order progress, assigns technicians, and manages priorities.",
+    "Clients access the dedicated portal to track service status, approve budgets, and communicate with the service team.",
+    "Financial managers record payments, generate financial reports, and monitor overdue payments.",
+    "Administrators utilize dashboards and reports to monitor overall operational and financial health.",
+    "Automated communication system notifies clients about order status updates via email and other channels."
+  ],
+  "validation_criteria": [
+    "System uptime greater than 99.5% to ensure availability.",
+    "Average response time under 2 seconds for all key user actions.",
+    "Successful authentication and role-based access control with zero critical vulnerabilities.",
+    "Coverage of automated tests exceeding 80%, including unit, integration, and end-to-end tests.",
+    "Reduction of service order processing time by at least 40%.",
+    "Customer satisfaction measured by NPS score greater than 8.0.",
+    "Financial processes automated for at least 90% of transactions.",
+    "At least 90% of users trained and proficient with the system within 3 months of deployment.",
+    "User interface allows completion of primary actions within two clicks on average.",
+    "Positive user feedback in 90% of support interactions and a 50% reduction in support tickets related to system use."
+  ],
+  "code_summary": {
+    "tech_stack": {
+      "framework": "Next.js 15.1.6",
+      "runtime": "Node.js",
+      "language": "TypeScript",
+      "database": "Supabase PostgreSQL",
+      "orm": "Prisma",
+      "authentication": "Supabase Auth",
+      "ui_framework": "React 19.0.0",
+      "styling": "Tailwind CSS",
+      "state_management": "React Hooks",
+      "form_handling": "React Hook Form",
+      "validation": "Zod",
+      "testing": {
+        "unit": "Jest",
+        "e2e": "Cypress",
+        "integration": "Jest"
+      },
+      "payment": "Stripe",
+      "email": "Nodemailer",
+      "sms": "Twilio",
+      "whatsapp": "WhatsApp Business API",
+      "queue": "BullMQ",
+      "cache": "Redis (ioredis)",
+      "file_processing": "ExcelJS",
+      "date_handling": "date-fns",
+      "icons": "Lucide React",
+      "ui_components": "Radix UI",
+      "deployment": "Vercel (Next.js)",
+      "monitoring": "Built-in logging"
+    },
+    "features": {
+      "authentication": {
+        "description": "Sistema de autenticação baseado em roles com Supabase Auth",
+        "endpoints": [
+          "/api/auth/register"
+        ],
+        "roles": [
+          "admin",
+          "tecnico",
+          "supervisor_tecnico",
+          "atendente",
+          "cliente"
+        ],
+        "permissions": "Role-based access control (RBAC)"
+      },
+      "client_management": {
+        "description": "Gerenciamento completo de clientes com portal dedicado",
+        "endpoints": [
+          "GET /api/clientes",
+          "POST /api/clientes",
+          "GET /api/clientes/[id]",
+          "PUT /api/clientes/[id]",
+          "DELETE /api/clientes/[id]"
+        ],
+        "features": [
+          "CRUD de clientes",
+          "Busca e paginação",
+          "Validação CPF/CNPJ",
+          "Portal do cliente",
+          "Histórico de ordens"
+        ]
+      },
+      "service_order_management": {
+        "description": "Sistema completo de ordens de serviço para equipamentos Apple",
+        "endpoints": [
+          "GET /api/ordens-servico",
+          "POST /api/ordens-servico",
+          "GET /api/ordens-servico/[id]",
+          "PUT /api/ordens-servico/[id]",
+          "DELETE /api/ordens-servico/[id]"
+        ],
+        "features": [
+          "Criação e edição de OS",
+          "Controle de status e prioridade",
+          "Atribuição de técnicos",
+          "Cálculo automático de valores",
+          "Assinatura digital",
+          "Impressão de documentos",
+          "Histórico de alterações"
+        ],
+        "statuses": [
+          "pendente",
+          "em_andamento",
+          "aguardando_aprovacao",
+          "aprovada",
+          "em_execucao",
+          "concluida",
+          "cancelada"
+        ],
+        "priorities": [
+          "baixa",
+          "media",
+          "alta",
+          "urgente"
+        ]
+      },
+      "equipment_management": {
+        "description": "Gestão de equipamentos Apple com rastreamento completo",
+        "endpoints": [
+          "GET /api/equipamentos",
+          "POST /api/equipamentos",
+          "GET /api/equipamentos/[id]",
+          "PUT /api/equipamentos/[id]",
+          "DELETE /api/equipamentos/[id]"
+        ],
+        "features": [
+          "Cadastro de equipamentos Apple",
+          "Rastreamento por serial/IMEI",
+          "Histórico de reparos",
+          "Status de garantia",
+          "Checklist de entrega"
+        ]
+      },
+      "financial_system": {
+        "description": "Sistema financeiro integrado com múltiplos métodos de pagamento",
+        "endpoints": [
+          "GET /api/pagamentos",
+          "POST /api/pagamentos",
+          "PUT /api/pagamentos/[id]"
+        ],
+        "payment_methods": [
+          "dinheiro",
+          "pix",
+          "cartao_credito",
+          "cartao_debito",
+          "transferencia",
+          "boleto"
+        ],
+        "integrations": [
+          "Stripe"
+        ],
+        "features": [
+          "Controle de pagamentos",
+          "Múltiplos métodos",
+          "Integração Stripe",
+          "Relatórios financeiros",
+          "Controle de inadimplência"
+        ]
+      },
+      "parts_inventory": {
+        "description": "Gestão de peças e estoque para reparos",
+        "features": [
+          "Controle de estoque",
+          "Peças por ordem de serviço",
+          "Cálculo automático de custos",
+          "Relatórios de consumo"
+        ]
+      },
+      "reporting_system": {
+        "description": "Sistema de relatórios e dashboards",
+        "endpoints": [
+          "GET /api/reports"
+        ],
+        "features": [
+          "Relatórios de clientes",
+          "Relatórios de ordens de serviço",
+          "Métricas de performance",
+          "Relatórios financeiros",
+          "Exportação para Excel"
+        ]
+      },
+      "communication_system": {
+        "description": "Sistema automatizado de comunicação com clientes",
+        "endpoints": [
+          "POST /api/ordens-servico/processar-emails",
+          "POST /api/ordens-servico/processar-whatsapp"
+        ],
+        "channels": [
+          "email",
+          "sms",
+          "whatsapp"
+        ],
+        "features": [
+          "Notificações automáticas",
+          "Templates personalizáveis",
+          "Processamento em lote",
+          "Histórico de comunicações",
+          "Status de entrega"
+        ]
+      },
+      "client_portal": {
+        "description": "Portal dedicado para clientes acompanharem suas ordens",
+        "endpoints": [
+          "GET /api/portal/cliente/ordem/[id]",
+          "POST /api/portal/cliente/aprovacao/[id]"
+        ],
+        "features": [
+          "Acompanhamento de OS",
+          "Aprovação de orçamentos",
+          "Histórico de serviços",
+          "Comunicação direta",
+          "Documentos digitais"
+        ]
+      },
+      "user_management": {
+        "description": "Gestão de usuários e técnicos do sistema",
+        "endpoints": [
+          "GET /api/users/technicians"
+        ],
+        "features": [
+          "Cadastro de técnicos",
+          "Controle de permissões",
+          "Atribuição de ordens",
+          "Relatórios de produtividade"
+        ]
+      },
+      "database_management": {
+        "description": "Gestão e monitoramento do banco de dados",
+        "endpoints": [
+          "GET /api/test-db-connection"
+        ],
+        "features": [
+          "Teste de conectividade",
+          "Monitoramento de performance",
+          "Backup automático",
+          "Migrações automáticas"
+        ]
+      }
+    }
+  }
+}

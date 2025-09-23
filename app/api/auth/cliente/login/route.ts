@@ -58,19 +58,20 @@ export async function POST(request: NextRequest) {
       .update({ ultimo_acesso: new Date().toISOString() })
       .eq('id', cliente.id)
 
-    // Criar sessão
-    const { error: errorSessao } = await supabase
+    // Criar sessão no banco
+    const { error: sessaoError } = await supabase
       .from('cliente_portal_sessoes')
       .insert({
         cliente_portal_id: cliente.id,
         token_sessao: token,
-        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
-        user_agent: request.headers.get('user-agent'),
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24h
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '::1',
+        user_agent: request.headers.get('user-agent') || '',
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 horas
       })
 
-    if (errorSessao) {
-      console.error('Erro ao criar sessão:', errorSessao)
+    if (sessaoError) {
+      console.error('Erro ao criar sessão:', sessaoError)
+      return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
     }
 
     // Buscar ordens de serviço do cliente

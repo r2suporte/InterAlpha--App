@@ -3,12 +3,17 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { AppSidebar } from "@/components/app-sidebar"
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import { SiteHeader } from "@/components/site-header"
 import { InputMask } from '@/components/ui/input-mask'
 import { DocumentSelector } from '@/components/ui/document-selector'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { SearchAndFilter } from '@/components/ui/search-and-filter'
+import { DataField, DataGrid, ContactInfo } from '@/components/ui/data-display'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,7 +22,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
-  ArrowLeft, 
   Plus, 
   Mail, 
   Phone, 
@@ -32,7 +36,11 @@ import {
   Building,
   User,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Filter,
+  MoreVertical,
+  Eye,
+  UserPlus
 } from 'lucide-react'
 import {
   validarCpfCnpj,
@@ -94,6 +102,7 @@ export default function ClientesPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [filters, setFilters] = useState<Record<string, any>>({})
   const [loadingCep, setLoadingCep] = useState(false)
   const [loadingCnpj, setLoadingCnpj] = useState(false)
   const [formData, setFormData] = useState<FormData>({
@@ -288,15 +297,22 @@ export default function ClientesPage() {
         setSuccess('Cliente atualizado com sucesso!')
       } else {
         // Criar novo cliente
-        const { error } = await supabase
+        const { data: novoCliente, error } = await supabase
           .from('clientes')
           .insert({
             ...clienteData,
             created_by: userData.id
           })
+          .select('id, numero_cliente, nome')
+          .single()
 
         if (error) throw error
-        setSuccess('Cliente criado com sucesso!')
+        
+        if (novoCliente?.numero_cliente) {
+          setSuccess(`Cliente criado com sucesso! ID: ${novoCliente.numero_cliente}`)
+        } else {
+          setSuccess('Cliente criado com sucesso!')
+        }
       }
 
       resetForm()
@@ -382,11 +398,34 @@ export default function ClientesPage() {
       .slice(0, 2)
   }
 
-  const filteredClientes = clientes.filter(cliente =>
-    cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cliente.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (cliente.cpf_cnpj && cliente.cpf_cnpj.includes(searchTerm.replace(/\D/g, '')))
-  )
+  const filteredClientes = clientes.filter(cliente => {
+    // Filtro por texto de pesquisa
+    const matchesSearch = !searchTerm || (
+      cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cliente.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (cliente.cpf_cnpj && cliente.cpf_cnpj.includes(searchTerm.replace(/\D/g, '')))
+    )
+
+    // Filtros avançados
+    const matchesFilters = Object.entries(filters).every(([key, value]) => {
+      if (!value || value === 'all') return true
+      
+      switch (key) {
+        case 'tipo_pessoa':
+          return cliente.tipo_pessoa === value
+        case 'status':
+          return value === 'active' ? cliente.is_active : !cliente.is_active
+        case 'cidade':
+          return cliente.cidade?.toLowerCase().includes(value.toLowerCase())
+        case 'estado':
+          return cliente.estado?.toLowerCase().includes(value.toLowerCase())
+        default:
+          return true
+      }
+    })
+
+    return matchesSearch && matchesFilters
+  })
 
   if (loading) {
     return (
@@ -400,35 +439,35 @@ export default function ClientesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="flex items-center text-blue-600 hover:text-blue-800 transition-colors">
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Voltar ao Dashboard
-              </Link>
-              <div className="h-6 w-px bg-gray-300" />
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Gerenciar Clientes</h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  {filteredClientes.length} cliente{filteredClientes.length !== 1 ? 's' : ''} {searchTerm ? 'encontrado' : 'cadastrado'}{filteredClientes.length !== 1 ? 's' : ''}
-                </p>
-              </div>
+    <SidebarProvider>
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+          {/* Header Section */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Gerenciar Clientes
+              </h2>
+              <p className="text-muted-foreground text-sm sm:text-base">
+                {filteredClientes.length} cliente{filteredClientes.length !== 1 ? 's' : ''} {searchTerm ? 'encontrado' : 'cadastrado'}{filteredClientes.length !== 1 ? 's' : ''}
+              </p>
             </div>
-            <Button onClick={openCreateModal} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Cliente
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" className="hidden sm:flex">
+                <Filter className="h-4 w-4 mr-2" />
+                Filtros
+              </Button>
+              <Button onClick={openCreateModal} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 w-full sm:w-auto">
+                <UserPlus className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Novo Cliente</span>
+                <span className="sm:hidden">Novo</span>
+              </Button>
+            </div>
           </div>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-8 sm:px-6 lg:px-8">
-        <div className="px-4 sm:px-0 space-y-6">
+          <div className="space-y-6">
           
           {/* Mensagens de erro e sucesso */}
           {errors.length > 0 && (
@@ -453,20 +492,47 @@ export default function ClientesPage() {
             </Alert>
           )}
 
-          {/* Barra de Pesquisa */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Pesquisar por nome, email ou CPF/CNPJ..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </CardContent>
-          </Card>
+          {/* Barra de Pesquisa e Filtros */}
+          <SearchAndFilter
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            searchPlaceholder="Pesquisar por nome, email ou CPF/CNPJ..."
+            filters={filters}
+            onFiltersChange={setFilters}
+            filterOptions={[
+              {
+                key: 'tipo_pessoa',
+                label: 'Tipo de Pessoa',
+                options: [
+                  { value: 'all', label: 'Todos' },
+                  { value: 'fisica', label: 'Pessoa Física' },
+                  { value: 'juridica', label: 'Pessoa Jurídica' }
+                ]
+              },
+              {
+                key: 'status',
+                label: 'Status',
+                options: [
+                  { value: 'all', label: 'Todos' },
+                  { value: 'active', label: 'Ativo' },
+                  { value: 'inactive', label: 'Inativo' }
+                ]
+              },
+              {
+                key: 'estado',
+                label: 'Estado',
+                options: [
+                  { value: 'all', label: 'Todos' },
+                  { value: 'SP', label: 'São Paulo' },
+                  { value: 'RJ', label: 'Rio de Janeiro' },
+                  { value: 'MG', label: 'Minas Gerais' },
+                  { value: 'RS', label: 'Rio Grande do Sul' },
+                  { value: 'PR', label: 'Paraná' },
+                  { value: 'SC', label: 'Santa Catarina' }
+                ]
+              }
+            ]}
+          />
 
           {/* Lista de Clientes */}
           {filteredClientes.length === 0 ? (
@@ -491,37 +557,38 @@ export default function ClientesPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredClientes.map((cliente) => (
-                <Card key={cliente.id} className="hover:shadow-lg transition-all duration-200 hover:scale-105">
+                <Card key={cliente.id} className="hover:shadow-lg transition-all duration-200 hover:scale-[1.02] sm:hover:scale-105">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-12 w-12">
-                          <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold">
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <Avatar className="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
+                          <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-sm sm:text-base">
                             {getInitials(cliente.nome)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <CardTitle className="text-lg truncate">{cliente.nome}</CardTitle>
+                          <CardTitle className="text-base sm:text-lg truncate">{cliente.nome}</CardTitle>
                           {cliente.numero_cliente && (
-                            <p className="text-sm text-gray-500 font-mono">ID: {cliente.numero_cliente}</p>
+                            <p className="text-xs sm:text-sm text-gray-500 font-mono">ID: {cliente.numero_cliente}</p>
                           )}
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Badge variant={cliente.tipo_pessoa === 'fisica' ? 'default' : 'secondary'}>
-                              {cliente.tipo_pessoa === 'fisica' ? (
-                                <><User className="h-3 w-3 mr-1" /> PF</>
-                              ) : (
-                                <><Building className="h-3 w-3 mr-1" /> PJ</>
-                              )}
-                            </Badge>
-                            <Badge variant={cliente.is_active ? 'default' : 'destructive'}>
-                              {cliente.is_active ? 'Ativo' : 'Inativo'}
-                            </Badge>
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
+                            <StatusBadge
+                              status={cliente.tipo_pessoa === 'fisica' ? 'info' : 'warning'}
+                              text={cliente.tipo_pessoa === 'fisica' ? 'PF' : 'PJ'}
+                              size="sm"
+                              showIcon={false}
+                            />
+                            <StatusBadge
+                              status={cliente.is_active ? 'active' : 'inactive'}
+                              text={cliente.is_active ? 'Ativo' : 'Inativo'}
+                              size="sm"
+                            />
                           </div>
                         </div>
                       </div>
-                      <div className="flex space-x-1">
+                      <div className="flex space-x-1 flex-shrink-0">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -542,33 +609,41 @@ export default function ClientesPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                      <span className="truncate">{cliente.email}</span>
-                    </div>
+                    <DataField
+                      label="Email"
+                      value={cliente.email}
+                      icon="mail"
+                      copyable
+                      className="text-sm"
+                    />
                     
                     {cliente.cpf_cnpj && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <FileText className="h-4 w-4 mr-2 text-gray-400" />
-                        <span>{formatarCpfCnpj(cliente.cpf_cnpj, cliente.tipo_pessoa)}</span>
-                      </div>
+                      <DataField
+                        label={cliente.tipo_pessoa === 'fisica' ? 'CPF' : 'CNPJ'}
+                        value={formatarCpfCnpj(cliente.cpf_cnpj, cliente.tipo_pessoa)}
+                        icon="fileText"
+                        copyable
+                        className="text-sm"
+                      />
                     )}
                     
                     {cliente.telefone && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                        <span>{formatarTelefone(cliente.telefone)}</span>
-                      </div>
+                      <DataField
+                        label="Telefone"
+                        value={formatarTelefone(cliente.telefone)}
+                        icon="phone"
+                        copyable
+                        className="text-sm"
+                      />
                     )}
                     
                     {(cliente.endereco || cliente.cidade) && (
-                      <div className="flex items-start text-sm text-gray-600">
-                        <MapPin className="h-4 w-4 mr-2 mt-0.5 text-gray-400 flex-shrink-0" />
-                        <span className="line-clamp-2">
-                          {cliente.endereco && `${cliente.endereco}, `}
-                          {cliente.cidade && cliente.estado && `${cliente.cidade}/${cliente.estado}`}
-                        </span>
-                      </div>
+                      <DataField
+                        label="Localização"
+                        value={`${cliente.endereco ? `${cliente.endereco}, ` : ''}${cliente.cidade && cliente.estado ? `${cliente.cidade}/${cliente.estado}` : ''}`}
+                        icon="mapPin"
+                        className="text-sm"
+                      />
                     )}
                     
                     <div className="flex items-center text-xs text-gray-500 pt-2 border-t">
@@ -581,11 +656,12 @@ export default function ClientesPage() {
             </div>
           )}
         </div>
-      </main>
+      </div>
+      </SidebarInset>
 
-      {/* Modal de Criação/Edição */}
+      {/* Modal de Criação/Edição de Cliente */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
           <DialogHeader>
             <DialogTitle>
               {editingCliente ? 'Editar Cliente' : 'Novo Cliente'}
@@ -606,16 +682,22 @@ export default function ClientesPage() {
               {/* ID do Cliente - somente leitura */}
               {editingCliente && (
                 <div className="bg-gray-50 p-4 rounded-lg border">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <DataGrid columns={2}>
                     <div className="space-y-2">
                       <Label htmlFor="id_cliente">ID do Cliente</Label>
                       <Input
                         id="id_cliente"
                         type="text"
-                        value={editingCliente.numero_cliente || 'Gerando...'}
+                        value={editingCliente.numero_cliente || 'ID será gerado automaticamente'}
                         disabled
                         className="bg-gray-100 text-gray-600"
                       />
+                      {editingCliente.numero_cliente && (
+                        <p className="text-xs text-green-600 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          ID gerado automaticamente pelo sistema
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="data_criacao">Data de Criação</Label>
@@ -627,11 +709,11 @@ export default function ClientesPage() {
                         className="bg-gray-100 text-gray-600"
                       />
                     </div>
-                  </div>
+                  </DataGrid>
                 </div>
               )}
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <DataGrid columns={2}>
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome Completo *</Label>
                   <div className="relative">
@@ -661,9 +743,9 @@ export default function ClientesPage() {
                     placeholder="email@exemplo.com"
                   />
                 </div>
-              </div>
+              </DataGrid>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <DataGrid columns={2}>
                 <div className="space-y-2">
                   <DocumentSelector
                      value={formData.cpf_cnpj}
@@ -684,7 +766,7 @@ export default function ClientesPage() {
                      placeholder="(11) 99999-9999"
                    />
                 </div>
-              </div>
+              </DataGrid>
             </div>
 
             {/* Endereço */}
@@ -719,7 +801,7 @@ export default function ClientesPage() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <DataGrid columns={4}>
                 <div className="space-y-2">
                   <Label htmlFor="numero">Número</Label>
                   <Input
@@ -759,9 +841,9 @@ export default function ClientesPage() {
                     placeholder="Nome da cidade"
                   />
                 </div>
-              </div>
+              </DataGrid>
               
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <DataGrid columns={1}>
                 <div className="space-y-2">
                   <Label htmlFor="estado">Estado</Label>
                   <Select value={formData.estado} onValueChange={(value) => setFormData({ ...formData, estado: value })}>
@@ -799,7 +881,7 @@ export default function ClientesPage() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
+              </DataGrid>
             </div>
 
             {/* Observações */}
@@ -832,6 +914,6 @@ export default function ClientesPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </SidebarProvider>
   )
 }

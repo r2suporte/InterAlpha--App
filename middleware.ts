@@ -1,10 +1,75 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { verify } from 'jsonwebtoken'
+
+// Função para tratar autenticação do portal do cliente
+async function handleClientPortalAuth(request: NextRequest) {
+  const clienteToken = request.cookies.get('cliente-token')?.value
+  
+  // Rotas protegidas do portal do cliente
+  const protectedClientRoutes = ['/portal/cliente/dashboard', '/portal/cliente/ordem']
+  const isProtectedClientRoute = protectedClientRoutes.some(route => 
+    request.nextUrl.pathname.startsWith(route)
+  )
+  
+  // Se é uma rota protegida, verificar autenticação
+  if (isProtectedClientRoute) {
+    if (!clienteToken) {
+      // Redirecionar para login do cliente se não tem token
+      const url = request.nextUrl.clone()
+      url.pathname = '/portal/cliente/login'
+      return NextResponse.redirect(url)
+    }
+    
+    try {
+      // Verificar se o token é válido
+      const decoded = verify(clienteToken, process.env.JWT_SECRET || 'fallback-secret')
+      if (!decoded || (decoded as any).tipo !== 'cliente') {
+        // Token inválido, redirecionar para login
+        const url = request.nextUrl.clone()
+        url.pathname = '/portal/cliente/login'
+        const response = NextResponse.redirect(url)
+        response.cookies.delete('cliente-token')
+        return response
+      }
+    } catch (error) {
+      // Token inválido, redirecionar para login
+      const url = request.nextUrl.clone()
+      url.pathname = '/portal/cliente/login'
+      const response = NextResponse.redirect(url)
+      response.cookies.delete('cliente-token')
+      return response
+    }
+  }
+  
+  // Se já está autenticado e tentando acessar login, redirecionar para dashboard
+  if (clienteToken && request.nextUrl.pathname === '/portal/cliente/login') {
+    try {
+      const decoded = verify(clienteToken, process.env.JWT_SECRET || 'fallback-secret')
+      if (decoded && (decoded as any).tipo === 'cliente') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/portal/cliente/dashboard'
+        return NextResponse.redirect(url)
+      }
+    } catch (error) {
+      // Token inválido, permitir acesso ao login
+    }
+  }
+  
+  return NextResponse.next()
+}
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
+
+  // Verificar se é uma rota do portal do cliente
+  const isClientPortalRoute = request.nextUrl.pathname.startsWith('/portal/cliente')
+  
+  if (isClientPortalRoute) {
+    return handleClientPortalAuth(request)
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

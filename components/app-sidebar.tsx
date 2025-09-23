@@ -173,29 +173,58 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
+    <Sidebar collapsible="offcanvas" className="border-r border-slate-200/60 dark:border-slate-800/60 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm" {...props}>
+      <SidebarHeader className="border-b border-slate-200/60 dark:border-slate-800/60 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:!p-3 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-colors"
             >
-              <a href="#">
-                <Building2 className="h-5 w-5" />
-                <span className="text-base font-semibold">InterAlpha</span>
+              <a href="#" className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg">
+                  <Building2 className="h-4 w-4" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-300 dark:to-indigo-300 bg-clip-text text-transparent">
+                    InterAlpha
+                  </span>
+                  <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                    Sistema de Gestão
+                  </span>
+                </div>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavAnalytics items={data.navAnalytics} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+      <SidebarContent className="bg-gradient-to-b from-slate-50/50 to-white dark:from-slate-950/50 dark:to-slate-950">
+        <div className="px-3 py-2">
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+            Principal
+          </div>
+          <NavMain items={data.navMain} />
+        </div>
+        
+        <div className="px-3 py-2 border-t border-slate-200/40 dark:border-slate-800/40">
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+            Análises
+          </div>
+          <NavAnalytics items={data.navAnalytics} />
+        </div>
+        
+        <div className="px-3 py-2 border-t border-slate-200/40 dark:border-slate-800/40">
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+            Ferramentas
+          </div>
+          <NavDocuments items={data.documents} />
+        </div>
+        
+        <div className="mt-auto px-3 py-2 border-t border-slate-200/40 dark:border-slate-800/40">
+          <NavSecondary items={data.navSecondary} />
+        </div>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-slate-200/60 dark:border-slate-800/60 bg-gradient-to-r from-slate-50 to-blue-50/30 dark:from-slate-950 dark:to-blue-950/30">
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>

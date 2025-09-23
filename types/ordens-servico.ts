@@ -12,6 +12,16 @@ export interface Cliente {
   cidade: string
   estado: string
   cep: string
+  numero_cliente: string
+  created_at: string
+}
+
+// Interface do cliente portal (referência)
+export interface ClientePortal {
+  id: string
+  nome: string
+  email: string
+  telefone: string
   created_at: string
 }
 
@@ -49,8 +59,10 @@ export type TipoServico =
 export interface OrdemServico {
   id: string
   numero_os: string
-  cliente_id: string
+  cliente_id?: string
+  cliente_portal_id?: string
   cliente?: Cliente
+  cliente_portal?: ClientePortal
   
   // Equipamento
   equipamento_id: string
@@ -121,7 +133,8 @@ export interface OrdemServico {
 // Interface para formulário de criação/edição
 export interface OrdemServicoFormData {
   numero_os: string
-  cliente_id: string
+  cliente_id?: string
+  cliente_portal_id?: string
   equipamento_id: string
   
   // Informações específicas do equipamento
