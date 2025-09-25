@@ -4,18 +4,22 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { LoadingSpinner, useLoadingState } from '@/components/ui/loading-states'
+import { ButtonLoading } from '@/components/ui/loading'
+import { useToast } from '@/components/ui/toast-system'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const { isLoading, startLoading, stopLoading } = useLoadingState()
   const [error, setError] = useState('')
+  const { success, error: showError } = useToast()
   const router = useRouter()
   const supabase = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+    startLoading()
     setError('')
 
     try {
@@ -26,6 +30,7 @@ export default function LoginPage() {
 
       if (error) {
         setError(error.message)
+        showError('Erro no login', error.message)
         return
       }
 
@@ -52,6 +57,9 @@ export default function LoginPage() {
           }
         }
 
+        // Toast de sucesso
+        success('Login realizado com sucesso!', 'Redirecionando...')
+        
         // Redirecionar baseado no role do usuário
         if (userData?.role === 'admin') {
           router.push('/dashboard')
@@ -63,8 +71,9 @@ export default function LoginPage() {
       }
     } catch (err) {
       setError('Erro inesperado. Tente novamente.')
+      showError('Erro inesperado', 'Tente novamente em alguns instantes.')
     } finally {
-      setLoading(false)
+      stopLoading()
     }
   }
 
@@ -128,10 +137,17 @@ export default function LoginPage() {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {loading ? 'Entrando...' : 'Entrar'}
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <ButtonLoading />
+                  Entrando...
+                </span>
+              ) : (
+                'Entrar'
+              )}
             </button>
           </div>
         </form>

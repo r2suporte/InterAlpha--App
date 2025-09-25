@@ -9,6 +9,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { 
+  ResponsiveContainer, 
+  ResponsiveStack, 
+  ResponsiveText, 
+  useBreakpoint, 
+  ShowHide 
+} from '@/components/ui/responsive-utils'
 import { Calculator, DollarSign, Percent, TrendingUp } from "lucide-react"
 
 export default function CalculadoraPage() {
@@ -16,6 +23,7 @@ export default function CalculadoraPage() {
   const [margemLucro, setMargemLucro] = useState("")
   const [valorVenda, setValorVenda] = useState("")
   const [tipoCalculo, setTipoCalculo] = useState("margem")
+  const { isMobile } = useBreakpoint()
 
   const calcularValores = () => {
     const custo = parseFloat(valorCusto) || 0
@@ -51,16 +59,22 @@ export default function CalculadoraPage() {
       <AppSidebar />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+        <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
           {/* Header */}
-          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">Calculadora Financeira</h2>
-              <p className="text-muted-foreground">
-                Calcule preços, margens de lucro e valores para seus serviços
-              </p>
-            </div>
-          </div>
+          <ResponsiveStack direction="vertical" className="space-y-2">
+            <ResponsiveText 
+              size={isMobile ? "2xl" : "3xl"}
+              className="font-bold tracking-tight"
+            >
+              Calculadora Financeira
+            </ResponsiveText>
+            <ResponsiveText 
+              size={isMobile ? "sm" : "base"}
+              className="text-muted-foreground"
+            >
+              Calcule preços, margens de lucro e valores para seus serviços
+            </ResponsiveText>
+          </ResponsiveStack>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Calculadora Principal */}
@@ -225,7 +239,7 @@ export default function CalculadoraPage() {
               </Card>
             </div>
           </div>
-        </div>
+        </ResponsiveContainer>
       </SidebarInset>
     </SidebarProvider>
   )

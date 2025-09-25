@@ -19,6 +19,9 @@ import {
   Wrench,
   Package
 } from 'lucide-react'
+import { useLoadingState } from '@/components/ui/loading-states'
+import { useToast } from '@/components/ui/toast-system'
+import { PageLoading } from '@/components/ui/loading'
 
 interface OrdemServico {
   id: string
@@ -64,7 +67,8 @@ export default function OrdemServicoDetalhes() {
   const [ordemServico, setOrdemServico] = useState<OrdemServico | null>(null)
   const [aprovacoes, setAprovacoes] = useState<Aprovacao[]>([])
   const [cliente, setCliente] = useState<Cliente | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { isLoading, startLoading, stopLoading } = useLoadingState()
+  const { error: showError, success } = useToast()
   const [error, setError] = useState('')
   const [processando, setProcessando] = useState<string | null>(null)
   const router = useRouter()
@@ -78,7 +82,7 @@ export default function OrdemServicoDetalhes() {
 
   const carregarDados = async () => {
     try {
-      setLoading(true)
+      startLoading()
       
       // Verificar autenticação
       const authResponse = await fetch('/api/auth/cliente/me')
@@ -98,16 +102,24 @@ export default function OrdemServicoDetalhes() {
         setOrdemServico(data.ordem_servico)
         setAprovacoes(data.aprovacoes || [])
       } else if (response.status === 404) {
-        setError('Ordem de serviço não encontrada')
+        const errorMessage = 'Ordem de serviço não encontrada'
+        setError(errorMessage)
+        showError('Erro', errorMessage)
       } else if (response.status === 403) {
-        setError('Você não tem permissão para acessar esta ordem de serviço')
+        const errorMessage = 'Você não tem permissão para acessar esta ordem de serviço'
+        setError(errorMessage)
+        showError('Acesso negado', errorMessage)
       } else {
-        setError('Erro ao carregar dados')
+        const errorMessage = 'Erro ao carregar dados'
+        setError(errorMessage)
+        showError('Erro', errorMessage)
       }
     } catch (error) {
-      setError('Erro ao carregar dados')
+      const errorMessage = 'Erro ao carregar dados'
+      setError(errorMessage)
+      showError('Erro', errorMessage)
     } finally {
-      setLoading(false)
+      stopLoading()
     }
   }
 
@@ -219,13 +231,10 @@ export default function OrdemServicoDetalhes() {
     return new Date(expiresAt) < new Date()
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Carregando...</p>
-        </div>
+        <PageLoading text="Carregando ordem de serviço..." />
       </div>
     )
   }

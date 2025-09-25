@@ -8,7 +8,20 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { MetricasFinanceiras } from "@/components/dashboard/MetricasFinanceiras"
 import { GraficosFinanceiros } from "@/components/dashboard/GraficosFinanceiros"
 import { Button } from "@/components/ui/button"
-import { Download, Filter, Calendar } from "lucide-react"
+import { Download, Filter, Calendar, MoreVertical } from "lucide-react"
+import { 
+  ResponsiveContainer, 
+  ResponsiveStack, 
+  ResponsiveText,
+  useBreakpoint,
+  ShowHide
+} from "@/components/ui/responsive-utils"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 function DashboardFinanceiroSkeleton() {
   return (
@@ -28,35 +41,71 @@ function DashboardFinanceiroSkeleton() {
 }
 
 export default function FinanceiroPage() {
+  const { isMobile } = useBreakpoint();
+
+  const ActionButtons = () => (
+    <>
+      <ShowHide on={['md', 'lg', 'xl']}>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm">
+            <Calendar className="mr-2 h-4 w-4" />
+            Período
+          </Button>
+          <Button variant="outline" size="sm">
+            <Filter className="mr-2 h-4 w-4" />
+            Filtros
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="mr-2 h-4 w-4" />
+            Exportar
+          </Button>
+        </div>
+      </ShowHide>
+
+      <ShowHide hide={['md', 'lg', 'xl']}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem>
+              <Calendar className="mr-2 h-4 w-4" />
+              Período
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Filter className="mr-2 h-4 w-4" />
+              Filtros
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Download className="mr-2 h-4 w-4" />
+              Exportar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </ShowHide>
+    </>
+  );
+
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+        <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
           {/* Header */}
-          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">Dashboard Financeiro</h2>
-              <p className="text-muted-foreground">
+          <ResponsiveStack direction="responsive" align="start" className="justify-between">
+            <div className="space-y-2">
+              <ResponsiveText size="3xl" className="font-bold tracking-tight">
+                Dashboard Financeiro
+              </ResponsiveText>
+              <ResponsiveText size="sm" className="text-muted-foreground">
                 Acompanhe as métricas financeiras e performance do seu negócio
-              </p>
+              </ResponsiveText>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm">
-                <Calendar className="mr-2 h-4 w-4" />
-                Período
-              </Button>
-              <Button variant="outline" size="sm">
-                <Filter className="mr-2 h-4 w-4" />
-                Filtros
-              </Button>
-              <Button variant="outline" size="sm">
-                <Download className="mr-2 h-4 w-4" />
-                Exportar
-              </Button>
-            </div>
-          </div>
+            <ActionButtons />
+          </ResponsiveStack>
 
           {/* Conteúdo Principal */}
           <Suspense fallback={<DashboardFinanceiroSkeleton />}>
@@ -68,7 +117,7 @@ export default function FinanceiroPage() {
               <GraficosFinanceiros />
             </div>
           </Suspense>
-        </div>
+        </ResponsiveContainer>
       </SidebarInset>
     </SidebarProvider>
   )

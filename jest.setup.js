@@ -1,6 +1,19 @@
 // Jest setup file
 import '@testing-library/jest-dom'
 
+// Polyfill para setImmediate (necessário para Nodemailer em ambiente de teste)
+if (typeof global.setImmediate === 'undefined') {
+  global.setImmediate = (callback, ...args) => {
+    return setTimeout(callback, 0, ...args)
+  }
+}
+
+if (typeof global.clearImmediate === 'undefined') {
+  global.clearImmediate = (id) => {
+    clearTimeout(id)
+  }
+}
+
 // Mock Next.js router
 jest.mock('next/router', () => ({
   useRouter() {

@@ -6,7 +6,9 @@ import { EquipamentoFormData, StatusGarantia } from '@/types/equipamentos'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DataField, DataCard } from '@/components/ui/data-display'
 import { StatusBadge, StatusType } from '@/components/ui/status-badge'
-import { Laptop, Hash, Shield } from 'lucide-react'
+import { useLoadingState } from '@/components/ui/loading-states'
+import { useToast } from '@/components/ui/toast-system'
+
 
 // Função para mapear status de garantia para StatusType
 const mapGarantiaToStatus = (status: StatusGarantia): StatusType => {
@@ -42,10 +44,11 @@ const getGarantiaText = (status: StatusGarantia): string => {
 
 export default function EquipamentosPage() {
   const [equipamentos, setEquipamentos] = useState<EquipamentoFormData[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const { isLoading, startLoading, stopLoading } = useLoadingState()
+  const { success, error: showError } = useToast()
 
   const handleSubmit = async (data: EquipamentoFormData) => {
-    setIsLoading(true)
+    startLoading()
     
     try {
       // Simular salvamento
@@ -54,12 +57,12 @@ export default function EquipamentosPage() {
       setEquipamentos(prev => [...prev, { ...data, id: Date.now().toString() }])
       
       console.log('Equipamento cadastrado:', data)
-      alert('Equipamento cadastrado com sucesso!')
+      success('Equipamento cadastrado!', 'Equipamento adicionado com sucesso.')
     } catch (error) {
       console.error('Erro ao cadastrar equipamento:', error)
-      alert('Erro ao cadastrar equipamento')
+      showError('Erro ao cadastrar', 'Não foi possível cadastrar o equipamento.')
     } finally {
-      setIsLoading(false)
+      stopLoading()
     }
   }
 
@@ -102,7 +105,7 @@ export default function EquipamentosPage() {
                         <DataField
                           label="Número de Série"
                           value={equipamento.serial_number}
-                          icon={Hash}
+                          icon="hash"
                           copyable
                         />
                         <DataField
@@ -113,12 +116,10 @@ export default function EquipamentosPage() {
                               text={getGarantiaText(equipamento.status_garantia)}
                             />
                           }
-                          icon={Shield}
                         />
                         <DataField
                           label="Tipo"
                           value={equipamento.tipo.replace('_', ' ').toUpperCase()}
-                          icon={Laptop}
                         />
                       </div>
                     </DataCard>

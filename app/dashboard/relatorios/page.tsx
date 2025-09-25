@@ -25,8 +25,16 @@ import {
   Activity,
   Clock
 } from "lucide-react"
+import { 
+  ResponsiveContainer, 
+  ResponsiveStack, 
+  ResponsiveText, 
+  useBreakpoint,
+  ShowHide 
+} from '@/components/ui/responsive-utils'
 
 export default function RelatoriosPage() {
+  const { isMobile, isTablet } = useBreakpoint()
   const [tipoRelatorio, setTipoRelatorio] = useState("")
   const [dataInicio, setDataInicio] = useState("")
   const [dataFim, setDataFim] = useState("")
@@ -108,16 +116,27 @@ export default function RelatoriosPage() {
       <AppSidebar />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+        <ResponsiveContainer className="flex-1 space-y-6 p-4 md:p-8 pt-6">
           {/* Header */}
-          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+          <ResponsiveStack 
+            direction={isMobile ? "vertical" : "horizontal"} 
+            className="space-y-4 md:items-center md:justify-between md:space-y-0"
+          >
             <div>
-              <h2 className="text-3xl font-bold tracking-tight">Relatórios</h2>
-              <p className="text-muted-foreground">
+              <ResponsiveText 
+                size={isMobile ? "2xl" : "3xl"}
+                className="font-bold tracking-tight"
+              >
+                Relatórios
+              </ResponsiveText>
+              <ResponsiveText 
+                size={isMobile ? "sm" : "base"}
+                className="text-muted-foreground"
+              >
                 Gere e visualize relatórios detalhados do seu negócio
-              </p>
+              </ResponsiveText>
             </div>
-          </div>
+          </ResponsiveStack>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Gerador de Relatórios */}
@@ -317,7 +336,7 @@ export default function RelatoriosPage() {
               </Card>
             </div>
           </div>
-        </div>
+        </ResponsiveContainer>
       </SidebarInset>
     </SidebarProvider>
   )

@@ -5,10 +5,10 @@ import { PrioridadeOrdemServico } from '@/types/ordens-servico'
 // PATCH - Atualizar prioridade da ordem de serviço
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const ordemId = params.id
+    const { id: ordemId } = await params
     const { prioridade } = await request.json()
 
     if (!prioridade) {

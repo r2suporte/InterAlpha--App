@@ -6,10 +6,10 @@ import { smsService } from '@/lib/services/sms-service'
 // PATCH - Atualizar status da ordem de serviço
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const ordemId = params.id
+    const { id: ordemId } = await params
     const { status } = await request.json()
 
     if (!status) {

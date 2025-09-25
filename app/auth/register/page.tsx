@@ -4,20 +4,24 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { LoadingSpinner, useLoadingState } from '@/components/ui/loading-states'
+import { ButtonLoading } from '@/components/ui/loading'
+import { useToast } from '@/components/ui/toast-system'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
-  const [loading, setLoading] = useState(false)
+  const { isLoading, startLoading, stopLoading } = useLoadingState()
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const { success, error: showError } = useToast()
   const router = useRouter()
   const supabase = createClient()
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+    startLoading()
     setError('')
     setMessage('')
 
@@ -34,6 +38,7 @@ export default function RegisterPage() {
 
       if (error) {
         setError(error.message)
+        showError('Erro no registro', error.message)
         return
       }
 
@@ -52,18 +57,21 @@ export default function RegisterPage() {
             console.error('Erro ao criar usuário:', insertError)
           }
 
+          success('Conta criada com sucesso!', 'Redirecionando para o dashboard...')
           router.push('/dashboard')
         } else {
           // Email precisa ser confirmado
           setMessage(
             'Conta criada com sucesso! Verifique seu email para confirmar a conta.'
           )
+          success('Conta criada!', 'Verifique seu email para confirmar a conta.')
         }
       }
     } catch (err) {
       setError('Erro inesperado. Tente novamente.')
+      showError('Erro inesperado', 'Tente novamente em alguns instantes.')
     } finally {
-      setLoading(false)
+      stopLoading()
     }
   }
 
@@ -148,10 +156,17 @@ export default function RegisterPage() {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {loading ? 'Criando conta...' : 'Criar conta'}
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <ButtonLoading />
+                  Criando conta...
+                </span>
+              ) : (
+                'Criar conta'
+              )}
             </button>
           </div>
         </form>

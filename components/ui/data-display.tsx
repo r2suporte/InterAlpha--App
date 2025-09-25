@@ -197,7 +197,7 @@ export function ContactInfo({
         <DataField 
           label="E-mail" 
           value={email} 
-          icon={Mail} 
+          icon="mail" 
           copyable 
         />
       )}
@@ -205,7 +205,7 @@ export function ContactInfo({
         <DataField 
           label="Telefone" 
           value={phone} 
-          icon={Phone} 
+          icon="phone" 
           copyable 
         />
       )}
@@ -213,7 +213,7 @@ export function ContactInfo({
         <DataField 
           label="Endereço" 
           value={address} 
-          icon={MapPin} 
+          icon="mapPin" 
         />
       )}
     </DataGrid>
@@ -245,21 +245,21 @@ export function DateTimeInfo({
         <DataField 
           label="Criado em" 
           value={formatDate(createdAt)} 
-          icon={Calendar} 
+          icon="calendar" 
         />
       )}
       {updatedAt && (
         <DataField 
           label="Atualizado em" 
           value={formatDate(updatedAt)} 
-          icon={Clock} 
+          icon="clock" 
         />
       )}
       {dueDate && (
         <DataField 
           label="Prazo" 
           value={formatDate(dueDate)} 
-          icon={Calendar} 
+          icon="calendar" 
         />
       )}
     </DataGrid>
@@ -290,21 +290,21 @@ export function FinancialInfo({
         <DataField 
           label="Custo" 
           value={formatCurrency(cost)} 
-          icon={DollarSign} 
+          icon="dollarSign" 
         />
       )}
       {price !== undefined && (
         <DataField 
           label="Preço" 
           value={formatCurrency(price)} 
-          icon={DollarSign} 
+          icon="dollarSign" 
         />
       )}
       {profit !== undefined && (
         <DataField 
           label="Lucro" 
           value={formatCurrency(profit)} 
-          icon={DollarSign} 
+          icon="dollarSign" 
         />
       )}
     </DataGrid>

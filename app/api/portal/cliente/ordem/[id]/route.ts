@@ -4,7 +4,7 @@ import { verifyClienteToken } from '@/lib/auth/client-middleware'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação do cliente
@@ -17,7 +17,7 @@ export async function GET(
     }
 
     const supabase = await createClient()
-    const ordemId = params.id
+    const { id: ordemId } = await params
 
     // Buscar ordem de serviço com verificação de permissão
     const { data: ordemServico, error: ordemError } = await supabase

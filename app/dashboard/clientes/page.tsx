@@ -42,6 +42,19 @@ import {
   Eye,
   UserPlus
 } from 'lucide-react'
+import { 
+  ResponsiveContainer, 
+  ResponsiveStack, 
+  ResponsiveText, 
+  useBreakpoint, 
+  ShowHide 
+} from '@/components/ui/responsive-utils'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   validarCpfCnpj,
   formatarCpfCnpj,
@@ -105,6 +118,8 @@ export default function ClientesPage() {
   const [filters, setFilters] = useState<Record<string, any>>({})
   const [loadingCep, setLoadingCep] = useState(false)
   const [loadingCnpj, setLoadingCnpj] = useState(false)
+  
+  const { isMobile } = useBreakpoint()
   const [formData, setFormData] = useState<FormData>({
     nome: '',
     email: '',
@@ -443,29 +458,59 @@ export default function ClientesPage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <ResponsiveContainer className="flex-1 space-y-4 p-4 md:p-8 pt-6">
           {/* Header Section */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
+          <ResponsiveStack direction="responsive" align="center" className="space-y-4 sm:space-y-0">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <ResponsiveText 
+                size={isMobile ? "2xl" : "3xl"}
+                className="font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
+              >
                 Gerenciar Clientes
-              </h2>
-              <p className="text-muted-foreground text-sm sm:text-base">
+              </ResponsiveText>
+              <ResponsiveText 
+                size={isMobile ? "sm" : "base"}
+                className="text-muted-foreground"
+              >
                 {filteredClientes.length} cliente{filteredClientes.length !== 1 ? 's' : ''} {searchTerm ? 'encontrado' : 'cadastrado'}{filteredClientes.length !== 1 ? 's' : ''}
-              </p>
+              </ResponsiveText>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm" className="hidden sm:flex">
-                <Filter className="h-4 w-4 mr-2" />
-                Filtros
-              </Button>
-              <Button onClick={openCreateModal} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 w-full sm:w-auto">
-                <UserPlus className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Novo Cliente</span>
-                <span className="sm:hidden">Novo</span>
-              </Button>
-            </div>
-          </div>
+            
+            <ShowHide hide={['sm']}>
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filtros
+                </Button>
+                <Button onClick={openCreateModal} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Novo Cliente
+                </Button>
+              </div>
+            </ShowHide>
+            
+            <ShowHide on={['sm']}>
+              <div className="flex items-center space-x-2 w-full">
+                <Button onClick={openCreateModal} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 flex-1">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Novo
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>
+                      <Filter className="h-4 w-4 mr-2" />
+                      Filtros
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </ShowHide>
+          </ResponsiveStack>
 
           <div className="space-y-6">
           
@@ -655,8 +700,8 @@ export default function ClientesPage() {
               ))}
             </div>
           )}
-        </div>
-      </div>
+          </div>
+        </ResponsiveContainer>
       </SidebarInset>
 
       {/* Modal de Criação/Edição de Cliente */}
@@ -688,11 +733,11 @@ export default function ClientesPage() {
                       <Input
                         id="id_cliente"
                         type="text"
-                        value={editingCliente.numero_cliente || 'ID será gerado automaticamente'}
+                        value={editingCliente?.numero_cliente || 'ID será gerado automaticamente'}
                         disabled
                         className="bg-gray-100 text-gray-600"
                       />
-                      {editingCliente.numero_cliente && (
+                      {editingCliente?.numero_cliente && (
                         <p className="text-xs text-green-600 flex items-center gap-1">
                           <CheckCircle className="w-3 h-3" />
                           ID gerado automaticamente pelo sistema
@@ -704,7 +749,7 @@ export default function ClientesPage() {
                       <Input
                         id="data_criacao"
                         type="text"
-                        value={new Date(editingCliente.created_at).toLocaleDateString('pt-BR')}
+                        value={new Date(editingCliente?.created_at || '').toLocaleDateString('pt-BR')}
                         disabled
                         className="bg-gray-100 text-gray-600"
                       />

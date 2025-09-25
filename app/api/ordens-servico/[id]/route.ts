@@ -6,11 +6,11 @@ import { smsService } from '@/lib/services/sms-service'
 // GET - Buscar ordem de serviço específica
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
-    const ordemId = params.id
+    const { id: ordemId } = await params
 
     // Detectar ambiente de teste
     const isTestEnvironment = process.env.NODE_ENV === 'test' || ordemId.startsWith('00000000-0000-0000-0000-')
@@ -111,10 +111,10 @@ export async function GET(
 // PUT - Atualizar ordem de serviço
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const ordemId = params.id
+    const { id: ordemId } = await params
     const updateData: any = await request.json()
 
     // Detectar ambiente de teste
@@ -385,10 +385,10 @@ export async function PUT(
 // DELETE - Excluir ordem de serviço (soft delete)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const ordemId = params.id
+    const { id: ordemId } = await params
     const supabase = await createClient()
 
     // Detectar ambiente de teste

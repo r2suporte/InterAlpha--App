@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { verifyClienteToken } from '@/lib/auth/client-middleware'
 
-export async function POST(
+export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação do cliente
@@ -26,7 +26,7 @@ export async function POST(
     }
 
     const supabase = await createClient()
-    const aprovacaoId = params.id
+    const { id: aprovacaoId } = await params
 
     // Buscar aprovação e verificar se pertence ao cliente
     const { data: aprovacao, error: aprovacaoError } = await supabase

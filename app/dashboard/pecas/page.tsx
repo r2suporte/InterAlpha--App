@@ -9,7 +9,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { DataField } from '@/components/ui/data-display'
 import { StatusBadge } from '@/components/ui/status-badge'
+import { useLoadingState } from '@/components/ui/loading-states'
+import { useToast } from '@/components/ui/toast-system'
+import { PageLoading } from '@/components/ui/loading'
 import PecaForm from '@/components/PecaForm'
+import { AppSidebar } from "@/components/app-sidebar"
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import { SiteHeader } from "@/components/site-header"
+import { 
+  ResponsiveContainer, 
+  ResponsiveStack, 
+  ResponsiveText, 
+  useBreakpoint, 
+  ShowHide 
+} from '@/components/ui/responsive-utils'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { 
   Peca, 
   CategoriaPeca, 
@@ -123,7 +142,9 @@ export default function PecasPage() {
   const [fornecedores] = useState<Fornecedor[]>(mockFornecedores)
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
   const [pecaEditando, setPecaEditando] = useState<Peca | undefined>()
-  const [isLoading, setIsLoading] = useState(false)
+  const { isLoading, startLoading, stopLoading } = useLoadingState()
+  const { success, error } = useToast()
+  const { isMobile } = useBreakpoint()
   
   // Filtros
   const [busca, setBusca] = useState('')
@@ -154,7 +175,7 @@ export default function PecasPage() {
 
   // Handlers
   const handleSubmitPeca = async (data: any) => {
-    setIsLoading(true)
+    startLoading()
     
     try {
       // Simular salvamento
@@ -174,6 +195,7 @@ export default function PecasPage() {
               }
             : peca
         ))
+        success('Peça atualizada com sucesso!')
       } else {
         // Adicionar nova peça
         const novaPeca: Peca = {
@@ -199,16 +221,17 @@ export default function PecasPage() {
           created_by: 'admin'
         }
         setPecas(prev => [...prev, novaPeca])
+        success('Peça cadastrada com sucesso!')
       }
       
       setMostrarFormulario(false)
       setPecaEditando(undefined)
       
-    } catch (error) {
-      console.error('Erro ao salvar peça:', error)
-      alert('Erro ao salvar peça')
+    } catch (err) {
+      console.error('Erro ao salvar peça:', err)
+      error('Erro ao salvar peça', 'Tente novamente mais tarde')
     } finally {
-      setIsLoading(false)
+      stopLoading()
     }
   }
 
@@ -234,39 +257,70 @@ export default function PecasPage() {
 
   if (mostrarFormulario) {
     return (
-      <div className="container mx-auto py-8 px-4">
-        <PecaForm
-          peca={pecaEditando}
-          onSubmit={handleSubmitPeca}
-          onCancel={() => {
-            setMostrarFormulario(false)
-            setPecaEditando(undefined)
-          }}
-          fornecedores={fornecedores}
-          isLoading={isLoading}
-        />
-      </div>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <SiteHeader />
+          <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
+            <PecaForm
+              peca={pecaEditando}
+              onSubmit={handleSubmitPeca}
+              onCancel={() => {
+                setMostrarFormulario(false)
+                setPecaEditando(undefined)
+              }}
+              fornecedores={fornecedores}
+              isLoading={isLoading}
+            />
+          </ResponsiveContainer>
+        </SidebarInset>
+      </SidebarProvider>
     )
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Gerenciamento de Peças</h1>
-          <p className="text-gray-600">
-            Cadastro e controle de estoque de peças para assistência técnica Apple
-          </p>
-        </div>
-        <Button 
-          onClick={() => setMostrarFormulario(true)}
-          className="flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Nova Peça
-        </Button>
-      </div>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <SiteHeader />
+        <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
+          {/* Cabeçalho */}
+          <ResponsiveStack direction="responsive" align="center" className="justify-between">
+            <div className="space-y-2">
+              <ResponsiveText 
+                size={isMobile ? "2xl" : "3xl"}
+                className="font-bold tracking-tight"
+              >
+                Gerenciamento de Peças
+              </ResponsiveText>
+              <ResponsiveText 
+                size={isMobile ? "sm" : "base"}
+                className="text-muted-foreground"
+              >
+                Cadastro e controle de estoque de peças para assistência técnica Apple
+              </ResponsiveText>
+            </div>
+            
+            <ShowHide hide={['sm']}>
+              <Button 
+                onClick={() => setMostrarFormulario(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Nova Peça
+              </Button>
+            </ShowHide>
+            
+            <ShowHide on={['sm']}>
+              <Button 
+                onClick={() => setMostrarFormulario(true)}
+                className="flex items-center gap-2 w-full"
+              >
+                <Plus className="w-4 h-4" />
+                Nova
+              </Button>
+            </ShowHide>
+          </ResponsiveStack>
 
       {/* Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
@@ -472,6 +526,8 @@ export default function PecasPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+        </ResponsiveContainer>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }

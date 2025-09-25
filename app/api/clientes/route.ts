@@ -1,57 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { Cliente } from '@/types/ordens-servico'
+import { withUserCache } from '@/lib/middleware/cache-middleware'
+import { CACHE_TTL } from '@/lib/services/cache-service'
+import { optimizedQuery } from '@/lib/database/query-optimizer'
+import { withAuthenticatedApiLogging, ApiLogger } from '@/lib/middleware/logging-middleware'
+import { withAuthenticatedApiMetrics, ApiMetricsCollector } from '@/lib/middleware/metrics-middleware'
 
-// GET - Listar clientes
-export async function GET(request: NextRequest) {
+// GET - Listar clientes (com cache)
+async function getClientes(request: NextRequest) {
   try {
+    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
+    
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
-    const search = searchParams.get('search')
-
-    const supabase = await createClient()
-
-    let query = supabase
-      .from('clientes')
-      .select('*')
-
-    // Aplicar filtro de busca
-    if (search) {
-      query = query.or(`nome.ilike.%${search}%,email.ilike.%${search}%,cpf_cnpj.ilike.%${search}%`)
-    }
-
-    // Aplicar paginação
-    const from = (page - 1) * limit
-    const to = from + limit - 1
-
-    query = query
-      .order('created_at', { ascending: false })
-      .range(from, to)
-
-    const { data: clientes, error, count } = await query
-
-    if (error) {
-      console.error('Erro ao buscar clientes:', error)
-      return NextResponse.json(
-        { error: 'Erro ao buscar clientes' },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: clientes,
+    const search = searchParams.get('search') || ''
+    const sortField = searchParams.get('sortField') || 'created_at'
+    const sortOrder = searchParams.get('sortOrder') || 'desc'
+    
+    // Usar query otimizada
+    const result = await optimizedQuery(supabase, 'clientes', {
+      select: 'id, nome, email, telefone, cpf_cnpj, endereco, created_at, updated_at',
       pagination: {
         page,
         limit,
-        total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit)
+        maxLimit: 50 // Limitar para evitar queries muito grandes
+      },
+      search: search ? {
+        query: search,
+        fields: ['nome', 'email', 'cpf_cnpj'],
+        operator: 'ilike'
+      } : undefined,
+      sort: {
+        field: sortField,
+        ascending: sortOrder === 'asc'
       }
     })
-
+    
+    if (result.error) {
+      console.error('Erro ao buscar clientes:', result.error)
+      return NextResponse.json(
+        { error: 'Erro interno do servidor' },
+        { status: 500 }
+      )
+    }
+    
+    return NextResponse.json({
+      clientes: result.data,
+      pagination: result.pagination
+    })
   } catch (error) {
-    console.error('Erro na listagem de clientes:', error)
+    console.error('Erro ao buscar clientes:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST - Criar novo cliente
-export async function POST(request: NextRequest) {
+async function createCliente(request: NextRequest) {
   try {
     const { nome, email, telefone, cpf_cnpj, endereco, cidade, estado, cep } = await request.json()
 
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
 }
 
 // PUT - Atualizar cliente existente
-export async function PUT(request: NextRequest) {
+async function updateCliente(request: NextRequest) {
   try {
     const { id, nome, email, telefone, cpf_cnpj, endereco, cidade, estado, cep } = await request.json()
 
@@ -306,3 +306,8 @@ export async function PUT(request: NextRequest) {
     )
   }
 }
+
+// Exportações com cache, logging e métricas aplicados
+export const GET = withUserCache(CACHE_TTL.MEDIUM)(getClientes)
+export const POST = withAuthenticatedApiMetrics(withAuthenticatedApiLogging(createCliente))
+export const PUT = withAuthenticatedApiMetrics(withAuthenticatedApiLogging(updateCliente))

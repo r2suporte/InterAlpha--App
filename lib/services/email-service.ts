@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer'
 import { createClient } from '@/lib/supabase/server'
+import { metricsService } from './metrics-service'
 
 interface EmailConfig {
   host: string
@@ -56,50 +57,61 @@ class EmailService {
   }
 
   async sendOrdemServicoEmail(ordemServico: OrdemServicoEmail, loginCredentials?: { login: string; senha: string }) {
-    if (!this.transporter) {
-      throw new Error('Transporter de email não configurado')
-    }
+    return await metricsService.measureOperation(
+      'email',
+      'sendOrdemServicoEmail',
+      async () => {
+        if (!this.transporter) {
+          throw new Error('Transporter de email não configurado')
+        }
 
-    const emailHtml = this.generateOrdemServicoEmailTemplate(ordemServico, loginCredentials)
+        const emailHtml = this.generateOrdemServicoEmailTemplate(ordemServico, loginCredentials)
 
-    const mailOptions = {
-      from: `"InterAlpha" <${process.env.SMTP_USER}>`,
-      to: ordemServico.cliente.email,
-      subject: `Nova Ordem de Serviço #${ordemServico.numero_os} - InterAlpha`,
-      html: emailHtml
-    }
+        const mailOptions = {
+          from: `"InterAlpha" <${process.env.SMTP_USER}>`,
+          to: ordemServico.cliente.email,
+          subject: `Nova Ordem de Serviço #${ordemServico.numero_os} - InterAlpha`,
+          html: emailHtml
+        }
 
-    try {
-      const result = await this.transporter.sendMail(mailOptions)
-      
-      // Registrar comunicação no banco
-      await this.registrarComunicacao({
-        cliente_portal_id: ordemServico.id,
-        ordem_servico_id: ordemServico.id,
-        tipo: 'email',
-        conteudo: emailHtml,
+        try {
+          const result = await this.transporter.sendMail(mailOptions)
+          
+          // Registrar comunicação no banco
+          await this.registrarComunicacao({
+            cliente_portal_id: ordemServico.id,
+            ordem_servico_id: ordemServico.id,
+            tipo: 'email',
+            conteudo: emailHtml,
+            destinatario: ordemServico.cliente.email,
+            status: 'enviado',
+            message_id: result.messageId
+          })
+
+          return result
+        } catch (error) {
+          console.error('Erro ao enviar email:', error)
+          
+          // Registrar erro no banco
+          await this.registrarComunicacao({
+            cliente_portal_id: ordemServico.id,
+            ordem_servico_id: ordemServico.id,
+            tipo: 'email',
+            conteudo: emailHtml,
+            destinatario: ordemServico.cliente.email,
+            status: 'erro',
+            erro: error instanceof Error ? error.message : 'Erro desconhecido'
+          })
+
+          throw error
+        }
+      },
+      {
         destinatario: ordemServico.cliente.email,
-        status: 'enviado',
-        message_id: result.messageId
-      })
-
-      return result
-    } catch (error) {
-      console.error('Erro ao enviar email:', error)
-      
-      // Registrar erro no banco
-      await this.registrarComunicacao({
-        cliente_portal_id: ordemServico.id,
-        ordem_servico_id: ordemServico.id,
-        tipo: 'email',
-        conteudo: emailHtml,
-        destinatario: ordemServico.cliente.email,
-        status: 'erro',
-        erro: error instanceof Error ? error.message : 'Erro desconhecido'
-      })
-
-      throw error
-    }
+        numero_os: ordemServico.numero_os,
+        valor: ordemServico.valor
+      }
+    )
   }
 
   private generateOrdemServicoEmailTemplate(ordemServico: OrdemServicoEmail, loginCredentials?: { login: string; senha: string }): string {
@@ -307,17 +319,23 @@ class EmailService {
   }
 
   async testConnection(): Promise<boolean> {
-    if (!this.transporter) {
-      return false
-    }
+    return await metricsService.measureOperation(
+      'email',
+      'testConnection',
+      async () => {
+        if (!this.transporter) {
+          return false
+        }
 
-    try {
-      await this.transporter.verify()
-      return true
-    } catch (error) {
-      console.error('Erro na conexão SMTP:', error)
-      return false
-    }
+        try {
+          await this.transporter.verify()
+          return true
+        } catch (error) {
+          console.error('Erro na conexão SMTP:', error)
+          return false
+        }
+      }
+    )
   }
 }
 

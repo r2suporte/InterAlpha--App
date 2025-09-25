@@ -4,6 +4,9 @@ import { OrdemServico, OrdemServicoFormData, StatusOrdemServico, PrioridadeOrdem
 import { smsService } from '@/lib/services/sms-service'
 import { Server as SocketIOServer } from 'socket.io'
 import { Server as NetServer } from 'http'
+import { optimizedQuery } from '@/lib/database/query-optimizer'
+import { withAuthenticatedApiLogging, ApiLogger } from '@/lib/middleware/logging-middleware'
+import { withAuthenticatedApiMetrics, withBusinessMetrics, ApiMetricsCollector } from '@/lib/middleware/metrics-middleware'
 
 // Função para obter instância do Socket.IO
 function getSocketIOInstance(): SocketIOServer | null {
@@ -17,7 +20,7 @@ function getSocketIOInstance(): SocketIOServer | null {
 }
 
 // GET - Listar ordens de serviço
-export async function GET(request: NextRequest) {
+async function getOrdensServico(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
@@ -25,48 +28,47 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') as StatusOrdemServico
     const cliente_id = searchParams.get('cliente_id')
     const tecnico_id = searchParams.get('tecnico_id')
-    const search = searchParams.get('search')
+    const search = searchParams.get('search') || ''
+    const sortField = searchParams.get('sortField') || 'created_at'
+    const sortOrder = searchParams.get('sortOrder') || 'desc'
 
     const supabase = await createClient()
 
-    let query = supabase
-      .from('ordens_servico')
-      .select(`
-        *,
-        cliente:clientes(id, nome, email, telefone, endereco, numero_cliente, created_at),
-        cliente_portal:clientes_portal(id, nome, email, telefone, created_at),
-        equipamento:equipamentos(*)
-      `)
+    // Construir filtros
+    const filters: any = {}
+    if (status) filters.status = { value: status, operator: 'eq' }
+    if (cliente_id) filters.cliente_id = { value: cliente_id, operator: 'eq' }
+    if (tecnico_id) filters.tecnico_id = { value: tecnico_id, operator: 'eq' }
 
-    // Aplicar filtros
-    if (status) {
-      query = query.eq('status', status)
-    }
+    // Usar query otimizada
+    const result = await optimizedQuery(supabase, 'ordens_servico', {
+      select: `
+        id, numero_os, titulo, descricao, status, prioridade, tipo_servico,
+        valor_servico, valor_pecas, data_abertura, data_inicio, data_conclusao,
+        tecnico_id, cliente_id, equipamento_id, created_at, updated_at,
+        cliente:clientes(id, nome, email, telefone, endereco, numero_cliente),
+        cliente_portal:clientes_portal(id, nome, email, telefone),
+        equipamento:equipamentos(id, marca, modelo, numero_serie)
+      `,
+      pagination: {
+        page,
+        limit,
+        maxLimit: 50 // Limitar para evitar queries muito grandes
+      },
+      search: search ? {
+        query: search,
+        fields: ['numero_os', 'titulo', 'descricao'],
+        operator: 'ilike'
+      } : undefined,
+      filters,
+      sort: {
+        field: sortField,
+        ascending: sortOrder === 'asc'
+      }
+    })
 
-    if (cliente_id) {
-      query = query.eq('cliente_id', cliente_id)
-    }
-
-    if (tecnico_id) {
-      query = query.eq('tecnico_id', tecnico_id)
-    }
-
-    if (search) {
-      query = query.or(`numero_os.ilike.%${search}%,titulo.ilike.%${search}%,descricao.ilike.%${search}%`)
-    }
-
-    // Aplicar paginação
-    const from = (page - 1) * limit
-    const to = from + limit - 1
-
-    query = query
-      .order('created_at', { ascending: false })
-      .range(from, to)
-
-    const { data: ordens, error, count } = await query
-
-    if (error) {
-      console.error('Erro ao buscar ordens de serviço:', error)
+    if (result.error) {
+      console.error('Erro ao buscar ordens de serviço:', result.error)
       return NextResponse.json(
         { error: 'Erro ao buscar ordens de serviço' },
         { status: 500 }
@@ -75,13 +77,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: ordens,
-      pagination: {
-        page,
-        limit,
-        total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit)
-      }
+      data: result.data,
+      pagination: result.pagination
     })
 
   } catch (error) {
@@ -93,8 +90,15 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Exportações com logging aplicado
+export const GET = withAuthenticatedApiMetrics(withAuthenticatedApiLogging(getOrdensServico))
+export const POST = withBusinessMetrics(
+  withAuthenticatedApiMetrics(withAuthenticatedApiLogging(createOrdemServico)),
+  'orders_created'
+)
+
 // POST - Criar nova ordem de serviço
-export async function POST(request: NextRequest) {
+async function createOrdemServico(request: NextRequest) {
   try {
     const rawData = await request.json()
 

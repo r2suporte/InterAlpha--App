@@ -5,6 +5,7 @@ import WhatsAppService from './whatsapp-service';
 import { SMSService } from './sms-service';
 import EmailService from './email-service';
 import { createClient } from '@/lib/supabase/client';
+import { metricsService } from './metrics-service';
 
 // 🔧 Interfaces e Tipos
 interface Cliente {
@@ -122,35 +123,18 @@ export class CommunicationService {
     options: CommunicationOptions = {}
   ): Promise<CommunicationResult> {
     const { enableFallback = true } = options;
-    const attempts: CommunicationResult['attempts'] = [];
-
-    // Selecionar canal principal
     const primaryChannel = this.selectOptimalChannel(cliente, options);
     
-    // Tentar envio no canal principal
-    let result = await this.sendToChannel(primaryChannel, cliente, message, subject);
-    attempts.push({
-      channel: primaryChannel,
-      success: result.success,
-      error: result.error,
-    });
-
-    if (result.success) {
-      return {
-        ...result,
-        channel: primaryChannel,
-        attempts,
-      };
-    }
-
-    // Se falhou e fallback está habilitado, tentar outros canais
-    if (!result.success && enableFallback) {
-      const fallbackChannels = this.getFallbackChannels(primaryChannel, cliente);
-      
-      for (const channel of fallbackChannels) {
-        result = await this.sendToChannel(channel, cliente, message, subject);
+    return await metricsService.measureOperation(
+      'communication',
+      'sendCommunication',
+      async () => {
+        const attempts: CommunicationResult['attempts'] = [];
+        
+        // Tentar envio no canal principal
+        let result = await this.sendToChannel(primaryChannel, cliente, message, subject);
         attempts.push({
-          channel,
+          channel: primaryChannel,
           success: result.success,
           error: result.error,
         });
@@ -158,21 +142,50 @@ export class CommunicationService {
         if (result.success) {
           return {
             ...result,
-            channel,
-            fallbackUsed: true,
+            channel: primaryChannel,
             attempts,
           };
         }
-      }
-    }
 
-    // Se todos os canais falharam
-    return {
-      success: false,
-      channel: primaryChannel,
-      error: 'Falha em todos os canais de comunicação',
-      attempts,
-    };
+        // Se falhou e fallback está habilitado, tentar outros canais
+        if (!result.success && enableFallback) {
+          const fallbackChannels = this.getFallbackChannels(primaryChannel, cliente);
+          
+          for (const channel of fallbackChannels) {
+            result = await this.sendToChannel(channel, cliente, message, subject);
+            attempts.push({
+              channel,
+              success: result.success,
+              error: result.error,
+            });
+
+            if (result.success) {
+              return {
+                ...result,
+                channel,
+                fallbackUsed: true,
+                attempts,
+              };
+            }
+          }
+        }
+
+        // Se todos os canais falharam
+        return {
+          success: false,
+          channel: primaryChannel,
+          error: 'Falha em todos os canais de comunicação',
+          attempts,
+        };
+      },
+      {
+        clienteId: cliente.id,
+        primaryChannel,
+        enableFallback,
+        priority: options.priority,
+        urgency: options.urgency
+      }
+    );
   }
 
   // 🔄 Obter Canais de Fallback
@@ -285,30 +298,43 @@ export class CommunicationService {
     tipo: 'criacao' | 'atualizacao' | 'conclusao',
     options: CommunicationOptions = {}
   ): Promise<CommunicationResult> {
-    // Definir urgência baseada no tipo
-    const urgencyMap = {
-      criacao: 'medium' as const,
-      atualizacao: 'low' as const,
-      conclusao: 'high' as const,
-    };
+    return await metricsService.measureOperation(
+      'communication',
+      'sendOrdemServicoCommunication',
+      async () => {
+        // Definir urgência baseada no tipo
+        const urgencyMap = {
+          criacao: 'medium' as const,
+          atualizacao: 'low' as const,
+          conclusao: 'high' as const,
+        };
 
-    const communicationOptions: CommunicationOptions = {
-      urgency: urgencyMap[tipo],
-      enableFallback: true,
-      priority: 'reliability',
-      ...options,
-    };
+        const communicationOptions: CommunicationOptions = {
+          urgency: urgencyMap[tipo],
+          enableFallback: true,
+          priority: 'reliability',
+          ...options,
+        };
 
-    // Gerar mensagem baseada no canal
-    const selectedChannel = this.selectOptimalChannel(cliente, communicationOptions);
-    const { message, subject } = this.generateOrdemServicoContent(
-      ordemServico,
-      cliente,
-      tipo,
-      selectedChannel
+        // Gerar mensagem baseada no canal
+        const selectedChannel = this.selectOptimalChannel(cliente, communicationOptions);
+        const { message, subject } = this.generateOrdemServicoContent(
+          ordemServico,
+          cliente,
+          tipo,
+          selectedChannel
+        );
+
+        return await this.sendCommunication(cliente, message, subject, communicationOptions);
+      },
+      {
+        ordemServicoId: ordemServico.id,
+        numeroOrdem: ordemServico.numero_ordem,
+        clienteId: cliente.id,
+        tipo,
+        valorTotal: ordemServico.valor_total
+      }
     );
-
-    return await this.sendCommunication(cliente, message, subject, communicationOptions);
   }
 
   // 📝 Geração de Conteúdo para Ordem de Serviço

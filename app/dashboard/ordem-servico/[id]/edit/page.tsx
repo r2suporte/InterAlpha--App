@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, AlertCircle } from 'lucide-react'
 import { OrdemServico, OrdemServicoFormData } from '@/types/ordens-servico'
 import OrdemServicoForm from '@/components/OrdemServicoForm'
+import { useLoadingState } from '@/components/ui/loading-states'
+import { useToast } from '@/components/ui/toast-system'
+import { PageLoading } from '@/components/ui/loading'
 
 // Função para converter OrdemServico para OrdemServicoFormData
 const convertToFormData = (ordem: OrdemServico): OrdemServicoFormData => {
@@ -45,13 +48,14 @@ export default function EditOrdemServicoPage() {
   const params = useParams()
   const router = useRouter()
   const [ordem, setOrdem] = useState<OrdemServico | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { isLoading, startLoading, stopLoading } = useLoadingState()
+  const { error: showError } = useToast()
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchOrdem = async () => {
       try {
-        setLoading(true)
+        startLoading()
         const response = await fetch(`/api/ordens-servico/${params.id}`)
         
         if (!response.ok) {
@@ -61,16 +65,18 @@ export default function EditOrdemServicoPage() {
         const data = await response.json()
         setOrdem(data)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao carregar ordem de serviço')
+        const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar ordem de serviço'
+        setError(errorMessage)
+        showError('Erro ao carregar ordem de serviço', errorMessage)
       } finally {
-        setLoading(false)
+        stopLoading()
       }
     }
 
     if (params.id) {
       fetchOrdem()
     }
-  }, [params.id])
+  }, [params.id, startLoading, stopLoading, showError])
 
   const handleSave = (dados: OrdemServicoFormData) => {
     // Aqui você pode implementar a lógica de salvamento
@@ -82,15 +88,14 @@ export default function EditOrdemServicoPage() {
     router.back()
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <SidebarProvider>
         <AppSidebar variant="inset" />
         <SidebarInset>
           <SiteHeader />
           <div className="flex flex-1 flex-col items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-600">Carregando ordem de serviço...</p>
+            <PageLoading text="Carregando ordem de serviço..." />
           </div>
         </SidebarInset>
       </SidebarProvider>

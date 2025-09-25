@@ -12,6 +12,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
+  ResponsiveContainer, 
+  ResponsiveStack, 
+  ResponsiveText, 
+  useBreakpoint, 
+  ShowHide 
+} from '@/components/ui/responsive-utils'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { 
   CreditCard, 
   DollarSign, 
   Calendar, 
@@ -22,13 +35,15 @@ import {
   Search,
   Filter,
   Download,
-  Eye
+  Eye,
+  MoreVertical
 } from "lucide-react"
 
 export default function PagamentosPage() {
   const [filtroStatus, setFiltroStatus] = useState("")
   const [filtroMetodo, setFiltroMetodo] = useState("")
   const [busca, setBusca] = useState("")
+  const { isMobile } = useBreakpoint()
 
   const pagamentos = [
     {
@@ -130,20 +145,38 @@ export default function PagamentosPage() {
       <AppSidebar />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+        <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
           {/* Header */}
-          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">Pagamentos</h2>
-              <p className="text-muted-foreground">
+          <ResponsiveStack direction="responsive" align="center" className="justify-between">
+            <div className="space-y-2">
+              <ResponsiveText 
+                size={isMobile ? "2xl" : "3xl"}
+                className="font-bold tracking-tight"
+              >
+                Pagamentos
+              </ResponsiveText>
+              <ResponsiveText 
+                size={isMobile ? "sm" : "base"}
+                className="text-muted-foreground"
+              >
                 Gerencie e monitore todos os pagamentos da sua empresa
-              </p>
+              </ResponsiveText>
             </div>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Pagamento
-            </Button>
-          </div>
+            
+            <ShowHide hide={['sm']}>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Pagamento
+              </Button>
+            </ShowHide>
+            
+            <ShowHide on={['sm']}>
+              <Button className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Novo
+              </Button>
+            </ShowHide>
+          </ResponsiveStack>
 
           {/* Estatísticas */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -320,7 +353,7 @@ export default function PagamentosPage() {
               )}
             </CardContent>
           </Card>
-        </div>
+        </ResponsiveContainer>
       </SidebarInset>
     </SidebarProvider>
   )

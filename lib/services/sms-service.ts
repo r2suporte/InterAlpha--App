@@ -2,6 +2,7 @@
 // Serviço para envio de SMS via Twilio com backup e fallback
 
 import { createClient } from '@/lib/supabase/client';
+import { metricsService } from './metrics-service';
 
 // 🔧 Interfaces e Tipos
 interface TwilioConfig {
@@ -97,36 +98,46 @@ export class SMSService {
 
   // 🚀 Envio de SMS Simples
   async sendSMS(to: string, message: string): Promise<SMSResponse> {
-    try {
-      const formattedPhone = this.formatPhoneNumber(to);
-      
-      const smsData: SMSMessage = {
-        to: formattedPhone,
-        body: message,
-        from: this.config.phoneNumber,
-      };
+    return await metricsService.measureOperation(
+      'sms',
+      'sendSMS',
+      async () => {
+        try {
+          const formattedPhone = this.formatPhoneNumber(to);
+          
+          const smsData: SMSMessage = {
+            to: formattedPhone,
+            body: message,
+            from: this.config.phoneNumber,
+          };
 
-      const response = await this.sendToTwilio(smsData);
-      
-      // Registrar comunicação no banco
-      await this.logCommunication({
-        cliente_telefone: formattedPhone,
-        tipo: 'sms',
-        conteudo: message,
-        status: response.success ? 'enviado' : 'erro',
-        provider: 'twilio',
-        message_id: response.messageId,
-      });
+          const response = await this.sendToTwilio(smsData);
+          
+          // Registrar comunicação no banco
+          await this.logCommunication({
+            cliente_telefone: formattedPhone,
+            tipo: 'sms',
+            conteudo: message,
+            status: response.success ? 'enviado' : 'erro',
+            provider: 'twilio',
+            message_id: response.messageId,
+          });
 
-      return response;
-    } catch (error) {
-      console.error('❌ Erro ao enviar SMS:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-        provider: 'twilio',
-      };
-    }
+          return response;
+        } catch (error) {
+          console.error('❌ Erro ao enviar SMS:', error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Erro desconhecido',
+            provider: 'twilio',
+          };
+        }
+      },
+      {
+        destinatario: to,
+        tamanho_mensagem: message.length
+      }
+    );
   }
 
   // 🔧 Envio para API do Twilio
@@ -170,24 +181,36 @@ export class SMSService {
 
   // 📋 SMS para Ordem de Serviço
   async sendOrdemServicoSMS(ordemServico: OrdemServico, cliente: Cliente, tipo: 'criacao' | 'atualizacao' | 'conclusao'): Promise<SMSResponse> {
-    try {
-      const telefone = cliente.celular || cliente.telefone;
-      
-      if (!telefone) {
-        throw new Error('Cliente não possui telefone cadastrado');
-      }
+    return await metricsService.measureOperation(
+      'sms',
+      'sendOrdemServicoSMS',
+      async () => {
+        try {
+          const telefone = cliente.celular || cliente.telefone;
+          
+          if (!telefone) {
+            throw new Error('Cliente não possui telefone cadastrado');
+          }
 
-      const message = this.generateOrdemServicoMessage(ordemServico, cliente, tipo);
-      
-      return await this.sendSMS(telefone, message);
-    } catch (error) {
-      console.error('❌ Erro ao enviar SMS de ordem de serviço:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-        provider: 'twilio',
-      };
-    }
+          const message = this.generateOrdemServicoMessage(ordemServico, cliente, tipo);
+          
+          return await this.sendSMS(telefone, message);
+        } catch (error) {
+          console.error('❌ Erro ao enviar SMS de ordem de serviço:', error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Erro desconhecido',
+            provider: 'twilio',
+          };
+        }
+      },
+      {
+        numero_ordem: ordemServico.numero_ordem,
+        tipo_sms: tipo,
+        cliente_id: cliente.id,
+        valor_total: ordemServico.valor_total
+      }
+    );
   }
 
   // 📝 Geração de Mensagem para Ordem de Serviço
@@ -243,42 +266,48 @@ export class SMSService {
 
   // 🧪 Teste de Conexão
   async testConnection(): Promise<{ success: boolean; message: string }> {
-    try {
-      const { accountSid, authToken } = this.config;
-      
-      if (!accountSid || !authToken) {
-        return {
-          success: false,
-          message: 'Configuração do Twilio incompleta',
-        };
-      }
+    return await metricsService.measureOperation(
+      'sms',
+      'testConnection',
+      async () => {
+        try {
+          const { accountSid, authToken } = this.config;
+          
+          if (!accountSid || !authToken) {
+            return {
+              success: false,
+              message: 'Configuração do Twilio incompleta',
+            };
+          }
 
-      // Teste simples de autenticação
-      const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}.json`;
-      
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
-        },
-      });
+          // Teste simples de autenticação
+          const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}.json`;
+          
+          const response = await fetch(url, {
+            headers: {
+              'Authorization': `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
+            },
+          });
 
-      if (response.ok) {
-        return {
-          success: true,
-          message: 'Conexão com Twilio estabelecida com sucesso',
-        };
-      } else {
-        return {
-          success: false,
-          message: 'Falha na autenticação com Twilio',
-        };
+          if (response.ok) {
+            return {
+              success: true,
+              message: 'Conexão com Twilio estabelecida com sucesso',
+            };
+          } else {
+            return {
+              success: false,
+              message: 'Falha na autenticação com Twilio',
+            };
+          }
+        } catch (error) {
+          return {
+            success: false,
+            message: `Erro de conexão: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+          };
+        }
       }
-    } catch (error) {
-      return {
-        success: false,
-        message: `Erro de conexão: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-      };
-    }
+    );
   }
 
   // 📈 Templates de SMS Predefinidos
