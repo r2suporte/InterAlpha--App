@@ -31,14 +31,14 @@ export function SiteHeader() {
     router.push('/dashboard/ordem-servico')
   }
   return (
-    <header className="group-has-data-[collapsible=icon]/sidebar-wrapper:h-16 flex h-16 shrink-0 items-center gap-2 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm transition-[width,height] ease-linear">
+    <header className="group-has-data-[collapsible=icon]/sidebar-wrapper:h-16 flex h-16 shrink-0 items-center gap-2 border-b border-slate-200/40 dark:border-slate-700/40 bg-gradient-to-r from-white/90 via-slate-50/95 to-white/90 dark:from-slate-950/90 dark:via-slate-900/95 dark:to-slate-950/90 backdrop-blur-md shadow-sm transition-[width,height] ease-linear">
       <div className="flex w-full items-center justify-between gap-4 px-4 lg:px-6">
         {/* Left Section */}
         <div className="flex items-center gap-4">
-          <SidebarTrigger className="-ml-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" />
+          <SidebarTrigger className="-ml-1 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition-all duration-200 rounded-lg" />
           <Separator
             orientation="vertical"
-            className="mx-2 data-[orientation=vertical]:h-6 bg-slate-200 dark:bg-slate-700"
+            className="mx-2 data-[orientation=vertical]:h-6 bg-slate-200/60 dark:bg-slate-700/60"
           />
           
           {/* Search Bar */}
@@ -46,7 +46,7 @@ export function SiteHeader() {
             <Search className="absolute left-3 h-4 w-4 text-slate-500 dark:text-slate-400" />
             <Input
               placeholder="Buscar ordens, clientes..."
-              className="pl-10 w-80 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400"
+              className="pl-10 w-80 bg-slate-50/80 dark:bg-slate-900/80 border-slate-200/60 dark:border-slate-700/60 focus:border-blue-500 dark:focus:border-blue-400 backdrop-blur-sm"
             />
           </div>
         </div>

@@ -157,4 +157,46 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Correções para layout da sidebar */
+  html, body {
+    height: 100%;
+    overflow-x: hidden;
+  }
+  
+  /* Garantir que a sidebar não seja cortada */
+  [data-sidebar] {
+    min-height: 100vh;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  
+  /* Melhorar o scroll da sidebar */
+  [data-sidebar]::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  [data-sidebar]::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  [data-sidebar]::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 3px;
+  }
+  
+  [data-sidebar]::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+  
+  /* Garantir que o conteúdo principal não sobreponha a sidebar */
+  .sidebar-wrapper {
+    display: flex;
+    min-height: 100vh;
+  }
+  
+  /* Melhorar a transição da sidebar */
+  .sidebar-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 }

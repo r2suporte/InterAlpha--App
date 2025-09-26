@@ -52,9 +52,6 @@ export default function Home() {
             <Link href="/auth/login" className="block w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors text-center">
               Acessar Sistema
             </Link>
-            <Link href="/auth/register" className="block w-full border border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 font-semibold py-3 px-6 rounded-lg transition-colors text-center">
-              Criar Conta
-            </Link>
           </div>
         </div>
       </div>
