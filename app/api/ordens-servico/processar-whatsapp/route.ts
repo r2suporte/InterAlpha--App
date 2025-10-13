@@ -1,15 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import WhatsAppService from '@/lib/services/whatsapp-service'
+import { NextRequest, NextResponse } from 'next/server';
+
+import WhatsAppService from '@/lib/services/whatsapp-service';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     // Buscar mensagens WhatsApp pendentes
     const { data: whatsappPendentes, error } = await supabase
       .from('comunicacoes_cliente')
-      .select(`
+      .select(
+        `
         *,
         ordens_servico (
           id,
@@ -24,37 +26,40 @@ export async function POST(request: NextRequest) {
             telefone
           )
         )
-      `)
+      `
+      )
       .eq('tipo', 'whatsapp')
       .eq('status', 'pendente')
       .order('created_at')
-      .limit(10)
+      .limit(10);
 
     if (error) {
-      console.error('Erro ao buscar WhatsApp pendentes:', error)
+      console.error('Erro ao buscar WhatsApp pendentes:', error);
       return NextResponse.json(
         { error: 'Erro ao buscar mensagens WhatsApp pendentes' },
         { status: 500 }
-      )
+      );
     }
 
     if (!whatsappPendentes || whatsappPendentes.length === 0) {
       return NextResponse.json({
         message: 'Nenhuma mensagem WhatsApp pendente encontrada',
-        processados: 0
-      })
+        processados: 0,
+      });
     }
 
-    const whatsappService = new WhatsAppService()
-    let mensagensProcessadas = 0
-    let mensagensComErro = 0
+    const whatsappService = new WhatsAppService();
+    let mensagensProcessadas = 0;
+    let mensagensComErro = 0;
 
     // Processar cada mensagem
     for (const whatsappPendente of whatsappPendentes) {
       try {
-        const ordemServico = whatsappPendente.ordens_servico
-        const cliente = Array.isArray(ordemServico?.clientes) ? ordemServico.clientes[0] : ordemServico?.clientes
-        
+        const ordemServico = whatsappPendente.ordens_servico;
+        const cliente = Array.isArray(ordemServico?.clientes)
+          ? ordemServico.clientes[0]
+          : ordemServico?.clientes;
+
         if (!cliente?.telefone) {
           // Marcar como erro - cliente sem telefone
           await supabase
@@ -62,12 +67,12 @@ export async function POST(request: NextRequest) {
             .update({
               status: 'erro',
               erro_detalhes: 'Cliente não possui telefone cadastrado',
-              tentativas: whatsappPendente.tentativas + 1
+              tentativas: whatsappPendente.tentativas + 1,
             })
-            .eq('id', whatsappPendente.id)
-          
-          mensagensComErro++
-          continue
+            .eq('id', whatsappPendente.id);
+
+          mensagensComErro++;
+          continue;
         }
 
         // Preparar dados para o WhatsApp
@@ -79,12 +84,13 @@ export async function POST(request: NextRequest) {
           data_inicio: ordemServico.data_inicio,
           cliente: {
             nome: cliente.nome,
-            telefone: cliente.telefone
-          }
-        }
+            telefone: cliente.telefone,
+          },
+        };
 
         // Enviar mensagem WhatsApp
-        const resultado = await whatsappService.sendOrdemServicoMessage(ordemServicoWhatsApp)
+        const resultado =
+          await whatsappService.sendOrdemServicoMessage(ordemServicoWhatsApp);
 
         // Marcar como enviado
         await supabase
@@ -93,26 +99,29 @@ export async function POST(request: NextRequest) {
             status: 'enviado',
             enviado_em: new Date().toISOString(),
             whatsapp_message_id: resultado.messages[0]?.id,
-            tentativas: whatsappPendente.tentativas + 1
+            tentativas: whatsappPendente.tentativas + 1,
           })
-          .eq('id', whatsappPendente.id)
+          .eq('id', whatsappPendente.id);
 
-        mensagensProcessadas++
-
+        mensagensProcessadas++;
       } catch (error) {
-        console.error(`Erro ao processar WhatsApp ${whatsappPendente.id}:`, error)
-        
+        console.error(
+          `Erro ao processar WhatsApp ${whatsappPendente.id}:`,
+          error
+        );
+
         // Marcar como erro
         await supabase
           .from('comunicacoes_cliente')
           .update({
             status: 'erro',
-            erro_detalhes: error instanceof Error ? error.message : 'Erro desconhecido',
-            tentativas: whatsappPendente.tentativas + 1
+            erro_detalhes:
+              error instanceof Error ? error.message : 'Erro desconhecido',
+            tentativas: whatsappPendente.tentativas + 1,
           })
-          .eq('id', whatsappPendente.id)
+          .eq('id', whatsappPendente.id);
 
-        mensagensComErro++
+        mensagensComErro++;
       }
     }
 
@@ -120,51 +129,52 @@ export async function POST(request: NextRequest) {
       message: 'Processamento de mensagens WhatsApp concluído',
       processados: mensagensProcessadas,
       erros: mensagensComErro,
-      total: whatsappPendentes.length
-    })
-
+      total: whatsappPendentes.length,
+    });
   } catch (error) {
-    console.error('Erro ao processar WhatsApp:', error)
+    console.error('Erro ao processar WhatsApp:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
-    )
+    );
   }
 }
 
 // Endpoint GET para verificar status da fila WhatsApp
 export async function GET() {
   try {
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     // Contar mensagens WhatsApp por status
     const { data: statusCount, error } = await supabase
       .from('comunicacoes_cliente')
       .select('status')
-      .eq('tipo', 'whatsapp')
+      .eq('tipo', 'whatsapp');
 
     if (error) {
       return NextResponse.json(
         { error: 'Erro ao consultar status das mensagens WhatsApp' },
         { status: 500 }
-      )
+      );
     }
 
-    const stats = statusCount.reduce((acc, item) => {
-      acc[item.status] = (acc[item.status] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
+    const stats = statusCount.reduce(
+      (acc, item) => {
+        acc[item.status] = (acc[item.status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     return NextResponse.json({
       message: 'Status da fila de mensagens WhatsApp',
-      estatisticas: stats
-    })
-
+      estatisticas: stats,
+    });
   } catch (error) {
-    console.error('Erro ao consultar fila WhatsApp:', error)
+    console.error('Erro ao consultar fila WhatsApp:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
-    )
+    );
   }
 }

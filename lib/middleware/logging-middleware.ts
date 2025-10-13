@@ -1,12 +1,16 @@
 /**
  * 🔍 Logging Middleware - Middleware para logging automático de APIs
- * 
+ *
  * Este middleware adiciona logging estruturado automático para todas as
  * requisições HTTP, incluindo métricas de performance e contexto.
  */
-
 import { NextRequest, NextResponse } from 'next/server';
-import { logger, LogContext, PerformanceLogger } from '../services/logger-service';
+
+import {
+  LogContext,
+  PerformanceLogger,
+  logger,
+} from '../services/logger-service';
 
 // 🏷️ Interface para configuração do middleware
 export interface LoggingMiddlewareConfig {
@@ -29,7 +33,7 @@ const DEFAULT_CONFIG: LoggingMiddlewareConfig = {
   logRequestBody: false,
   logResponseBody: false,
   excludePaths: ['/api/health', '/api/metrics'],
-  sensitiveFields: ['password', 'token', 'authorization', 'cookie']
+  sensitiveFields: ['password', 'token', 'authorization', 'cookie'],
 };
 
 /**
@@ -39,7 +43,7 @@ function sanitizeData(data: any, sensitiveFields: string[]): any {
   if (!data || typeof data !== 'object') return data;
 
   const sanitized = { ...data };
-  
+
   for (const field of sensitiveFields) {
     if (field in sanitized) {
       sanitized[field] = '[REDACTED]';
@@ -54,17 +58,17 @@ function sanitizeData(data: any, sensitiveFields: string[]): any {
  */
 function extractRequestContext(request: NextRequest): LogContext {
   const url = new URL(request.url);
-  
+
   return {
     method: request.method,
     endpoint: url.pathname,
     userAgent: request.headers.get('user-agent') || undefined,
-    ip: request.headers.get('x-forwarded-for') || 
-        request.headers.get('x-real-ip') || 
-        'unknown',
-    requestId: request.headers.get('x-request-id') || 
-               crypto.randomUUID(),
-    sessionId: request.headers.get('x-session-id') || undefined
+    ip:
+      request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      'unknown',
+    requestId: request.headers.get('x-request-id') || crypto.randomUUID(),
+    sessionId: request.headers.get('x-session-id') || undefined,
   };
 }
 
@@ -80,7 +84,7 @@ export function withLogging<T extends any[]>(
   return async (...args: T): Promise<NextResponse> => {
     const request = args[0] as NextRequest;
     const url = new URL(request.url);
-    
+
     // Verificar se o path deve ser excluído
     if (finalConfig.excludePaths?.some(path => url.pathname.startsWith(path))) {
       return handler(...args);
@@ -88,7 +92,7 @@ export function withLogging<T extends any[]>(
 
     const context = extractRequestContext(request);
     const perfLogger = new PerformanceLogger(
-      logger, 
+      logger,
       `${request.method} ${url.pathname}`,
       context
     );
@@ -101,7 +105,7 @@ export function withLogging<T extends any[]>(
           headers: sanitizeData(
             Object.fromEntries(request.headers.entries()),
             finalConfig.sensitiveFields || []
-          )
+          ),
         };
 
         // Adicionar body se habilitado
@@ -131,7 +135,7 @@ export function withLogging<T extends any[]>(
         const responseData: any = {
           status: response.status,
           statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries())
+          headers: Object.fromEntries(response.headers.entries()),
         };
 
         // Adicionar body se habilitado
@@ -147,24 +151,41 @@ export function withLogging<T extends any[]>(
           }
         }
 
-        const level = response.status >= 500 ? 'error' : 
-                     response.status >= 400 ? 'warn' : 'info';
-        
+        const level =
+          response.status >= 500
+            ? 'error'
+            : response.status >= 400
+              ? 'warn'
+              : 'info';
+
         if (level === 'error') {
-          logger.error('Request completed with error', undefined, {
-            ...context,
-            statusCode: response.status
-          }, responseData);
+          logger.error(
+            'Request completed with error',
+            undefined,
+            {
+              ...context,
+              statusCode: response.status,
+            },
+            responseData
+          );
         } else if (level === 'warn') {
-          logger.warn('Request completed with warning', {
-            ...context,
-            statusCode: response.status
-          }, responseData);
+          logger.warn(
+            'Request completed with warning',
+            {
+              ...context,
+              statusCode: response.status,
+            },
+            responseData
+          );
         } else {
-          logger.info('Request completed successfully', {
-            ...context,
-            statusCode: response.status
-          }, responseData);
+          logger.info(
+            'Request completed successfully',
+            {
+              ...context,
+              statusCode: response.status,
+            },
+            responseData
+          );
         }
       }
 
@@ -172,20 +193,15 @@ export function withLogging<T extends any[]>(
       if (finalConfig.enablePerformanceLogging) {
         perfLogger.end({
           statusCode: response.status,
-          responseSize: response.headers.get('content-length') || 'unknown'
+          responseSize: response.headers.get('content-length') || 'unknown',
         });
       }
 
       return response;
-
     } catch (error) {
       // ❌ Log de erro
       if (finalConfig.enableErrorLogging) {
-        logger.error(
-          'Request failed with exception',
-          error as Error,
-          context
-        );
+        logger.error('Request failed with exception', error as Error, context);
       }
 
       // 📊 Log de performance com erro
@@ -208,7 +224,7 @@ export function withPublicApiLogging<T extends any[]>(
   return withLogging(handler, {
     logRequestBody: false,
     logResponseBody: false,
-    excludePaths: ['/api/health', '/api/metrics', '/api/public/status']
+    excludePaths: ['/api/health', '/api/metrics', '/api/public/status'],
   });
 }
 
@@ -222,9 +238,15 @@ export function withAuthenticatedApiLogging<T extends any[]>(
     logRequestBody: true,
     logResponseBody: false,
     sensitiveFields: [
-      'password', 'token', 'authorization', 'cookie',
-      'cpf', 'cnpj', 'telefone', 'email'
-    ]
+      'password',
+      'token',
+      'authorization',
+      'cookie',
+      'cpf',
+      'cnpj',
+      'telefone',
+      'email',
+    ],
   });
 }
 
@@ -239,9 +261,16 @@ export function withAdminApiLogging<T extends any[]>(
     logResponseBody: true,
     enablePerformanceLogging: true,
     sensitiveFields: [
-      'password', 'token', 'authorization', 'cookie',
-      'cpf', 'cnpj', 'telefone', 'email', 'chave_pix'
-    ]
+      'password',
+      'token',
+      'authorization',
+      'cookie',
+      'cpf',
+      'cnpj',
+      'telefone',
+      'email',
+      'chave_pix',
+    ],
   });
 }
 
@@ -255,7 +284,7 @@ export function withMetricsLogging<T extends any[]>(
     enableRequestLogging: false,
     enableResponseLogging: false,
     enablePerformanceLogging: true,
-    excludePaths: []
+    excludePaths: [],
   });
 }
 
@@ -263,7 +292,11 @@ export function withMetricsLogging<T extends any[]>(
  * 🎯 Decorator para logging automático de métodos de classe
  */
 export function LogApiMethod(config?: LoggingMiddlewareConfig) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
     const wrappedMethod = withLogging(originalMethod, config);
     descriptor.value = wrappedMethod;
@@ -290,7 +323,7 @@ export class ApiLogger {
       operation,
       table,
       duration,
-      recordsAffected
+      recordsAffected,
     });
   }
 
@@ -304,20 +337,20 @@ export class ApiLogger {
     context?: LogContext
   ): void {
     const message = `Auth operation: ${operation} ${success ? 'succeeded' : 'failed'}`;
-    
+
     if (success) {
       logger.info(message, {
         ...context,
         userId,
         operation,
-        success
+        success,
       });
     } else {
       logger.warn(message, {
         ...context,
         userId,
         operation,
-        success
+        success,
       });
     }
   }
@@ -334,7 +367,7 @@ export class ApiLogger {
     context?: LogContext
   ): void {
     const message = `Payment operation: ${operation} ${success ? 'succeeded' : 'failed'}`;
-    
+
     if (success) {
       logger.info(message, {
         ...context,
@@ -342,7 +375,7 @@ export class ApiLogger {
         amount,
         currency,
         paymentId,
-        success
+        success,
       });
     } else {
       logger.error(message, undefined, {
@@ -351,7 +384,7 @@ export class ApiLogger {
         amount,
         currency,
         paymentId,
-        success
+        success,
       });
     }
   }
@@ -367,14 +400,14 @@ export class ApiLogger {
     context?: LogContext
   ): void {
     const message = `Communication sent: ${type} to ${recipient} ${success ? 'succeeded' : 'failed'}`;
-    
+
     if (success) {
       logger.info(message, {
         ...context,
         type,
         recipient: recipient.replace(/(.{3}).*(.{3})/, '$1***$2'), // Mascarar recipient
         messageId,
-        success
+        success,
       });
     } else {
       logger.error(message, undefined, {
@@ -382,7 +415,7 @@ export class ApiLogger {
         type,
         recipient: recipient.replace(/(.{3}).*(.{3})/, '$1***$2'),
         messageId,
-        success
+        success,
       });
     }
   }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AlertService } from '@/lib/services/alert-service';
+
 import { withAuthenticatedApiLogging } from '@/lib/middleware/logging-middleware';
 import { withAuthenticatedApiMetrics } from '@/lib/middleware/metrics-middleware';
+import { AlertService } from '@/lib/services/alert-service';
 
 const alertService = new AlertService();
 
@@ -11,14 +12,14 @@ async function getRules(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: rules
+      data: rules,
     });
   } catch (error) {
     console.error('Erro ao buscar regras de alerta:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Erro interno do servidor' 
+      {
+        success: false,
+        error: 'Erro interno do servidor',
       },
       { status: 500 }
     );
@@ -31,14 +32,14 @@ async function initializeDefaultRules(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Regras padrão inicializadas com sucesso'
+      message: 'Regras padrão inicializadas com sucesso',
     });
   } catch (error) {
     console.error('Erro ao inicializar regras padrão:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Erro interno do servidor' 
+      {
+        success: false,
+        error: 'Erro interno do servidor',
       },
       { status: 500 }
     );

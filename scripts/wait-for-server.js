@@ -3,9 +3,9 @@ const http = require('http');
 const waitForServer = (url, timeout = 30000) => {
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
-    
+
     const checkServer = () => {
-      const req = http.get(url, (res) => {
+      const req = http.get(url, res => {
         if (res.statusCode === 200 || res.statusCode === 404) {
           console.log(`✅ Servidor está respondendo em ${url}`);
           resolve();
@@ -13,7 +13,7 @@ const waitForServer = (url, timeout = 30000) => {
           setTimeout(checkServer, 1000);
         }
       });
-      
+
       req.on('error', () => {
         if (Date.now() - startTime > timeout) {
           reject(new Error(`Timeout: Servidor não respondeu em ${timeout}ms`));
@@ -22,7 +22,7 @@ const waitForServer = (url, timeout = 30000) => {
         }
       });
     };
-    
+
     checkServer();
   });
 };
@@ -36,7 +36,7 @@ waitForServer(serverUrl)
     console.log('✅ Servidor está pronto!');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Erro ao aguardar servidor:', error.message);
     process.exit(1);
   });

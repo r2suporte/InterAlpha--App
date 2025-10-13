@@ -1,10 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect, useState } from 'react';
+
+import {
+  DollarSign,
+  FileText,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Users, FileText, DollarSign, Target } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { createClient } from '@/lib/supabase/client';
 
 interface Metricas {
   totalClientes: number;
@@ -62,12 +77,12 @@ export default function MetricasCard({ className }: MetricasCardProps) {
 
       // Buscar faturamento total (simulado - ajustar quando a coluna valor existir)
       const faturamentoTotal = (totalOrdens || 0) * 1500; // Valor médio simulado
-      
+
       // Buscar faturamento do mês atual
       const inicioMes = new Date();
       inicioMes.setDate(1);
       inicioMes.setHours(0, 0, 0, 0);
-      
+
       const { count: ordensDoMes, error: mesError } = await supabase
         .from('ordens_servico')
         .select('*', { count: 'exact', head: true })
@@ -76,7 +91,8 @@ export default function MetricasCard({ className }: MetricasCardProps) {
       if (mesError) throw mesError;
 
       const faturamentoMes = (ordensDoMes || 0) * 1500;
-      const ticketMedio = totalOrdens && totalOrdens > 0 ? faturamentoTotal / totalOrdens : 0;
+      const ticketMedio =
+        totalOrdens && totalOrdens > 0 ? faturamentoTotal / totalOrdens : 0;
 
       setMetricas({
         totalClientes: totalClientes || 0,
@@ -126,12 +142,14 @@ export default function MetricasCard({ className }: MetricasCardProps) {
 
   if (loading) {
     return (
-      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ${className}`}>
+      <div
+        className={`grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 ${className}`}
+      >
         {[...Array(6)].map((_, i) => (
           <Card key={i} className="animate-pulse">
             <CardHeader className="pb-2">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-4 w-3/4 rounded bg-gray-200"></div>
+              <div className="h-8 w-1/2 rounded bg-gray-200"></div>
             </CardHeader>
           </Card>
         ))}
@@ -143,12 +161,12 @@ export default function MetricasCard({ className }: MetricasCardProps) {
     return (
       <Card className={`border-red-200 ${className}`}>
         <CardContent className="p-6">
-          <div className="text-red-600 text-center">
-            <FileText className="h-8 w-8 mx-auto mb-2" />
+          <div className="text-center text-red-600">
+            <FileText className="mx-auto mb-2 h-8 w-8" />
             <p>{error}</p>
-            <button 
+            <button
               onClick={fetchMetricas}
-              className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+              className="mt-2 rounded bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
             >
               Tentar novamente
             </button>
@@ -161,9 +179,11 @@ export default function MetricasCard({ className }: MetricasCardProps) {
   const percentualConclusao = calcularPercentualConclusao();
 
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 ${className}`}>
+    <div
+      className={`grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 ${className}`}
+    >
       {/* Total de Clientes */}
-      <Card className="hover:shadow-lg transition-shadow">
+      <Card className="transition-shadow hover:shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Total de Clientes
@@ -171,16 +191,18 @@ export default function MetricasCard({ className }: MetricasCardProps) {
           <Users className="h-4 w-4 text-blue-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-blue-600">{metricas.totalClientes}</div>
+          <div className="text-2xl font-bold text-blue-600">
+            {metricas.totalClientes}
+          </div>
           <Badge variant="secondary" className="mt-2">
-            <TrendingUp className="h-3 w-3 mr-1" />
+            <TrendingUp className="mr-1 h-3 w-3" />
             Ativo
           </Badge>
         </CardContent>
       </Card>
 
       {/* Total de Ordens */}
-      <Card className="hover:shadow-lg transition-shadow">
+      <Card className="transition-shadow hover:shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Ordens de Serviço
@@ -188,7 +210,9 @@ export default function MetricasCard({ className }: MetricasCardProps) {
           <FileText className="h-4 w-4 text-green-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">{metricas.totalOrdens}</div>
+          <div className="text-2xl font-bold text-green-600">
+            {metricas.totalOrdens}
+          </div>
           <Badge variant="secondary" className="mt-2">
             Total
           </Badge>
@@ -196,7 +220,7 @@ export default function MetricasCard({ className }: MetricasCardProps) {
       </Card>
 
       {/* Ordens Abertas */}
-      <Card className="hover:shadow-lg transition-shadow">
+      <Card className="transition-shadow hover:shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Ordens Abertas
@@ -204,9 +228,11 @@ export default function MetricasCard({ className }: MetricasCardProps) {
           <Target className="h-4 w-4 text-orange-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-orange-600">{metricas.ordensAbertas}</div>
-          <Badge 
-            variant={metricas.ordensAbertas > 0 ? "destructive" : "secondary"}
+          <div className="text-2xl font-bold text-orange-600">
+            {metricas.ordensAbertas}
+          </div>
+          <Badge
+            variant={metricas.ordensAbertas > 0 ? 'destructive' : 'secondary'}
             className="mt-2"
           >
             {metricas.ordensAbertas > 0 ? 'Pendente' : 'Em dia'}
@@ -215,7 +241,7 @@ export default function MetricasCard({ className }: MetricasCardProps) {
       </Card>
 
       {/* Taxa de Conclusão */}
-      <Card className="hover:shadow-lg transition-shadow">
+      <Card className="transition-shadow hover:shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Taxa de Conclusão
@@ -227,11 +253,13 @@ export default function MetricasCard({ className }: MetricasCardProps) {
           )}
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${percentualConclusao >= 80 ? 'text-green-600' : 'text-red-600'}`}>
+          <div
+            className={`text-2xl font-bold ${percentualConclusao >= 80 ? 'text-green-600' : 'text-red-600'}`}
+          >
             {percentualConclusao}%
           </div>
-          <Badge 
-            variant={percentualConclusao >= 80 ? "default" : "destructive"}
+          <Badge
+            variant={percentualConclusao >= 80 ? 'default' : 'destructive'}
             className="mt-2"
           >
             {percentualConclusao >= 80 ? 'Excelente' : 'Atenção'}
@@ -240,7 +268,7 @@ export default function MetricasCard({ className }: MetricasCardProps) {
       </Card>
 
       {/* Faturamento Total */}
-      <Card className="hover:shadow-lg transition-shadow">
+      <Card className="transition-shadow hover:shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Faturamento Total
@@ -258,7 +286,7 @@ export default function MetricasCard({ className }: MetricasCardProps) {
       </Card>
 
       {/* Ticket Médio */}
-      <Card className="hover:shadow-lg transition-shadow">
+      <Card className="transition-shadow hover:shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Ticket Médio

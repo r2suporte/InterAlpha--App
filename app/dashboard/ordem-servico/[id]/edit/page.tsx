@@ -1,17 +1,20 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, AlertCircle } from 'lucide-react'
-import { OrdemServico, OrdemServicoFormData } from '@/types/ordens-servico'
-import OrdemServicoForm from '@/components/OrdemServicoForm'
-import { useLoadingState } from '@/components/ui/loading-states'
-import { useToast } from '@/components/ui/toast-system'
-import { PageLoading } from '@/components/ui/loading'
+import { useEffect, useState } from 'react';
+
+import { useParams, useRouter } from 'next/navigation';
+
+import { AlertCircle, ArrowLeft } from 'lucide-react';
+
+import OrdemServicoForm from '@/components/OrdemServicoForm';
+import { EnhancedSidebar } from '@/components/navigation/enhanced-sidebar';
+import { SiteHeader } from '@/components/site-header';
+import { Button } from '@/components/ui/button';
+import { PageLoading } from '@/components/ui/loading';
+import { useLoadingState } from '@/components/ui/loading-states';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { useToast } from '@/components/ui/toast-system';
+import { OrdemServico, OrdemServicoFormData } from '@/types/ordens-servico';
 
 // Função para converter OrdemServico para OrdemServicoFormData
 const convertToFormData = (ordem: OrdemServico): OrdemServicoFormData => {
@@ -40,58 +43,61 @@ const convertToFormData = (ordem: OrdemServico): OrdemServicoFormData => {
     observacoes_cliente: ordem.observacoes_cliente || '',
     observacoes_tecnico: ordem.observacoes_tecnico || '',
     garantia_servico_dias: ordem.garantia_servico_dias.toString(),
-    garantia_pecas_dias: ordem.garantia_pecas_dias.toString()
-  }
-}
+    garantia_pecas_dias: ordem.garantia_pecas_dias.toString(),
+  };
+};
 
 export default function EditOrdemServicoPage() {
-  const params = useParams()
-  const router = useRouter()
-  const [ordem, setOrdem] = useState<OrdemServico | null>(null)
-  const { isLoading, startLoading, stopLoading } = useLoadingState()
-  const { error: showError } = useToast()
-  const [error, setError] = useState<string | null>(null)
+  const params = useParams();
+  const router = useRouter();
+  const [ordem, setOrdem] = useState<OrdemServico | null>(null);
+  const { isLoading, startLoading, stopLoading } = useLoadingState();
+  const { error: showError } = useToast();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOrdem = async () => {
       try {
-        startLoading()
-        const response = await fetch(`/api/ordens-servico/${params.id}`)
-        
+        startLoading();
+        const response = await fetch(`/api/ordens-servico/${params.id}`);
+
         if (!response.ok) {
-          throw new Error('Ordem de serviço não encontrada')
+          throw new Error('Ordem de serviço não encontrada');
         }
-        
-        const data = await response.json()
-        setOrdem(data)
+
+        const data = await response.json();
+        setOrdem(data);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar ordem de serviço'
-        setError(errorMessage)
-        showError('Erro ao carregar ordem de serviço', errorMessage)
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : 'Erro ao carregar ordem de serviço';
+        setError(errorMessage);
+        showError('Erro ao carregar ordem de serviço', errorMessage);
       } finally {
-        stopLoading()
+        stopLoading();
       }
-    }
+    };
 
     if (params.id) {
-      fetchOrdem()
+      fetchOrdem();
     }
-  }, [params.id, startLoading, stopLoading, showError])
+  }, [params.id, startLoading, stopLoading, showError]);
 
   const handleSave = (dados: OrdemServicoFormData) => {
     // Aqui você pode implementar a lógica de salvamento
-    console.log('Dados salvos:', dados)
-    router.push(`/dashboard/ordem-servico/${params.id}`)
-  }
+    console.log('Dados salvos:', dados);
+    router.push(`/dashboard/ordem-servico/${params.id}`);
+  };
 
   const handleCancel = () => {
-    router.back()
-  }
+    router.back();
+  };
 
   if (isLoading) {
     return (
       <SidebarProvider>
-        <AppSidebar variant="inset" />
+        <EnhancedSidebar />
         <SidebarInset>
           <SiteHeader />
           <div className="flex flex-1 flex-col items-center justify-center">
@@ -99,44 +105,42 @@ export default function EditOrdemServicoPage() {
           </div>
         </SidebarInset>
       </SidebarProvider>
-    )
+    );
   }
 
   if (error || !ordem) {
     return (
       <SidebarProvider>
-        <AppSidebar variant="inset" />
+        <EnhancedSidebar />
         <SidebarInset>
           <SiteHeader />
           <div className="flex flex-1 flex-col items-center justify-center">
-            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Erro ao carregar</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <AlertCircle className="mb-4 h-12 w-12 text-red-500" />
+            <h2 className="mb-2 text-xl font-semibold text-gray-900">
+              Erro ao carregar
+            </h2>
+            <p className="mb-4 text-gray-600">{error}</p>
             <Button onClick={() => router.back()}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Voltar
             </Button>
           </div>
         </SidebarInset>
       </SidebarProvider>
-    )
+    );
   }
 
   return (
     <SidebarProvider>
-      <AppSidebar variant="inset" />
+      <EnhancedSidebar />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-6 p-6">
             {/* Header */}
             <div className="flex items-center gap-4">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleCancel}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={handleCancel}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
                 Voltar
               </Button>
               <div>
@@ -159,5 +163,5 @@ export default function EditOrdemServicoPage() {
         </div>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }

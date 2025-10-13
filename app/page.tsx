@@ -1,60 +1,122 @@
-import Link from 'next/link'
+import Link from 'next/link';
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:translate-y-1/4 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <h1 className="text-6xl font-bold">InterAlpha</h1>
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-6xl lg:w-full lg:mb-0 lg:grid-cols-2 lg:text-left gap-8">
-        {/* Portal do Cliente */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Portal do Cliente</h2>
-            <p className="text-gray-600 dark:text-gray-300">
-              Acompanhe suas ordens de serviço, aprove orçamentos e gerencie seus dados
-            </p>
-          </div>
-          
-          <div className="space-y-4">
-            <Link href="/portal/cliente/login" className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors text-center">
-              Acessar Portal do Cliente
-            </Link>
-            <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-              Use o login e senha enviados por email
-            </div>
-          </div>
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
+      {/* Header Section */}
+      <div className="relative pb-16 pt-20 text-center">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -right-32 -top-40 h-80 w-80 animate-pulse rounded-full bg-gradient-to-br from-blue-400 to-purple-600 opacity-20 mix-blend-multiply blur-xl filter"></div>
+          <div className="absolute -bottom-40 -left-32 h-80 w-80 animate-pulse rounded-full bg-gradient-to-br from-pink-400 to-red-600 opacity-20 mix-blend-multiply blur-xl filter delay-1000"></div>
         </div>
 
-        {/* Portal do Funcionário */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
-              </svg>
+        <div className="relative z-10 mx-auto max-w-4xl px-6">
+          <h1 className="mb-6 animate-pulse bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-7xl font-bold text-transparent md:text-8xl">
+            InterAlpha
+          </h1>
+          <p className="mx-auto max-w-2xl text-xl font-light text-gray-600 dark:text-gray-300 md:text-2xl">
+            Plataforma completa para gestão de serviços e relacionamento com
+            clientes
+          </p>
+        </div>
+      </div>
+
+      {/* Portals Section */}
+      <div className="mx-auto max-w-7xl px-6 pb-20">
+        <div className="grid items-stretch gap-8 md:grid-cols-2 lg:gap-12">
+          {/* Portal do Cliente */}
+          <div className="group relative h-full">
+            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 opacity-25 blur transition duration-1000 group-hover:opacity-75 group-hover:duration-200"></div>
+            <div className="relative flex h-full transform flex-col rounded-2xl border border-gray-100 bg-white p-8 shadow-2xl transition-all duration-300 hover:scale-105 dark:border-gray-700 dark:bg-gray-800 lg:p-10">
+              <div className="mb-8 flex-grow text-center">
+                <div className="relative mx-auto mb-6 h-20 w-20">
+                  <div className="absolute inset-0 rotate-6 transform rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600"></div>
+                  <div className="relative flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-r from-blue-400 to-blue-500 shadow-lg">
+                    <svg
+                      className="h-10 w-10 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <h2 className="mb-4 text-3xl font-bold text-gray-900 dark:text-white lg:text-4xl">
+                  Portal do Cliente
+                </h2>
+                <p className="text-lg leading-relaxed text-gray-600 dark:text-gray-300">
+                  Acompanhe suas ordens de serviço, aprove orçamentos e gerencie
+                  seus dados
+                </p>
+              </div>
+
+              <div className="mt-auto space-y-4">
+                <Link
+                  href="/portal/cliente/login"
+                  className="block w-full transform rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-4 text-center text-lg font-semibold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
+                >
+                  Acessar Portal do Cliente
+                </Link>
+                <div className="rounded-lg bg-gray-50 px-4 py-3 text-center text-sm text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                  Use o login e senha enviados por email
+                </div>
+              </div>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Portal do Funcionário</h2>
-            <p className="text-gray-600 dark:text-gray-300">
-              Gerencie ordens de serviço, clientes, equipamentos e relatórios
-            </p>
           </div>
-          
-          <div className="space-y-4">
-            <Link href="/auth/login" className="block w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors text-center">
-              Acessar Sistema
-            </Link>
+
+          {/* Portal do Funcionário */}
+          <div className="group relative h-full">
+            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-green-600 to-emerald-600 opacity-25 blur transition duration-1000 group-hover:opacity-75 group-hover:duration-200"></div>
+            <div className="relative flex h-full transform flex-col rounded-2xl border border-gray-100 bg-white p-8 shadow-2xl transition-all duration-300 hover:scale-105 dark:border-gray-700 dark:bg-gray-800 lg:p-10">
+              <div className="mb-8 flex-grow text-center">
+                <div className="relative mx-auto mb-6 h-20 w-20">
+                  <div className="absolute inset-0 rotate-6 transform rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600"></div>
+                  <div className="relative flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-r from-green-400 to-emerald-500 shadow-lg">
+                    <svg
+                      className="h-10 w-10 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <h2 className="mb-4 text-3xl font-bold text-gray-900 dark:text-white lg:text-4xl">
+                  Portal do Funcionário
+                </h2>
+                <p className="text-lg leading-relaxed text-gray-600 dark:text-gray-300">
+                  Gerencie ordens de serviço, clientes, equipamentos e
+                  relatórios
+                </p>
+              </div>
+
+              <div className="mt-auto space-y-4">
+                <Link
+                  href="/auth/login"
+                  className="block w-full transform rounded-xl bg-gradient-to-r from-green-600 to-emerald-700 px-8 py-4 text-center text-lg font-semibold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:from-green-700 hover:to-emerald-800 hover:shadow-xl"
+                >
+                  Acessar Sistema
+                </Link>
+                <div className="rounded-lg bg-gray-50 px-4 py-3 text-center text-sm text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                  Acesso restrito a funcionários autorizados
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </main>
-  )
+  );
 }

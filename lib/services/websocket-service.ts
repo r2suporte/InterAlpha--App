@@ -1,4 +1,4 @@
-import { io, Socket } from 'socket.io-client';
+import { Socket, io } from 'socket.io-client';
 
 export interface OrderStatusUpdate {
   orderId: string;
@@ -21,24 +21,35 @@ class WebSocketService {
   private socket: Socket | null = null;
   private isConnected = false;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectDelay = 1000;
+  private maxReconnectAttempts = 3;
+  private reconnectDelay = 2000;
+  private isReconnecting = false;
+  private shouldConnect = true;
 
   constructor() {
-    this.connect();
+    // Só conecta se estiver no browser e em desenvolvimento
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      this.connect();
+    }
   }
 
   private connect() {
+    if (!this.shouldConnect || this.isReconnecting) {
+      return;
+    }
+
     try {
       this.socket = io({
         path: '/api/socket',
         transports: ['websocket', 'polling'],
         upgrade: true,
         rememberUpgrade: true,
-        timeout: 20000,
+        timeout: 10000,
+        autoConnect: false, // Controle manual da conexão
       });
 
       this.setupEventListeners();
+      this.socket.connect();
     } catch (error) {
       console.error('Erro ao conectar WebSocket:', error);
       this.handleReconnect();
@@ -54,23 +65,23 @@ class WebSocketService {
       this.reconnectAttempts = 0;
     });
 
-    this.socket.on('disconnect', (reason) => {
+    this.socket.on('disconnect', reason => {
       console.log('WebSocket desconectado:', reason);
       this.isConnected = false;
-      
+
       if (reason === 'io server disconnect') {
         // Server disconnected, try to reconnect
         this.handleReconnect();
       }
     });
 
-    this.socket.on('connect_error', (error) => {
+    this.socket.on('connect_error', error => {
       console.error('Erro de conexão WebSocket:', error);
       this.isConnected = false;
       this.handleReconnect();
     });
 
-    this.socket.on('reconnect', (attemptNumber) => {
+    this.socket.on('reconnect', attemptNumber => {
       console.log('WebSocket reconectado após', attemptNumber, 'tentativas');
       this.isConnected = true;
       this.reconnectAttempts = 0;
@@ -78,19 +89,28 @@ class WebSocketService {
   }
 
   private handleReconnect() {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Máximo de tentativas de reconexão atingido');
+    if (this.reconnectAttempts >= this.maxReconnectAttempts || this.isReconnecting || !this.shouldConnect) {
+      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        console.warn('Máximo de tentativas de reconexão atingido. WebSocket desabilitado.');
+        this.shouldConnect = false;
+      }
       return;
     }
 
+    this.isReconnecting = true;
     this.reconnectAttempts++;
-    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-    
-    console.log(`Tentando reconectar em ${delay}ms (tentativa ${this.reconnectAttempts})`);
-    
+    const delay = this.reconnectDelay * this.reconnectAttempts;
+
+    console.log(
+      `Tentando reconectar em ${delay}ms (tentativa ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+    );
+
     setTimeout(() => {
-      if (!this.isConnected) {
+      if (!this.isConnected && this.shouldConnect) {
+        this.isReconnecting = false;
         this.connect();
+      } else {
+        this.isReconnecting = false;
       }
     }, delay);
   }
@@ -174,18 +194,36 @@ class WebSocketService {
   getConnectionStatus() {
     return {
       isConnected: this.isConnected,
-      socketId: this.socket?.id,
       reconnectAttempts: this.reconnectAttempts,
+      socketId: this.socket?.id,
+      shouldConnect: this.shouldConnect,
+      isReconnecting: this.isReconnecting,
     };
   }
 
-  // Disconnect
+  // Enable WebSocket connection
+  enableConnection() {
+    this.shouldConnect = true;
+    this.reconnectAttempts = 0;
+    if (!this.isConnected && typeof window !== 'undefined') {
+      this.connect();
+    }
+  }
+
+  // Disable WebSocket connection
+  disableConnection() {
+    this.shouldConnect = false;
+    this.disconnect();
+  }
+
+  // Disconnect and cleanup
   disconnect() {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
-      this.isConnected = false;
     }
+    this.isConnected = false;
+    this.isReconnecting = false;
   }
 }
 

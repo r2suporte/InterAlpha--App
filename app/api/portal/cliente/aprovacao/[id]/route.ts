@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { verifyClienteToken } from '@/lib/auth/client-middleware'
+import { NextRequest, NextResponse } from 'next/server';
+
+import { verifyClienteToken } from '@/lib/auth/client-middleware';
+import { createClient } from '@/lib/supabase/server';
 
 export async function PATCH(
   request: NextRequest,
@@ -8,52 +9,54 @@ export async function PATCH(
 ) {
   try {
     // Verificar autenticação do cliente
-    const clienteData = await verifyClienteToken(request)
+    const clienteData = await verifyClienteToken(request);
     if (!clienteData) {
       return NextResponse.json(
         { error: 'Token inválido ou expirado' },
         { status: 401 }
-      )
+      );
     }
 
-    const { acao, observacoes } = await request.json()
-    
+    const { acao, observacoes } = await request.json();
+
     if (!acao || !['aprovar', 'rejeitar'].includes(acao)) {
       return NextResponse.json(
         { error: 'Ação inválida. Use "aprovar" ou "rejeitar"' },
         { status: 400 }
-      )
+      );
     }
 
-    const supabase = await createClient()
-    const { id: aprovacaoId } = await params
+    const supabase = await createClient();
+    const { id: aprovacaoId } = await params;
 
     // Buscar aprovação e verificar se pertence ao cliente
     const { data: aprovacao, error: aprovacaoError } = await supabase
       .from('cliente_aprovacoes')
-      .select(`
+      .select(
+        `
         *,
         ordem_servico:ordens_servico(
           id,
           cliente_portal_id,
           numero_os
         )
-      `)
+      `
+      )
       .eq('id', aprovacaoId)
-      .single()
+      .single();
 
     if (aprovacaoError) {
       if (aprovacaoError.code === 'PGRST116') {
         return NextResponse.json(
           { error: 'Aprovação não encontrada' },
           { status: 404 }
-        )
+        );
       }
-      console.error('Erro ao buscar aprovação:', aprovacaoError)
+      console.error('Erro ao buscar aprovação:', aprovacaoError);
       return NextResponse.json(
         { error: 'Erro interno do servidor' },
         { status: 500 }
-      )
+      );
     }
 
     // Verificar se a aprovação pertence ao cliente autenticado
@@ -61,7 +64,7 @@ export async function PATCH(
       return NextResponse.json(
         { error: 'Você não tem permissão para esta aprovação' },
         { status: 403 }
-      )
+      );
     }
 
     // Verificar se a aprovação ainda está pendente
@@ -69,7 +72,7 @@ export async function PATCH(
       return NextResponse.json(
         { error: 'Esta aprovação já foi processada' },
         { status: 400 }
-      )
+      );
     }
 
     // Verificar se a aprovação não expirou
@@ -78,17 +81,17 @@ export async function PATCH(
       await supabase
         .from('cliente_aprovacoes')
         .update({ status: 'expirado' })
-        .eq('id', aprovacaoId)
+        .eq('id', aprovacaoId);
 
       return NextResponse.json(
         { error: 'Esta aprovação expirou' },
         { status: 400 }
-      )
+      );
     }
 
     // Processar aprovação
-    const novoStatus = acao === 'aprovar' ? 'aprovado' : 'rejeitado'
-    const agora = new Date().toISOString()
+    const novoStatus = acao === 'aprovar' ? 'aprovado' : 'rejeitado';
+    const agora = new Date().toISOString();
 
     const { error: updateError } = await supabase
       .from('cliente_aprovacoes')
@@ -96,33 +99,31 @@ export async function PATCH(
         status: novoStatus,
         observacoes_cliente: observacoes || null,
         aprovado_em: agora,
-        updated_at: agora
+        updated_at: agora,
       })
-      .eq('id', aprovacaoId)
+      .eq('id', aprovacaoId);
 
     if (updateError) {
-      console.error('Erro ao atualizar aprovação:', updateError)
+      console.error('Erro ao atualizar aprovação:', updateError);
       return NextResponse.json(
         { error: 'Erro ao processar aprovação' },
         { status: 500 }
-      )
+      );
     }
 
     // Registrar comunicação
     try {
-      await supabase
-        .from('comunicacoes_cliente')
-        .insert({
-          cliente_portal_id: clienteData.clienteId,
-          ordem_servico_id: aprovacao.ordem_servico_id,
-          tipo: 'aprovacao',
-          canal: 'portal',
-          conteudo: `${acao === 'aprovar' ? 'Aprovação' : 'Rejeição'} de ${aprovacao.tipo}: ${aprovacao.descricao}${observacoes ? `\nObservações: ${observacoes}` : ''}`,
-          status: 'enviado',
-          enviado_em: agora
-        })
+      await supabase.from('comunicacoes_cliente').insert({
+        cliente_portal_id: clienteData.clienteId,
+        ordem_servico_id: aprovacao.ordem_servico_id,
+        tipo: 'aprovacao',
+        canal: 'portal',
+        conteudo: `${acao === 'aprovar' ? 'Aprovação' : 'Rejeição'} de ${aprovacao.tipo}: ${aprovacao.descricao}${observacoes ? `\nObservações: ${observacoes}` : ''}`,
+        status: 'enviado',
+        enviado_em: agora,
+      });
     } catch (error) {
-      console.error('Erro ao registrar comunicação:', error)
+      console.error('Erro ao registrar comunicação:', error);
       // Não falhar a operação por causa disso
     }
 
@@ -135,15 +136,14 @@ export async function PATCH(
       aprovacao: {
         id: aprovacao.id,
         status: novoStatus,
-        aprovado_em: agora
-      }
-    })
-
+        aprovado_em: agora,
+      },
+    });
   } catch (error) {
-    console.error('Erro na API de aprovação:', error)
+    console.error('Erro na API de aprovação:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
-    )
+    );
   }
 }

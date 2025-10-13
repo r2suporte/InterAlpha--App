@@ -11,21 +11,21 @@ async function debugTriggers() {
 
   try {
     // Usar SQL direto para buscar triggers
-    const { data, error } = await supabase
-      .from('pg_trigger')
-      .select(`
+    const { data, error } = await supabase.from('pg_trigger').select(`
         tgname,
         tgrelid,
         tgfoid,
         tgenabled
       `);
-    
+
     if (error) {
       console.log('Erro ao buscar triggers via tabela:', error);
-      
+
       // Tentar uma abordagem diferente - inserir diretamente e capturar o erro detalhado
-      console.log('\n🧪 Tentando inserção direta para capturar erro detalhado...');
-      
+      console.log(
+        '\n🧪 Tentando inserção direta para capturar erro detalhado...'
+      );
+
       const { data: insertData, error: insertError } = await supabase
         .from('ordens_servico')
         .insert({
@@ -34,20 +34,21 @@ async function debugTriggers() {
           descricao: 'Teste para debug',
           status: 'aberta',
           prioridade: 'media',
-          valor_servico: 50.00
+          valor_servico: 50.0,
         })
         .select();
-        
+
       if (insertError) {
-        console.log('❌ Erro detalhado na inserção:', JSON.stringify(insertError, null, 2));
+        console.log(
+          '❌ Erro detalhado na inserção:',
+          JSON.stringify(insertError, null, 2)
+        );
       } else {
         console.log('✅ Inserção bem-sucedida!', insertData);
       }
-      
     } else {
       console.log('Triggers encontrados:', data);
     }
-
   } catch (error) {
     console.error('Erro geral:', error);
   }

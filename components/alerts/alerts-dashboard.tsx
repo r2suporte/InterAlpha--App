@@ -1,22 +1,30 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useEffect, useState } from 'react';
+
+import {
+  AlertCircle,
+  AlertTriangle,
+  Bell,
+  BellOff,
+  CheckCircle,
+  Clock,
+  Eye,
+  RefreshCw,
+  Settings,
+} from 'lucide-react';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  AlertTriangle, 
-  AlertCircle, 
-  CheckCircle, 
-  Clock, 
-  Eye,
-  Settings,
-  RefreshCw,
-  Bell,
-  BellOff
-} from 'lucide-react';
 
 interface Alert {
   id: string;
@@ -71,7 +79,7 @@ export default function AlertsDashboard() {
     try {
       const response = await fetch('/api/alerts');
       const data = await response.json();
-      
+
       if (data.success) {
         setAlertsData(data.data);
         setError(null);
@@ -88,7 +96,7 @@ export default function AlertsDashboard() {
     try {
       const response = await fetch('/api/alerts/rules');
       const data = await response.json();
-      
+
       if (data.success) {
         setRules(data.data);
       } else {
@@ -108,12 +116,12 @@ export default function AlertsDashboard() {
         },
         body: JSON.stringify({
           action: 'acknowledge',
-          acknowledged_by: 'current_user' // Em um app real, viria do contexto de autenticação
+          acknowledged_by: 'current_user', // Em um app real, viria do contexto de autenticação
         }),
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         await fetchAlerts(); // Recarregar alertas
       } else {
@@ -133,12 +141,12 @@ export default function AlertsDashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'resolve'
+          action: 'resolve',
         }),
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         await fetchAlerts(); // Recarregar alertas
       } else {
@@ -161,7 +169,7 @@ export default function AlertsDashboard() {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         await fetchRules(); // Recarregar regras
       } else {
@@ -180,7 +188,7 @@ export default function AlertsDashboard() {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         await fetchAlerts(); // Recarregar alertas após verificação
       } else {
@@ -293,14 +301,14 @@ export default function AlertsDashboard() {
             size="sm"
             onClick={() => setAutoRefresh(!autoRefresh)}
           >
-            {autoRefresh ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
+            {autoRefresh ? (
+              <Bell className="h-4 w-4" />
+            ) : (
+              <BellOff className="h-4 w-4" />
+            )}
             {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={checkAlerts}
-          >
+          <Button variant="outline" size="sm" onClick={checkAlerts}>
             <RefreshCw className="h-4 w-4" />
             Verificar Alertas
           </Button>
@@ -317,20 +325,26 @@ export default function AlertsDashboard() {
 
       {/* Stats Cards */}
       {alertsData && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Alertas</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total de Alertas
+              </CardTitle>
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{alertsData.stats.total_alerts}</div>
+              <div className="text-2xl font-bold">
+                {alertsData.stats.total_alerts}
+              </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Alertas Ativos</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Alertas Ativos
+              </CardTitle>
               <AlertTriangle className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
@@ -342,7 +356,9 @@ export default function AlertsDashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Alertas Críticos</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Alertas Críticos
+              </CardTitle>
               <AlertTriangle className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
@@ -354,7 +370,9 @@ export default function AlertsDashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tempo Médio de Resolução</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Tempo Médio de Resolução
+              </CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -379,7 +397,7 @@ export default function AlertsDashboard() {
             <Card>
               <CardContent className="flex items-center justify-center py-8">
                 <div className="text-center">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                  <CheckCircle className="mx-auto mb-4 h-12 w-12 text-green-500" />
                   <h3 className="text-lg font-semibold">Nenhum alerta ativo</h3>
                   <p className="text-muted-foreground">
                     Todos os sistemas estão funcionando normalmente
@@ -389,17 +407,22 @@ export default function AlertsDashboard() {
             </Card>
           ) : (
             <div className="space-y-4">
-              {alertsData?.alerts.map((alert) => (
+              {alertsData?.alerts.map(alert => (
                 <Card key={alert.id} className="border-l-4 border-l-red-500">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         {getSeverityIcon(alert.severity)}
-                        <CardTitle className="text-lg">{alert.rule_name}</CardTitle>
+                        <CardTitle className="text-lg">
+                          {alert.rule_name}
+                        </CardTitle>
                         <Badge className={getSeverityColor(alert.severity)}>
                           {alert.severity.toUpperCase()}
                         </Badge>
-                        <Badge variant="outline" className="flex items-center space-x-1">
+                        <Badge
+                          variant="outline"
+                          className="flex items-center space-x-1"
+                        >
                           {getStatusIcon(alert.status)}
                           <span>{alert.status.toUpperCase()}</span>
                         </Badge>
@@ -412,7 +435,7 @@ export default function AlertsDashboard() {
                               size="sm"
                               onClick={() => acknowledgeAlert(alert.id)}
                             >
-                              <Eye className="h-4 w-4 mr-1" />
+                              <Eye className="mr-1 h-4 w-4" />
                               Reconhecer
                             </Button>
                             <Button
@@ -420,7 +443,7 @@ export default function AlertsDashboard() {
                               size="sm"
                               onClick={() => resolveAlert(alert.id)}
                             >
-                              <CheckCircle className="h-4 w-4 mr-1" />
+                              <CheckCircle className="mr-1 h-4 w-4" />
                               Resolver
                             </Button>
                           </>
@@ -428,19 +451,25 @@ export default function AlertsDashboard() {
                       </div>
                     </div>
                     <CardDescription>
-                      Métrica: {alert.metric} | Valor atual: {alert.current_value} | 
-                      Limite: {alert.threshold}
+                      Métrica: {alert.metric} | Valor atual:{' '}
+                      {alert.current_value} | Limite: {alert.threshold}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm mb-4">{alert.message}</p>
+                    <p className="mb-4 text-sm">{alert.message}</p>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Disparado em: {formatDate(alert.triggered_at)}</span>
+                      <span>
+                        Disparado em: {formatDate(alert.triggered_at)}
+                      </span>
                       {alert.acknowledged_at && (
-                        <span>Reconhecido em: {formatDate(alert.acknowledged_at)}</span>
+                        <span>
+                          Reconhecido em: {formatDate(alert.acknowledged_at)}
+                        </span>
                       )}
                       {alert.resolved_at && (
-                        <span>Resolvido em: {formatDate(alert.resolved_at)}</span>
+                        <span>
+                          Resolvido em: {formatDate(alert.resolved_at)}
+                        </span>
                       )}
                     </div>
                   </CardContent>
@@ -453,7 +482,7 @@ export default function AlertsDashboard() {
         {/* Rules Tab */}
         <TabsContent value="rules" className="space-y-4">
           <div className="space-y-4">
-            {rules.map((rule) => (
+            {rules.map(rule => (
               <Card key={rule.id}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -463,8 +492,8 @@ export default function AlertsDashboard() {
                       <Badge className={getSeverityColor(rule.severity)}>
                         {rule.severity.toUpperCase()}
                       </Badge>
-                      <Badge variant={rule.enabled ? "default" : "secondary"}>
-                        {rule.enabled ? "ATIVA" : "INATIVA"}
+                      <Badge variant={rule.enabled ? 'default' : 'secondary'}>
+                        {rule.enabled ? 'ATIVA' : 'INATIVA'}
                       </Badge>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -473,7 +502,7 @@ export default function AlertsDashboard() {
                         size="sm"
                         onClick={() => toggleRule(rule.id, !rule.enabled)}
                       >
-                        {rule.enabled ? "Desativar" : "Ativar"}
+                        {rule.enabled ? 'Desativar' : 'Ativar'}
                       </Button>
                       <Button variant="outline" size="sm">
                         <Settings className="h-4 w-4" />
@@ -483,7 +512,7 @@ export default function AlertsDashboard() {
                   <CardDescription>{rule.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
                     <div>
                       <span className="font-medium">Métrica:</span>
                       <p className="text-muted-foreground">{rule.metric}</p>
@@ -496,12 +525,18 @@ export default function AlertsDashboard() {
                     </div>
                     <div>
                       <span className="font-medium">Cooldown:</span>
-                      <p className="text-muted-foreground">{rule.cooldown_minutes} min</p>
+                      <p className="text-muted-foreground">
+                        {rule.cooldown_minutes} min
+                      </p>
                     </div>
                     <div>
                       <span className="font-medium">Status:</span>
-                      <p className={rule.enabled ? "text-green-600" : "text-gray-500"}>
-                        {rule.enabled ? "Ativa" : "Inativa"}
+                      <p
+                        className={
+                          rule.enabled ? 'text-green-600' : 'text-gray-500'
+                        }
+                      >
+                        {rule.enabled ? 'Ativa' : 'Inativa'}
                       </p>
                     </div>
                   </div>

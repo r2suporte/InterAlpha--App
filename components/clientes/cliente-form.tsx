@@ -1,73 +1,81 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { InputMask } from '@/components/ui/input-mask'
-import { DocumentSelector } from '@/components/ui/document-selector'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, AlertCircle } from 'lucide-react'
-import { 
-  ResponsiveGrid, 
-  ResponsiveStack, 
-  CollapsibleSection,
-  useBreakpoint 
-} from '@/components/ui/responsive-utils'
+import { useEffect, useState } from 'react';
+
+import { AlertCircle, Loader2 } from 'lucide-react';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { DocumentSelector } from '@/components/ui/document-selector';
+import { Input } from '@/components/ui/input';
+import { InputMask } from '@/components/ui/input-mask';
+import { Label } from '@/components/ui/label';
 import {
-  validarCpfCnpj,
+  CollapsibleSection,
+  ResponsiveGrid,
+  ResponsiveStack,
+  useBreakpoint,
+} from '@/components/ui/responsive-utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  type CNPJResponse,
+  type EnderecoCompleto,
+  type TipoPessoa,
+  type ViaCepResponse,
+  buscarDadosCNPJ,
+  buscarEnderecoPorCEP,
+  determinarTipoPessoa,
+  formatarCEP,
   formatarCpfCnpj,
   formatarTelefone,
-  formatarCEP,
-  validarEmail,
-  validarCEP,
-  buscarEnderecoPorCEP,
-  buscarDadosCNPJ,
-  determinarTipoPessoa,
   getMascaraCpfCnpj,
   limparDocumento,
+  validarCEP,
   validarCamposObrigatorios,
-  type TipoPessoa,
-  type EnderecoCompleto,
-  type ViaCepResponse,
-  type CNPJResponse
-} from '@/lib/validators'
+  validarCpfCnpj,
+  validarEmail,
+} from '@/lib/validators';
 
 interface FormData {
-  nome: string
-  email: string
-  telefone: string
-  cpf_cnpj: string
-  tipo_pessoa: TipoPessoa
-  cep: string
-  logradouro: string
-  numero: string
-  complemento: string
-  bairro: string
-  cidade: string
-  estado: string
-  observacoes: string
+  nome: string;
+  email: string;
+  telefone: string;
+  cpf_cnpj: string;
+  tipo_pessoa: TipoPessoa;
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  observacoes: string;
 }
 
 interface ClienteFormProps {
-  initialData?: Partial<FormData>
-  onSubmit: (data: FormData) => Promise<void>
-  onCancel: () => void
-  isLoading?: boolean
-  title: string
+  initialData?: Partial<FormData>;
+  onSubmit: (data: FormData) => Promise<void>;
+  onCancel: () => void;
+  isLoading?: boolean;
+  title: string;
 }
 
-export function ClienteForm({ 
-  initialData, 
-  onSubmit, 
-  onCancel, 
+export function ClienteForm({
+  initialData,
+  onSubmit,
+  onCancel,
   isLoading = false,
-  title 
+  title,
 }: ClienteFormProps) {
-  const { isMobile } = useBreakpoint()
-  
+  const { isMobile } = useBreakpoint();
+
   const [formData, setFormData] = useState<FormData>({
     nome: '',
     email: '',
@@ -82,120 +90,129 @@ export function ClienteForm({
     cidade: '',
     estado: '',
     observacoes: '',
-    ...initialData
-  })
+    ...initialData,
+  });
 
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [isLoadingCep, setIsLoadingCep] = useState(false)
-  const [isLoadingCnpj, setIsLoadingCnpj] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const [isLoadingCnpj, setIsLoadingCnpj] = useState(false);
 
   const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }))
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
-  }
+  };
 
   const handleCepChange = async (cep: string) => {
-    const cepLimpo = cep.replace(/\D/g, '')
-    handleInputChange('cep', formatarCEP(cep))
+    const cepLimpo = cep.replace(/\D/g, '');
+    handleInputChange('cep', formatarCEP(cep));
 
     if (cepLimpo.length === 8 && validarCEP(cepLimpo)) {
-      setIsLoadingCep(true)
+      setIsLoadingCep(true);
       try {
-        const endereco = await buscarEnderecoPorCEP(cepLimpo)
+        const endereco = await buscarEnderecoPorCEP(cepLimpo);
         if (endereco) {
           setFormData(prev => ({
             ...prev,
             logradouro: endereco.logradouro || '',
             bairro: endereco.bairro || '',
             cidade: endereco.localidade || '',
-            estado: endereco.uf || ''
-          }))
+            estado: endereco.uf || '',
+          }));
         }
       } catch (error) {
-        console.error('Erro ao buscar CEP:', error)
+        console.error('Erro ao buscar CEP:', error);
       } finally {
-        setIsLoadingCep(false)
+        setIsLoadingCep(false);
       }
     }
-  }
+  };
 
   const handleDocumentChange = async (documento: string) => {
-    const docLimpo = limparDocumento(documento)
-    const tipoPessoa = determinarTipoPessoa(docLimpo)
-    
+    const docLimpo = limparDocumento(documento);
+    const tipoPessoa = determinarTipoPessoa(docLimpo);
+
     setFormData(prev => ({
       ...prev,
       cpf_cnpj: formatarCpfCnpj(documento, tipoPessoa),
-      tipo_pessoa: tipoPessoa
-    }))
+      tipo_pessoa: tipoPessoa,
+    }));
 
-    if (tipoPessoa === 'juridica' && docLimpo.length === 14 && validarCpfCnpj(docLimpo, tipoPessoa)) {
-      setIsLoadingCnpj(true)
+    if (
+      tipoPessoa === 'juridica' &&
+      docLimpo.length === 14 &&
+      validarCpfCnpj(docLimpo, tipoPessoa)
+    ) {
+      setIsLoadingCnpj(true);
       try {
-        const dadosCnpj = await buscarDadosCNPJ(docLimpo)
+        const dadosCnpj = await buscarDadosCNPJ(docLimpo);
         if (dadosCnpj && dadosCnpj.endereco) {
           setFormData(prev => ({
             ...prev,
             nome: dadosCnpj.nome || prev.nome,
             email: dadosCnpj.email || prev.email,
             telefone: dadosCnpj.telefone || prev.telefone,
-            cep: dadosCnpj.endereco?.cep ? formatarCEP(dadosCnpj.endereco.cep) : prev.cep,
+            cep: dadosCnpj.endereco?.cep
+              ? formatarCEP(dadosCnpj.endereco.cep)
+              : prev.cep,
             logradouro: dadosCnpj.endereco?.logradouro || prev.logradouro,
             numero: dadosCnpj.endereco?.numero || prev.numero,
             complemento: dadosCnpj.endereco?.complemento || prev.complemento,
             bairro: dadosCnpj.endereco?.bairro || prev.bairro,
             cidade: dadosCnpj.endereco?.municipio || prev.cidade,
-            estado: dadosCnpj.endereco?.uf || prev.estado
-          }))
+            estado: dadosCnpj.endereco?.uf || prev.estado,
+          }));
         }
       } catch (error) {
-        console.error('Erro ao buscar CNPJ:', error)
+        console.error('Erro ao buscar CNPJ:', error);
       } finally {
-        setIsLoadingCnpj(false)
+        setIsLoadingCnpj(false);
       }
     }
-  }
+  };
 
   const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {}
+    const newErrors: Record<string, string> = {};
 
     if (!formData.nome.trim()) {
-      newErrors.nome = 'Nome é obrigatório'
+      newErrors.nome = 'Nome é obrigatório';
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email é obrigatório'
+      newErrors.email = 'Email é obrigatório';
     } else if (!validarEmail(formData.email)) {
-      newErrors.email = 'Email inválido'
+      newErrors.email = 'Email inválido';
     }
 
-    if (formData.cpf_cnpj && !validarCpfCnpj(limparDocumento(formData.cpf_cnpj), formData.tipo_pessoa)) {
-      newErrors.cpf_cnpj = 'CPF/CNPJ inválido'
+    if (
+      formData.cpf_cnpj &&
+      !validarCpfCnpj(limparDocumento(formData.cpf_cnpj), formData.tipo_pessoa)
+    ) {
+      newErrors.cpf_cnpj = 'CPF/CNPJ inválido';
     }
 
     if (formData.cep && !validarCEP(formData.cep.replace(/\D/g, ''))) {
-      newErrors.cep = 'CEP inválido'
+      newErrors.cep = 'CEP inválido';
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (!validateForm()) {
-      return
+      return;
     }
 
     try {
-      await onSubmit(formData)
+      await onSubmit(formData);
     } catch (error) {
-      console.error('Erro ao salvar cliente:', error)
+      console.error('Erro ao salvar cliente:', error);
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -214,7 +231,7 @@ export function ClienteForm({
             <Input
               id="nome"
               value={formData.nome}
-              onChange={(e) => handleInputChange('nome', e.target.value)}
+              onChange={e => handleInputChange('nome', e.target.value)}
               placeholder="Nome completo"
               className={errors.nome ? 'border-red-500' : ''}
             />
@@ -229,7 +246,7 @@ export function ClienteForm({
               id="email"
               type="email"
               value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
+              onChange={e => handleInputChange('email', e.target.value)}
               placeholder="email@exemplo.com"
               className={errors.email ? 'border-red-500' : ''}
             />
@@ -244,7 +261,7 @@ export function ClienteForm({
               id="telefone"
               mask="(99) 99999-9999"
               value={formData.telefone}
-              onChange={(e) => handleInputChange('telefone', e.target.value)}
+              onChange={e => handleInputChange('telefone', e.target.value)}
               placeholder="(11) 99999-9999"
             />
           </div>
@@ -259,7 +276,7 @@ export function ClienteForm({
                 className={errors.cpf_cnpj ? 'border-red-500' : ''}
               />
               {isLoadingCnpj && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 transform">
                   <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
               )}
@@ -282,12 +299,12 @@ export function ClienteForm({
                   id="cep"
                   mask="99999-999"
                   value={formData.cep}
-                  onChange={(e) => handleCepChange(e.target.value)}
+                  onChange={e => handleCepChange(e.target.value)}
                   placeholder="00000-000"
                   className={errors.cep ? 'border-red-500' : ''}
                 />
                 {isLoadingCep && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 transform">
                     <Loader2 className="h-4 w-4 animate-spin" />
                   </div>
                 )}
@@ -304,7 +321,7 @@ export function ClienteForm({
               <Input
                 id="logradouro"
                 value={formData.logradouro}
-                onChange={(e) => handleInputChange('logradouro', e.target.value)}
+                onChange={e => handleInputChange('logradouro', e.target.value)}
                 placeholder="Rua, Avenida, etc."
               />
             </div>
@@ -314,7 +331,7 @@ export function ClienteForm({
               <Input
                 id="numero"
                 value={formData.numero}
-                onChange={(e) => handleInputChange('numero', e.target.value)}
+                onChange={e => handleInputChange('numero', e.target.value)}
                 placeholder="123"
               />
             </div>
@@ -324,7 +341,7 @@ export function ClienteForm({
               <Input
                 id="complemento"
                 value={formData.complemento}
-                onChange={(e) => handleInputChange('complemento', e.target.value)}
+                onChange={e => handleInputChange('complemento', e.target.value)}
                 placeholder="Apto, Sala, etc."
               />
             </div>
@@ -334,7 +351,7 @@ export function ClienteForm({
               <Input
                 id="bairro"
                 value={formData.bairro}
-                onChange={(e) => handleInputChange('bairro', e.target.value)}
+                onChange={e => handleInputChange('bairro', e.target.value)}
                 placeholder="Nome do bairro"
               />
             </div>
@@ -344,7 +361,7 @@ export function ClienteForm({
               <Input
                 id="cidade"
                 value={formData.cidade}
-                onChange={(e) => handleInputChange('cidade', e.target.value)}
+                onChange={e => handleInputChange('cidade', e.target.value)}
                 placeholder="Nome da cidade"
               />
             </div>
@@ -354,7 +371,7 @@ export function ClienteForm({
               <Input
                 id="estado"
                 value={formData.estado}
-                onChange={(e) => handleInputChange('estado', e.target.value)}
+                onChange={e => handleInputChange('estado', e.target.value)}
                 placeholder="UF"
                 maxLength={2}
               />
@@ -370,7 +387,7 @@ export function ClienteForm({
           <Textarea
             id="observacoes"
             value={formData.observacoes}
-            onChange={(e) => handleInputChange('observacoes', e.target.value)}
+            onChange={e => handleInputChange('observacoes', e.target.value)}
             placeholder="Informações adicionais sobre o cliente..."
             rows={4}
           />
@@ -388,15 +405,11 @@ export function ClienteForm({
         >
           Cancelar
         </Button>
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="w-full sm:w-auto"
-        >
+        <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Salvar Cliente
         </Button>
       </ResponsiveStack>
     </form>
-  )
+  );
 }

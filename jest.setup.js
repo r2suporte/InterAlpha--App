@@ -1,17 +1,17 @@
 // Jest setup file
-import '@testing-library/jest-dom'
+import '@testing-library/jest-dom';
 
 // Polyfill para setImmediate (necessário para Nodemailer em ambiente de teste)
 if (typeof global.setImmediate === 'undefined') {
   global.setImmediate = (callback, ...args) => {
-    return setTimeout(callback, 0, ...args)
-  }
+    return setTimeout(callback, 0, ...args);
+  };
 }
 
 if (typeof global.clearImmediate === 'undefined') {
-  global.clearImmediate = (id) => {
-    clearTimeout(id)
-  }
+  global.clearImmediate = id => {
+    clearTimeout(id);
+  };
 }
 
 // Mock Next.js router
@@ -34,9 +34,9 @@ jest.mock('next/router', () => ({
         emit: jest.fn(),
       },
       isFallback: false,
-    }
+    };
   },
-}))
+}));
 
 // Mock Next.js navigation
 jest.mock('next/navigation', () => ({
@@ -48,24 +48,30 @@ jest.mock('next/navigation', () => ({
       back: jest.fn(),
       forward: jest.fn(),
       refresh: jest.fn(),
-    }
+    };
   },
   useSearchParams() {
-    return new URLSearchParams()
+    return new URLSearchParams();
   },
   usePathname() {
-    return '/'
+    return '/';
   },
-}))
+}));
 
 // Mock Supabase client
 jest.mock('@/lib/supabase/client', () => ({
   createClient: jest.fn(() => ({
     auth: {
-      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      getUser: jest
+        .fn()
+        .mockResolvedValue({ data: { user: null }, error: null }),
       signOut: jest.fn().mockResolvedValue({ error: null }),
-      signInWithPassword: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
-      signUp: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      signInWithPassword: jest
+        .fn()
+        .mockResolvedValue({ data: { user: null }, error: null }),
+      signUp: jest
+        .fn()
+        .mockResolvedValue({ data: { user: null }, error: null }),
     },
     from: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),
@@ -79,15 +85,15 @@ jest.mock('@/lib/supabase/client', () => ({
 }));
 
 // Mock environment variables
-process.env.NODE_ENV = 'test'
-process.env.NEXTAUTH_SECRET = 'test-secret'
+process.env.NODE_ENV = 'test';
+process.env.NEXTAUTH_SECRET = 'test-secret';
 
 // Global test utilities
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
   disconnect: jest.fn(),
-}))
+}));
 
 // Mock window.matchMedia (only in jsdom environment)
 if (typeof window !== 'undefined') {
@@ -103,7 +109,7 @@ if (typeof window !== 'undefined') {
       removeEventListener: jest.fn(),
       dispatchEvent: jest.fn(),
     })),
-  })
+  });
 }
 
 // Mock IntersectionObserver
@@ -111,22 +117,22 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
   disconnect: jest.fn(),
-}))
+}));
 
 // Suppress console errors during tests (optional)
-const originalError = console.error
+const originalError = console.error;
 beforeAll(() => {
   console.error = (...args) => {
     if (
       typeof args[0] === 'string' &&
       args[0].includes('Warning: ReactDOM.render is no longer supported')
     ) {
-      return
+      return;
     }
-    originalError.call(console, ...args)
-  }
-})
+    originalError.call(console, ...args);
+  };
+});
 
 afterAll(() => {
-  console.error = originalError
-})
+  console.error = originalError;
+});

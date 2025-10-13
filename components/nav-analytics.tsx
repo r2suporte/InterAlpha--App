@@ -1,13 +1,14 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import { ChevronRightIcon, type LucideIcon } from "lucide-react"
+import * as React from 'react';
+
+import { ChevronRightIcon, type LucideIcon } from 'lucide-react';
 
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from '@/components/ui/collapsible';
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -17,26 +18,26 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-} from "@/components/ui/sidebar"
+} from '@/components/ui/sidebar';
 
 export function NavAnalytics({
   items,
 }: {
   items: {
-    title: string
-    url: string
-    icon?: LucideIcon
+    title: string;
+    url: string;
+    icon?: LucideIcon;
     items?: {
-      title: string
-      url: string
-    }[]
-  }[]
+      title: string;
+      url: string;
+    }[];
+  }[];
 }) {
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Analytics</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => (
+        {items.map(item => (
           <Collapsible
             key={item.title}
             asChild
@@ -53,7 +54,7 @@ export function NavAnalytics({
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <SidebarMenuSub>
-                  {item.items?.map((subItem) => (
+                  {item.items?.map(subItem => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild>
                         <a href={subItem.url}>
@@ -69,5 +70,5 @@ export function NavAnalytics({
         ))}
       </SidebarMenu>
     </SidebarGroup>
-  )
+  );
 }

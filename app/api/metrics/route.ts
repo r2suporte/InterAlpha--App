@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { metricsService } from '@/lib/services/metrics-service';
+
 import { withMetricsCache } from '@/lib/middleware/cache-middleware';
+import {
+  withAuthenticatedApiLogging,
+  withMetricsLogging,
+} from '@/lib/middleware/logging-middleware';
+import {
+  withAuthenticatedApiMetrics,
+  withMetricsApiMetrics,
+} from '@/lib/middleware/metrics-middleware';
 import { CACHE_TTL } from '@/lib/services/cache-service';
-import { withMetricsLogging, withAuthenticatedApiLogging } from '@/lib/middleware/logging-middleware'
-import { withMetricsApiMetrics, withAuthenticatedApiMetrics } from '@/lib/middleware/metrics-middleware';
+import { metricsService } from '@/lib/services/metrics-service';
+import { createClient } from '@/lib/supabase/server';
 
 // 📊 Interface para resposta da API
 interface MetricsResponse {
@@ -36,9 +43,12 @@ interface MetricsResponse {
 }
 
 // 🎯 Calcular tendência baseada em dados históricos
-function calculateTrend(currentHour: number, previousHour: number): 'up' | 'down' | 'stable' {
+function calculateTrend(
+  currentHour: number,
+  previousHour: number
+): 'up' | 'down' | 'stable' {
   const change = ((currentHour - previousHour) / previousHour) * 100;
-  
+
   if (change > 10) return 'up';
   if (change < -10) return 'down';
   return 'stable';
@@ -46,8 +56,8 @@ function calculateTrend(currentHour: number, previousHour: number): 'up' | 'down
 
 // 🏥 Determinar status de saúde baseado em métricas
 function determineHealthStatus(
-  successRate: number, 
-  averageResponseTime: number, 
+  successRate: number,
+  averageResponseTime: number,
   errorCount: number
 ): { status: 'healthy' | 'warning' | 'critical'; issues: string[] } {
   const issues: string[] = [];
@@ -88,7 +98,7 @@ function detectAnomalies(services: any[]): Array<{
 
   services.forEach(service => {
     // Anomalia: Taxa de erro alta
-    const errorRate = ((service.errorCount / service.totalOperations) * 100);
+    const errorRate = (service.errorCount / service.totalOperations) * 100;
     if (errorRate > 2) {
       anomalies.push({
         service: service.service,
@@ -96,7 +106,7 @@ function detectAnomalies(services: any[]): Array<{
         value: parseFloat(errorRate.toFixed(2)),
         threshold: 2.0,
         severity: errorRate > 5 ? 'critical' : 'warning',
-        timestamp: now
+        timestamp: now,
       });
     }
 
@@ -108,7 +118,7 @@ function detectAnomalies(services: any[]): Array<{
         value: service.averageResponseTime,
         threshold: 3000,
         severity: service.averageResponseTime > 5000 ? 'critical' : 'warning',
-        timestamp: now
+        timestamp: now,
       });
     }
 
@@ -120,7 +130,7 @@ function detectAnomalies(services: any[]): Array<{
         value: service.successRate,
         threshold: 95.0,
         severity: service.successRate < 90 ? 'critical' : 'warning',
-        timestamp: now
+        timestamp: now,
       });
     }
   });
@@ -143,41 +153,58 @@ async function getMetrics(request: NextRequest) {
     // Obter estatísticas de cada serviço
     const services = ['email', 'sms', 'whatsapp', 'communication'];
     const serviceMetrics = await Promise.all(
-      services.map(async (service) => {
-        const stats = await metricsService.getPerformanceStats(service, timeRange as '1h' | '24h' | '7d');
-        
+      services.map(async service => {
+        const stats = await metricsService.getPerformanceStats(
+          service,
+          timeRange as '1h' | '24h' | '7d'
+        );
+
         // Agregar estatísticas por serviço
-        const serviceStats = stats.reduce((acc, stat) => {
-          acc.totalRequests += stat.totalRequests;
-          acc.errorCount += stat.errorCount;
-          acc.lastHour.requests += stat.lastHour.requests;
-          acc.lastDay.requests += stat.lastDay.requests;
-          
-          // Calcular médias ponderadas
-          const totalOps = acc.totalRequests || 1;
-          acc.averageResponseTime = ((acc.averageResponseTime * (totalOps - stat.totalRequests)) + 
-                                   (stat.averageResponseTime * stat.totalRequests)) / totalOps;
-          acc.p95ResponseTime = Math.max(acc.p95ResponseTime, stat.p95ResponseTime);
-          
-          return acc;
-        }, {
-          totalRequests: 0,
-          errorCount: 0,
-          averageResponseTime: 0,
-          p95ResponseTime: 0,
-          successRate: 0,
-          lastHour: { requests: 0, errors: 0, avgResponseTime: 0 },
-          lastDay: { requests: 0, errors: 0, avgResponseTime: 0 }
-        });
+        const serviceStats = stats.reduce(
+          (acc, stat) => {
+            acc.totalRequests += stat.totalRequests;
+            acc.errorCount += stat.errorCount;
+            acc.lastHour.requests += stat.lastHour.requests;
+            acc.lastDay.requests += stat.lastDay.requests;
+
+            // Calcular médias ponderadas
+            const totalOps = acc.totalRequests || 1;
+            acc.averageResponseTime =
+              (acc.averageResponseTime * (totalOps - stat.totalRequests) +
+                stat.averageResponseTime * stat.totalRequests) /
+              totalOps;
+            acc.p95ResponseTime = Math.max(
+              acc.p95ResponseTime,
+              stat.p95ResponseTime
+            );
+
+            return acc;
+          },
+          {
+            totalRequests: 0,
+            errorCount: 0,
+            averageResponseTime: 0,
+            p95ResponseTime: 0,
+            successRate: 0,
+            lastHour: { requests: 0, errors: 0, avgResponseTime: 0 },
+            lastDay: { requests: 0, errors: 0, avgResponseTime: 0 },
+          }
+        );
 
         // Calcular taxa de sucesso
-        serviceStats.successRate = serviceStats.totalRequests > 0 
-          ? ((serviceStats.totalRequests - serviceStats.errorCount) / serviceStats.totalRequests) * 100 
-          : 100;
+        serviceStats.successRate =
+          serviceStats.totalRequests > 0
+            ? ((serviceStats.totalRequests - serviceStats.errorCount) /
+                serviceStats.totalRequests) *
+              100
+            : 100;
 
         // Calcular tendência baseada na última hora vs dia anterior
-        const trend = calculateTrend(serviceStats.lastHour.requests, serviceStats.lastDay.requests / 24);
-        
+        const trend = calculateTrend(
+          serviceStats.lastHour.requests,
+          serviceStats.lastDay.requests / 24
+        );
+
         return {
           service,
           totalOperations: serviceStats.totalRequests,
@@ -186,7 +213,7 @@ async function getMetrics(request: NextRequest) {
           p95ResponseTime: Math.round(serviceStats.p95ResponseTime),
           errorCount: serviceStats.errorCount,
           lastHour: serviceStats.lastHour.requests,
-          trend
+          trend,
         };
       })
     );
@@ -207,7 +234,7 @@ async function getMetrics(request: NextRequest) {
         status: health.status,
         lastCheck: now.toISOString(),
         uptime: parseFloat(uptime.toFixed(1)),
-        issues: health.issues
+        issues: health.issues,
       };
     });
 
@@ -217,11 +244,10 @@ async function getMetrics(request: NextRequest) {
     const response: MetricsResponse = {
       services: serviceMetrics,
       health: healthData,
-      anomalies
+      anomalies,
     };
 
     return NextResponse.json(response);
-
   } catch (error) {
     console.error('Erro ao obter métricas:', error);
     return NextResponse.json(
@@ -249,11 +275,10 @@ async function deleteOldMetrics(request: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({ 
-      success: true, 
-      message: `Métricas anteriores a ${cutoffDate.toISOString()} foram removidas` 
+    return NextResponse.json({
+      success: true,
+      message: `Métricas anteriores a ${cutoffDate.toISOString()} foram removidas`,
     });
-
   } catch (error) {
     console.error('Erro ao limpar métricas:', error);
     return NextResponse.json(
@@ -270,7 +295,12 @@ async function recordMetric(request: NextRequest) {
     const { service, operation, duration, success, error, metadata } = body;
 
     // Validar dados obrigatórios
-    if (!service || !operation || duration === undefined || success === undefined) {
+    if (
+      !service ||
+      !operation ||
+      duration === undefined ||
+      success === undefined
+    ) {
       return NextResponse.json(
         { error: 'Campos obrigatórios: service, operation, duration, success' },
         { status: 400 }
@@ -284,14 +314,13 @@ async function recordMetric(request: NextRequest) {
       duration,
       success,
       error,
-      metadata
+      metadata,
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Métrica registrada com sucesso' 
+    return NextResponse.json({
+      success: true,
+      message: 'Métrica registrada com sucesso',
     });
-
   } catch (error) {
     console.error('Erro ao registrar métrica:', error);
     return NextResponse.json(
@@ -302,6 +331,8 @@ async function recordMetric(request: NextRequest) {
 }
 
 // Exportações com cache, logging e métricas aplicados
-export const GET = withMetricsCache(CACHE_TTL.SHORT)(getMetrics)
-export const DELETE = withAuthenticatedApiMetrics(withAuthenticatedApiLogging(deleteOldMetrics))
-export const POST = withMetricsApiMetrics(withMetricsLogging(recordMetric))
+export const GET = withMetricsCache(CACHE_TTL.SHORT)(getMetrics);
+export const DELETE = withAuthenticatedApiMetrics(
+  withAuthenticatedApiLogging(deleteOldMetrics)
+);
+export const POST = withMetricsApiMetrics(withMetricsLogging(recordMetric));

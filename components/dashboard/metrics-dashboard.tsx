@@ -1,30 +1,38 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Activity, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  TrendingUp, 
-  TrendingDown,
+import React, { useEffect, useState } from 'react';
+
+import {
+  Activity,
+  AlertCircle,
+  AlertTriangle,
+  BarChart3,
+  CheckCircle,
+  Clock,
+  Database,
   Mail,
   MessageSquare,
   Phone,
   RefreshCw,
-  AlertTriangle,
-  BarChart3,
-  Database,
+  TrendingDown,
+  TrendingUp,
   Users,
+  XCircle,
   Zap,
-  AlertCircle
 } from 'lucide-react';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // 📊 Interfaces para Métricas
 interface ServiceMetrics {
@@ -61,8 +69,8 @@ interface MetricsData {
 
 // 🎨 Componente de Ícone por Serviço
 const ServiceIcon = ({ service }: { service: string }) => {
-  const iconProps = { className: "h-5 w-5" };
-  
+  const iconProps = { className: 'h-5 w-5' };
+
   switch (service) {
     case 'email':
       return <Mail {...iconProps} />;
@@ -85,12 +93,13 @@ const HealthStatus = ({ status }: { status: string }) => {
     critical: { color: 'bg-red-500', text: 'Crítico', icon: XCircle },
   };
 
-  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.critical;
+  const config =
+    statusConfig[status as keyof typeof statusConfig] || statusConfig.critical;
   const Icon = config.icon;
 
   return (
     <div className="flex items-center gap-2">
-      <div className={`w-2 h-2 rounded-full ${config.color}`} />
+      <div className={`h-2 w-2 rounded-full ${config.color}`} />
       <Icon className="h-4 w-4" />
       <span className="text-sm font-medium">{config.text}</span>
     </div>
@@ -107,21 +116,21 @@ export default function MetricsDashboard() {
   const loadMetrics = async () => {
     try {
       setLoading(true);
-      
+
       // Buscar métricas da API
       const response = await fetch('/api/metrics?timeRange=24h');
-      
+
       if (!response.ok) {
         throw new Error(`Erro na API: ${response.status}`);
       }
-      
+
       const data: MetricsData = await response.json();
-      
+
       setMetricsData(data);
       setLastUpdate(new Date());
     } catch (error) {
       console.error('Erro ao carregar métricas:', error);
-      
+
       // Fallback para dados simulados em caso de erro
       const fallbackData: MetricsData = {
         services: [
@@ -133,7 +142,7 @@ export default function MetricsDashboard() {
             p95ResponseTime: 0,
             errorCount: 0,
             lastHour: 0,
-            trend: 'stable'
+            trend: 'stable',
           },
           {
             service: 'sms',
@@ -143,7 +152,7 @@ export default function MetricsDashboard() {
             p95ResponseTime: 0,
             errorCount: 0,
             lastHour: 0,
-            trend: 'stable'
+            trend: 'stable',
           },
           {
             service: 'whatsapp',
@@ -153,7 +162,7 @@ export default function MetricsDashboard() {
             p95ResponseTime: 0,
             errorCount: 0,
             lastHour: 0,
-            trend: 'stable'
+            trend: 'stable',
           },
           {
             service: 'communication',
@@ -163,8 +172,8 @@ export default function MetricsDashboard() {
             p95ResponseTime: 0,
             errorCount: 0,
             lastHour: 0,
-            trend: 'stable'
-          }
+            trend: 'stable',
+          },
         ],
         health: [
           {
@@ -172,33 +181,33 @@ export default function MetricsDashboard() {
             status: 'healthy',
             lastCheck: new Date().toISOString(),
             uptime: 100,
-            issues: []
+            issues: [],
           },
           {
             service: 'sms',
             status: 'healthy',
             lastCheck: new Date().toISOString(),
             uptime: 100,
-            issues: []
+            issues: [],
           },
           {
             service: 'whatsapp',
             status: 'healthy',
             lastCheck: new Date().toISOString(),
             uptime: 100,
-            issues: []
+            issues: [],
           },
           {
             service: 'communication',
             status: 'healthy',
             lastCheck: new Date().toISOString(),
             uptime: 100,
-            issues: []
-          }
+            issues: [],
+          },
         ],
-        anomalies: []
+        anomalies: [],
       };
-      
+
       setMetricsData(fallbackData);
       setLastUpdate(new Date());
     } finally {
@@ -209,7 +218,7 @@ export default function MetricsDashboard() {
   // 🚀 Carregar dados na inicialização
   useEffect(() => {
     loadMetrics();
-    
+
     // Auto-refresh a cada 30 segundos
     const interval = setInterval(loadMetrics, 30000);
     return () => clearInterval(interval);
@@ -217,7 +226,7 @@ export default function MetricsDashboard() {
 
   if (loading && !metricsData) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <div className="flex items-center gap-2">
           <RefreshCw className="h-5 w-5 animate-spin" />
           <span>Carregando métricas...</span>
@@ -240,13 +249,15 @@ export default function MetricsDashboard() {
           <span className="text-sm text-muted-foreground">
             Última atualização: {lastUpdate.toLocaleTimeString()}
           </span>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={loadMetrics}
             disabled={loading}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+            />
             Atualizar
           </Button>
         </div>
@@ -260,7 +271,14 @@ export default function MetricsDashboard() {
               <TrendingUp className="h-4 w-4" />
               <strong>Anomalias detectadas:</strong>
               {metricsData.anomalies.map((anomaly, index) => (
-                <Badge key={index} variant={anomaly.severity === 'critical' ? 'destructive' : 'secondary'}>
+                <Badge
+                  key={index}
+                  variant={
+                    anomaly.severity === 'critical'
+                      ? 'destructive'
+                      : 'secondary'
+                  }
+                >
                   {anomaly.service}: {anomaly.metric} ({anomaly.value}%)
                 </Badge>
               ))}
@@ -278,8 +296,8 @@ export default function MetricsDashboard() {
 
         {/* 📈 Visão Geral */}
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {metricsData?.services.map((service) => (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {metricsData?.services.map(service => (
               <Card key={service.service}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium capitalize">
@@ -290,14 +308,23 @@ export default function MetricsDashboard() {
                 <CardContent>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-2xl font-bold">{service.successRate}%</span>
-                      {service.trend === 'up' && <TrendingUp className="h-4 w-4 text-green-500" />}
-                      {service.trend === 'down' && <TrendingDown className="h-4 w-4 text-red-500" />}
-                      {service.trend === 'stable' && <div className="w-4 h-4" />}
+                      <span className="text-2xl font-bold">
+                        {service.successRate}%
+                      </span>
+                      {service.trend === 'up' && (
+                        <TrendingUp className="h-4 w-4 text-green-500" />
+                      )}
+                      {service.trend === 'down' && (
+                        <TrendingDown className="h-4 w-4 text-red-500" />
+                      )}
+                      {service.trend === 'stable' && (
+                        <div className="h-4 w-4" />
+                      )}
                     </div>
                     <Progress value={service.successRate} className="h-2" />
                     <div className="text-xs text-muted-foreground">
-                      {service.totalOperations} operações • {service.lastHour} na última hora
+                      {service.totalOperations} operações • {service.lastHour}{' '}
+                      na última hora
                     </div>
                   </div>
                 </CardContent>
@@ -308,8 +335,8 @@ export default function MetricsDashboard() {
 
         {/* ⚡ Performance */}
         <TabsContent value="performance" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {metricsData?.services.map((service) => (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {metricsData?.services.map(service => (
               <Card key={service.service}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -323,20 +350,32 @@ export default function MetricsDashboard() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="text-sm text-muted-foreground">Tempo Médio</div>
-                      <div className="text-2xl font-bold">{service.averageResponseTime}ms</div>
+                      <div className="text-sm text-muted-foreground">
+                        Tempo Médio
+                      </div>
+                      <div className="text-2xl font-bold">
+                        {service.averageResponseTime}ms
+                      </div>
                     </div>
                     <div>
                       <div className="text-sm text-muted-foreground">P95</div>
-                      <div className="text-2xl font-bold">{service.p95ResponseTime}ms</div>
+                      <div className="text-2xl font-bold">
+                        {service.p95ResponseTime}ms
+                      </div>
                     </div>
                     <div>
-                      <div className="text-sm text-muted-foreground">Operações</div>
-                      <div className="text-2xl font-bold">{service.totalOperations.toLocaleString()}</div>
+                      <div className="text-sm text-muted-foreground">
+                        Operações
+                      </div>
+                      <div className="text-2xl font-bold">
+                        {service.totalOperations.toLocaleString()}
+                      </div>
                     </div>
                     <div>
                       <div className="text-sm text-muted-foreground">Erros</div>
-                      <div className="text-2xl font-bold text-red-500">{service.errorCount}</div>
+                      <div className="text-2xl font-bold text-red-500">
+                        {service.errorCount}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -347,8 +386,8 @@ export default function MetricsDashboard() {
 
         {/* 🏥 Saúde dos Serviços */}
         <TabsContent value="health" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {metricsData?.health.map((health) => (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {metricsData?.health.map(health => (
               <Card key={health.service}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -359,25 +398,35 @@ export default function MetricsDashboard() {
                     <HealthStatus status={health.status} />
                   </CardTitle>
                   <CardDescription>
-                    Última verificação: {new Date(health.lastCheck).toLocaleTimeString()}
+                    Última verificação:{' '}
+                    {new Date(health.lastCheck).toLocaleTimeString()}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-muted-foreground">Uptime</span>
-                      <span className="text-sm font-medium">{health.uptime}%</span>
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        Uptime
+                      </span>
+                      <span className="text-sm font-medium">
+                        {health.uptime}%
+                      </span>
                     </div>
                     <Progress value={health.uptime} className="h-2" />
                   </div>
-                  
+
                   {health.issues.length > 0 && (
                     <div>
-                      <div className="text-sm font-medium mb-2">Problemas Identificados:</div>
+                      <div className="mb-2 text-sm font-medium">
+                        Problemas Identificados:
+                      </div>
                       <ul className="space-y-1">
                         {health.issues.map((issue, index) => (
-                          <li key={index} className="text-sm text-muted-foreground flex items-center gap-2">
-                            <div className="w-1 h-1 bg-yellow-500 rounded-full" />
+                          <li
+                            key={index}
+                            className="flex items-center gap-2 text-sm text-muted-foreground"
+                          >
+                            <div className="h-1 w-1 rounded-full bg-yellow-500" />
                             {issue}
                           </li>
                         ))}

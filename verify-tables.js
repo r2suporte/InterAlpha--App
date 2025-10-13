@@ -12,7 +12,9 @@ async function verifyTables() {
 
   if (!supabaseUrl || !supabaseKey) {
     console.error('❌ Erro: Variáveis de ambiente do Supabase não encontradas');
-    console.error('   Verifique NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY');
+    console.error(
+      '   Verifique NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY'
+    );
     process.exit(1);
   }
 
@@ -26,7 +28,7 @@ async function verifyTables() {
       .from('users')
       .select('*')
       .limit(1);
-    
+
     if (usersError) {
       console.log(`❌ Tabela users: ${usersError.message}`);
     } else {
@@ -39,7 +41,7 @@ async function verifyTables() {
       .from('clientes')
       .select('*')
       .limit(1);
-    
+
     if (clientesError) {
       console.log(`❌ Tabela clientes: ${clientesError.message}`);
     } else {
@@ -52,7 +54,7 @@ async function verifyTables() {
       .from('ordens_servico')
       .select('*')
       .limit(1);
-    
+
     if (ordensError) {
       console.log(`❌ Tabela ordens_servico: ${ordensError.message}`);
     } else {
@@ -65,7 +67,7 @@ async function verifyTables() {
       .from('pagamentos')
       .select('*')
       .limit(1);
-    
+
     if (pagamentosError) {
       console.log(`❌ Tabela pagamentos: ${pagamentosError.message}`);
     } else {
@@ -73,7 +75,6 @@ async function verifyTables() {
     }
 
     console.log('\n🎉 Verificação concluída!');
-
   } catch (error) {
     console.error('❌ Erro durante a verificação:', error.message);
     process.exit(1);

@@ -1,48 +1,47 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import { Loader2 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import * as React from 'react';
+
+import { Loader2 } from 'lucide-react';
+
+import { cn } from '@/lib/utils';
 
 interface LoadingProps {
-  size?: "sm" | "md" | "lg" | "xl"
-  variant?: "default" | "overlay" | "inline"
-  text?: string
-  className?: string
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  variant?: 'default' | 'overlay' | 'inline';
+  text?: string;
+  className?: string;
 }
 
 const sizeClasses = {
-  sm: "h-4 w-4",
-  md: "h-6 w-6", 
-  lg: "h-8 w-8",
-  xl: "h-12 w-12"
-}
+  sm: 'h-4 w-4',
+  md: 'h-6 w-6',
+  lg: 'h-8 w-8',
+  xl: 'h-12 w-12',
+};
 
 const textSizeClasses = {
-  sm: "text-sm",
-  md: "text-base",
-  lg: "text-lg", 
-  xl: "text-xl"
-}
+  sm: 'text-sm',
+  md: 'text-base',
+  lg: 'text-lg',
+  xl: 'text-xl',
+};
 
-export function Loading({ 
-  size = "md", 
-  variant = "default", 
-  text, 
-  className 
+export function Loading({
+  size = 'md',
+  variant = 'default',
+  text,
+  className,
 }: LoadingProps) {
   const spinnerClasses = cn(
-    "animate-spin text-muted-foreground",
+    'animate-spin text-muted-foreground',
     sizeClasses[size],
     className
-  )
+  );
 
-  const textClasses = cn(
-    "text-muted-foreground mt-2",
-    textSizeClasses[size]
-  )
+  const textClasses = cn('mt-2 text-muted-foreground', textSizeClasses[size]);
 
-  if (variant === "overlay") {
+  if (variant === 'overlay') {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
         <div className="flex flex-col items-center space-y-2">
@@ -50,16 +49,20 @@ export function Loading({
           {text && <p className={textClasses}>{text}</p>}
         </div>
       </div>
-    )
+    );
   }
 
-  if (variant === "inline") {
+  if (variant === 'inline') {
     return (
       <div className="flex items-center space-x-2">
         <Loader2 className={spinnerClasses} />
-        {text && <span className={cn("text-muted-foreground", textSizeClasses[size])}>{text}</span>}
+        {text && (
+          <span className={cn('text-muted-foreground', textSizeClasses[size])}>
+            {text}
+          </span>
+        )}
       </div>
-    )
+    );
   }
 
   return (
@@ -67,19 +70,19 @@ export function Loading({
       <Loader2 className={spinnerClasses} />
       {text && <p className={textClasses}>{text}</p>}
     </div>
-  )
+  );
 }
 
 // Componente específico para páginas
-export function PageLoading({ text = "Carregando..." }: { text?: string }) {
+export function PageLoading({ text = 'Carregando...' }: { text?: string }) {
   return (
-    <div className="flex items-center justify-center min-h-[400px]">
+    <div className="flex min-h-[400px] items-center justify-center">
       <Loading size="lg" text={text} />
     </div>
-  )
+  );
 }
 
 // Componente específico para botões
-export function ButtonLoading({ size = "sm" }: { size?: "sm" | "md" }) {
-  return <Loader2 className={cn("animate-spin", sizeClasses[size])} />
+export function ButtonLoading({ size = 'sm' }: { size?: 'sm' | 'md' }) {
+  return <Loader2 className={cn('animate-spin', sizeClasses[size])} />;
 }

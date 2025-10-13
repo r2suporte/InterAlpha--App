@@ -1,6 +1,6 @@
 /**
  * 📝 Logger Service - Sistema de logging estruturado
- * 
+ *
  * Este serviço fornece logging estruturado com diferentes níveis,
  * contexto, métricas e integração com sistemas de monitoramento.
  */
@@ -19,7 +19,7 @@ export interface LogContext {
   method?: string;
   statusCode?: number;
   duration?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // 📋 Interface para entrada de log
@@ -34,7 +34,7 @@ export interface LogEntry {
     stack?: string;
     code?: string;
   };
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // 🎯 Interface para configuração do logger
@@ -65,7 +65,7 @@ export class LoggerService {
     info: 1,
     warn: 2,
     error: 3,
-    fatal: 4
+    fatal: 4,
   };
 
   constructor(config: LoggerConfig) {
@@ -76,34 +76,54 @@ export class LoggerService {
   /**
    * 🔍 Debug - Informações detalhadas para desenvolvimento
    */
-  debug(message: string, context?: LogContext, metadata?: Record<string, any>): void {
+  debug(
+    message: string,
+    context?: LogContext,
+    metadata?: Record<string, unknown>
+  ): void {
     this.log('debug', message, context, undefined, metadata);
   }
 
   /**
    * ℹ️ Info - Informações gerais do sistema
    */
-  info(message: string, context?: LogContext, metadata?: Record<string, any>): void {
+  info(
+    message: string,
+    context?: LogContext,
+    metadata?: Record<string, unknown>
+  ): void {
     this.log('info', message, context, undefined, metadata);
   }
 
   /**
    * ⚠️ Warn - Avisos que não impedem o funcionamento
    */
-  warn(message: string, context?: LogContext, metadata?: Record<string, any>): void {
+  warn(
+    message: string,
+    context?: LogContext,
+    metadata?: Record<string, unknown>
+  ): void {
     this.log('warn', message, context, undefined, metadata);
   }
 
   /**
    * ❌ Error - Erros que afetam funcionalidades
    */
-  error(message: string, error?: Error, context?: LogContext, metadata?: Record<string, any>): void {
-    const errorInfo = error ? {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      code: (error as any).code
-    } : undefined;
+  error(
+    message: string,
+    error?: Error,
+    context?: LogContext,
+    metadata?: Record<string, unknown>
+  ): void {
+    const errorWithCode = error as Error & { code?: string };
+    const errorInfo = error
+      ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+          code: errorWithCode.code,
+        }
+      : undefined;
 
     this.log('error', message, context, errorInfo, metadata);
   }
@@ -111,13 +131,21 @@ export class LoggerService {
   /**
    * 💀 Fatal - Erros críticos que podem parar o sistema
    */
-  fatal(message: string, error?: Error, context?: LogContext, metadata?: Record<string, any>): void {
-    const errorInfo = error ? {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      code: (error as any).code
-    } : undefined;
+  fatal(
+    message: string,
+    error?: Error,
+    context?: LogContext,
+    metadata?: Record<string, unknown>
+  ): void {
+    const errorWithCode = error as Error & { code?: string };
+    const errorInfo = error
+      ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+          code: errorWithCode.code,
+        }
+      : undefined;
 
     this.log('fatal', message, context, errorInfo, metadata);
   }
@@ -130,10 +158,13 @@ export class LoggerService {
     message: string,
     context?: LogContext,
     error?: LogEntry['error'],
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): void {
     // Verificar se o nível está habilitado
-    if (LoggerService.LOG_LEVELS[level] < LoggerService.LOG_LEVELS[this.config.level]) {
+    if (
+      LoggerService.LOG_LEVELS[level] <
+      LoggerService.LOG_LEVELS[this.config.level]
+    ) {
       return;
     }
 
@@ -143,7 +174,7 @@ export class LoggerService {
       timestamp: new Date().toISOString(),
       context,
       error,
-      metadata
+      metadata,
     };
 
     // Adicionar ao buffer
@@ -170,16 +201,16 @@ export class LoggerService {
    */
   private logToConsole(entry: LogEntry): void {
     const { level, message, timestamp, context, error, metadata } = entry;
-    
+
     // Cores para diferentes níveis
     const colors = {
       debug: '\x1b[36m', // Cyan
-      info: '\x1b[32m',  // Green
-      warn: '\x1b[33m',  // Yellow
+      info: '\x1b[32m', // Green
+      warn: '\x1b[33m', // Yellow
       error: '\x1b[31m', // Red
-      fatal: '\x1b[35m'  // Magenta
+      fatal: '\x1b[35m', // Magenta
     };
-    
+
     const reset = '\x1b[0m';
     const color = colors[level] || '';
 
@@ -240,9 +271,12 @@ export class LoggerService {
     try {
       const fs = await import('fs/promises');
       const path = await import('path');
-      
+
       const logDir = path.join(process.cwd(), 'logs');
-      const logFile = path.join(logDir, `app-${new Date().toISOString().split('T')[0]}.log`);
+      const logFile = path.join(
+        logDir,
+        `app-${new Date().toISOString().split('T')[0]}.log`
+      );
 
       // Criar diretório se não existir
       try {
@@ -252,7 +286,7 @@ export class LoggerService {
       }
 
       // Formatar logs para arquivo
-      const logLines = logs.map(log => JSON.stringify(log)).join('\n') + '\n';
+      const logLines = `${logs.map(log => JSON.stringify(log)).join('\n')  }\n`;
 
       // Escrever no arquivo
       await fs.appendFile(logFile, logLines);
@@ -273,7 +307,7 @@ export class LoggerService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ logs })
+        body: JSON.stringify({ logs }),
       });
 
       if (!response.ok) {
@@ -315,7 +349,7 @@ export class LoggerService {
     return {
       bufferSize: this.logBuffer.length,
       config: this.config,
-      uptime: process.uptime()
+      uptime: process.uptime(),
     };
   }
 }
@@ -330,7 +364,7 @@ export function createLogger(config?: Partial<LoggerConfig>): LoggerService {
     enableFile: process.env.NODE_ENV === 'production',
     enableRemote: false,
     remoteEndpoint: process.env.LOG_REMOTE_ENDPOINT,
-    environment: (process.env.NODE_ENV as any) || 'development'
+    environment: (process.env.NODE_ENV as 'development' | 'production' | 'test') || 'development',
   };
 
   return new LoggerService({ ...defaultConfig, ...config });
@@ -352,14 +386,15 @@ export function createRequestLogger(logger: LoggerService) {
     duration: number,
     context?: Partial<LogContext>
   ) {
-    const level: LogLevel = statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
+    const level: LogLevel =
+      statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
     const message = `${method} ${url} - ${statusCode}`;
     const requestContext = {
       method,
       endpoint: url,
       statusCode,
       duration,
-      ...context
+      ...context,
     };
 
     // Usar métodos públicos baseados no nível
@@ -396,25 +431,34 @@ export class PerformanceLogger {
   /**
    * ✅ Finalizar medição com sucesso
    */
-  end(metadata?: Record<string, any>): void {
+  end(metadata?: Record<string, unknown>): void {
     const duration = performance.now() - this.startTime;
-    
-    this.logger.info(`${this.operation} completed`, {
-      ...this.context,
-      duration: Math.round(duration * 100) / 100 // 2 casas decimais
-    }, metadata);
+
+    this.logger.info(
+      `${this.operation} completed`,
+      {
+        ...this.context,
+        duration: Math.round(duration * 100) / 100, // 2 casas decimais
+      },
+      metadata
+    );
   }
 
   /**
    * ❌ Finalizar medição com erro
    */
-  error(error: Error, metadata?: Record<string, any>): void {
+  error(error: Error, metadata?: Record<string, unknown>): void {
     const duration = performance.now() - this.startTime;
-    
-    this.logger.error(`${this.operation} failed`, error, {
-      ...this.context,
-      duration: Math.round(duration * 100) / 100
-    }, metadata);
+
+    this.logger.error(
+      `${this.operation} failed`,
+      error,
+      {
+        ...this.context,
+        duration: Math.round(duration * 100) / 100,
+      },
+      metadata
+    );
   }
 }
 
@@ -422,22 +466,27 @@ export class PerformanceLogger {
  * 🎯 Decorator para logging automático de métodos
  */
 export function LogMethod(operation?: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: Object,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
-    const operationName = operation || `${target.constructor.name}.${propertyKey}`;
+    const operationName =
+      operation || `${target.constructor.name}.${propertyKey}`;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (this: unknown, ...args: unknown[]) {
       const perfLogger = new PerformanceLogger(logger, operationName);
-      
+
       try {
-        const result = await originalMethod.apply(this, args);
+        const result = await (originalMethod as (...a: unknown[]) => Promise<unknown>).apply(this, args);
         perfLogger.end();
         return result;
       } catch (error) {
         perfLogger.error(error as Error);
         throw error;
       }
-    };
+    } as unknown as (...a: unknown[]) => Promise<unknown>;
 
     return descriptor;
   };

@@ -1,6 +1,5 @@
 // 📊 Metrics Service - Sistema de Monitoramento de Performance
 // Coleta e analisa métricas dos serviços de comunicação
-
 import { createClient } from '@/lib/supabase/client';
 
 interface MetricData {
@@ -11,6 +10,17 @@ interface MetricData {
   error?: string;
   metadata?: Record<string, any>;
   timestamp: Date;
+}
+
+// Shape returned by the DB (communication_metrics table)
+interface DBMetricRow {
+  service: MetricData['service'];
+  operation: string;
+  duration_ms: number;
+  success: boolean;
+  error_message?: string | null;
+  metadata?: Record<string, unknown> | null;
+  created_at: string;
 }
 
 interface PerformanceStats {
@@ -49,16 +59,19 @@ export class MetricsService {
 
   constructor() {
     // Limpar métricas antigas da memória a cada 5 minutos
-    setInterval(() => {
-      this.cleanupMemoryMetrics();
-    }, 5 * 60 * 1000);
+    setInterval(
+      () => {
+        this.cleanupMemoryMetrics();
+      },
+      5 * 60 * 1000
+    );
   }
 
   // 📈 Registrar Métrica
   async recordMetric(data: Omit<MetricData, 'timestamp'>): Promise<void> {
     const metric: MetricData = {
       ...data,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     // Adicionar à memória para análise rápida
@@ -66,17 +79,15 @@ export class MetricsService {
 
     // Persistir no banco de dados
     try {
-      await this.supabase
-        .from('communication_metrics')
-        .insert({
-          service: metric.service,
-          operation: metric.operation,
-          duration_ms: metric.duration,
-          success: metric.success,
-          error_message: metric.error,
-          metadata: metric.metadata,
-          created_at: metric.timestamp.toISOString()
-        });
+      await this.supabase.from('communication_metrics').insert({
+        service: metric.service,
+        operation: metric.operation,
+        duration_ms: metric.duration,
+        success: metric.success,
+        error_message: metric.error,
+        metadata: metric.metadata,
+        created_at: metric.timestamp.toISOString(),
+      });
     } catch (error) {
       console.error('Erro ao salvar métrica:', error);
     }
@@ -107,14 +118,14 @@ export class MetricsService {
       throw err;
     } finally {
       const duration = Date.now() - startTime;
-      
+
       await this.recordMetric({
         service,
         operation,
         duration,
         success,
         error,
-        metadata
+        metadata,
       });
     }
   }
@@ -128,7 +139,7 @@ export class MetricsService {
     const timeRangeMs = {
       '1h': 60 * 60 * 1000,
       '24h': 24 * 60 * 60 * 1000,
-      '7d': 7 * 24 * 60 * 60 * 1000
+      '7d': 7 * 24 * 60 * 60 * 1000,
     };
 
     const since = new Date(now.getTime() - timeRangeMs[timeRange]);
@@ -148,54 +159,74 @@ export class MetricsService {
       if (error) throw error;
 
       // Agrupar por serviço e operação
-      const grouped = metrics?.reduce((acc, metric) => {
-        const key = `${metric.service}-${metric.operation}`;
-        if (!acc[key]) {
-          acc[key] = {
-            service: metric.service,
-            operation: metric.operation,
-            metrics: []
-          };
-        }
-        acc[key].metrics.push(metric);
-        return acc;
-      }, {} as Record<string, any>) || {};
+      const grouped = (
+        metrics?.reduce(
+          (
+            acc: Record<string, { service: string; operation: string; metrics: DBMetricRow[] }>,
+            metric: DBMetricRow
+          ) => {
+            const key = `${metric.service}-${metric.operation}`;
+            if (!acc[key]) {
+              acc[key] = {
+                service: metric.service,
+                operation: metric.operation,
+                metrics: [],
+              };
+            }
+            acc[key].metrics.push(metric);
+            return acc;
+          },
+          {} as Record<string, { service: string; operation: string; metrics: DBMetricRow[] }>
+        ) ?? {}
+      ) as Record<string, { service: string; operation: string; metrics: DBMetricRow[] }>;
 
       // Calcular estatísticas
-      return Object.values(grouped).map((group: any) => {
-        const metrics = group.metrics;
+      return Object.values(grouped).map((group: { service: string; operation: string; metrics: DBMetricRow[] }) => {
+        const {metrics} = group;
         const totalRequests = metrics.length;
-        const successCount = metrics.filter((m: any) => m.success).length;
-        const durations = metrics.map((m: any) => m.duration_ms).sort((a: number, b: number) => a - b);
-        
+        const successCount = metrics.filter((m) => m.success).length;
+        const durations = metrics
+          .map((m) => m.duration_ms)
+          .sort((a: number, b: number) => a - b);
+
         // Métricas da última hora
-        const lastHourMetrics = metrics.filter((m: any) => 
+        const lastHourMetrics = metrics.filter((m: DBMetricRow) =>
           new Date(m.created_at) > new Date(now.getTime() - 60 * 60 * 1000)
         );
-        
+
         // Métricas do último dia
-        const lastDayMetrics = metrics.filter((m: any) => 
-          new Date(m.created_at) > new Date(now.getTime() - 24 * 60 * 60 * 1000)
+        const lastDayMetrics = metrics.filter((m: DBMetricRow) =>
+          new Date(m.created_at) >
+          new Date(now.getTime() - 24 * 60 * 60 * 1000)
         );
+
+        const averageResponseTime = durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
+        const p95ResponseTime = durations.length > 0 ? durations[Math.floor(durations.length * 0.95)] : 0;
+
+        const lastHourErrors = lastHourMetrics.filter((m) => !m.success).length;
+        const lastHourAvg = lastHourMetrics.length > 0 ? lastHourMetrics.reduce((sum, m) => sum + m.duration_ms, 0) / lastHourMetrics.length : 0;
+
+        const lastDayErrors = lastDayMetrics.filter((m) => !m.success).length;
+        const lastDayAvg = lastDayMetrics.length > 0 ? lastDayMetrics.reduce((sum, m) => sum + m.duration_ms, 0) / lastDayMetrics.length : 0;
 
         return {
           service: group.service,
           operation: group.operation,
           totalRequests,
-          successRate: (successCount / totalRequests) * 100,
-          averageResponseTime: durations.reduce((a: number, b: number) => a + b, 0) / durations.length,
-          p95ResponseTime: durations[Math.floor(durations.length * 0.95)] || 0,
+          successRate: totalRequests > 0 ? (successCount / totalRequests) * 100 : 0,
+          averageResponseTime,
+          p95ResponseTime,
           errorCount: totalRequests - successCount,
           lastHour: {
             requests: lastHourMetrics.length,
-            errors: lastHourMetrics.filter((m: any) => !m.success).length,
-            avgResponseTime: lastHourMetrics.reduce((sum: number, m: any) => sum + m.duration_ms, 0) / lastHourMetrics.length || 0
+            errors: lastHourErrors,
+            avgResponseTime: lastHourAvg,
           },
           lastDay: {
             requests: lastDayMetrics.length,
-            errors: lastDayMetrics.filter((m: any) => !m.success).length,
-            avgResponseTime: lastDayMetrics.reduce((sum: number, m: any) => sum + m.duration_ms, 0) / lastDayMetrics.length || 0
-          }
+            errors: lastDayErrors,
+            avgResponseTime: lastDayAvg,
+          },
         };
       });
     } catch (error) {
@@ -220,12 +251,13 @@ export class MetricsService {
           uptime: 0,
           lastCheck: new Date(),
           responseTime: 0,
-          errorRate: 100
+          errorRate: 100,
         });
         continue;
       }
 
-      const errorRate = (serviceStats.errorCount / serviceStats.totalRequests) * 100;
+      const errorRate =
+        (serviceStats.errorCount / serviceStats.totalRequests) * 100;
       const avgResponseTime = serviceStats.averageResponseTime;
 
       let status: ServiceHealth['status'] = 'healthy';
@@ -242,7 +274,7 @@ export class MetricsService {
         uptime: serviceStats.successRate,
         lastCheck: new Date(),
         responseTime: avgResponseTime,
-        errorRate
+        errorRate,
       });
     }
 
@@ -250,14 +282,16 @@ export class MetricsService {
   }
 
   // 🚨 Detectar Anomalias
-  async detectAnomalies(): Promise<Array<{
-    service: string;
-    operation: string;
-    type: 'high_error_rate' | 'slow_response' | 'volume_spike';
-    severity: 'low' | 'medium' | 'high';
-    description: string;
-    timestamp: Date;
-  }>> {
+  async detectAnomalies(): Promise<
+    Array<{
+      service: string;
+      operation: string;
+      type: 'high_error_rate' | 'slow_response' | 'volume_spike';
+      severity: 'low' | 'medium' | 'high';
+      description: string;
+      timestamp: Date;
+    }>
+  > {
     const anomalies = [];
     const stats = await this.getPerformanceStats(undefined, '1h');
 
@@ -268,9 +302,12 @@ export class MetricsService {
           service: stat.service,
           operation: stat.operation,
           type: 'high_error_rate' as const,
-          severity: stat.lastHour.errors / stat.lastHour.requests > 0.3 ? 'high' as const : 'medium' as const,
+          severity:
+            stat.lastHour.errors / stat.lastHour.requests > 0.3
+              ? ('high' as const)
+              : ('medium' as const),
           description: `Taxa de erro de ${((stat.lastHour.errors / stat.lastHour.requests) * 100).toFixed(1)}% na última hora`,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
@@ -280,9 +317,12 @@ export class MetricsService {
           service: stat.service,
           operation: stat.operation,
           type: 'slow_response' as const,
-          severity: stat.lastHour.avgResponseTime > 15000 ? 'high' as const : 'medium' as const,
+          severity:
+            stat.lastHour.avgResponseTime > 15000
+              ? ('high' as const)
+              : ('medium' as const),
           description: `Tempo de resposta médio de ${stat.lastHour.avgResponseTime.toFixed(0)}ms na última hora`,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
@@ -293,9 +333,12 @@ export class MetricsService {
           service: stat.service,
           operation: stat.operation,
           type: 'volume_spike' as const,
-          severity: stat.lastHour.requests > hourlyAvg * 5 ? 'high' as const : 'low' as const,
+          severity:
+            stat.lastHour.requests > hourlyAvg * 5
+              ? ('high' as const)
+              : ('low' as const),
           description: `Pico de ${stat.lastHour.requests} requisições na última hora (média: ${hourlyAvg.toFixed(0)})`,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
     }
@@ -315,42 +358,64 @@ export class MetricsService {
     successRate: number;
     averageResponseTime: number;
     errorCount: number;
-    byService: Record<string, {
-      requests: number;
-      errors: number;
-      avgResponseTime: number;
-    }>;
+    byService: Record<
+      string,
+      {
+        requests: number;
+        errors: number;
+        avgResponseTime: number;
+      }
+    >;
   } {
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const recentMetrics = this.metrics.filter(m => m.timestamp > fiveMinutesAgo);
+    const recentMetrics = this.metrics.filter(
+      m => m.timestamp > fiveMinutesAgo
+    );
 
     const totalRequests = recentMetrics.length;
     const successCount = recentMetrics.filter(m => m.success).length;
     const totalDuration = recentMetrics.reduce((sum, m) => sum + m.duration, 0);
 
-    const byService = recentMetrics.reduce((acc, metric) => {
-      if (!acc[metric.service]) {
-        acc[metric.service] = { requests: 0, errors: 0, totalDuration: 0 };
-      }
-      acc[metric.service].requests++;
-      if (!metric.success) acc[metric.service].errors++;
-      acc[metric.service].totalDuration += metric.duration;
-      return acc;
-    }, {} as Record<string, any>);
+    const byService = recentMetrics.reduce(
+      (acc, metric) => {
+        if (!acc[metric.service]) {
+          acc[metric.service] = { requests: 0, errors: 0, totalDuration: 0 };
+        }
+        acc[metric.service].requests++;
+        if (!metric.success) acc[metric.service].errors++;
+        acc[metric.service].totalDuration += metric.duration;
+        return acc;
+      },
+      {} as Record<string, { requests: number; errors: number; totalDuration: number }>
+    );
 
     // Calcular médias por serviço
-    Object.keys(byService).forEach(service => {
+    Object.keys(byService).forEach((service) => {
       const serviceData = byService[service];
-      serviceData.avgResponseTime = serviceData.totalDuration / serviceData.requests;
-      delete serviceData.totalDuration;
+      // compute avg and remove totalDuration helper
+      (serviceData as { requests: number; errors: number; avgResponseTime?: number }).avgResponseTime =
+        serviceData.totalDuration / serviceData.requests;
+      delete (serviceData as { totalDuration?: number }).totalDuration;
+    });
+
+    // Normalize byService to final shape (remove totalDuration)
+    const byServiceFinal: Record<string, { requests: number; errors: number; avgResponseTime: number }> = {};
+    Object.keys(byService).forEach((service) => {
+      const s = byService[service];
+      byServiceFinal[service] = {
+        requests: s.requests,
+        errors: s.errors,
+        avgResponseTime: s.requests > 0 ? s.totalDuration / s.requests : 0,
+      };
     });
 
     return {
       totalRequests,
       successRate: totalRequests > 0 ? (successCount / totalRequests) * 100 : 0,
-      averageResponseTime: totalRequests > 0 ? totalDuration / totalRequests : 0,
+      averageResponseTime:
+        totalRequests > 0 ? totalDuration / totalRequests : 0,
       errorCount: totalRequests - successCount,
-      byService
+      byService: byServiceFinal,
     };
   }
 }

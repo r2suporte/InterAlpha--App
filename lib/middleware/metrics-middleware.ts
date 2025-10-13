@@ -1,7 +1,7 @@
 // 📊 Metrics Middleware - Coleta Automática de Métricas em APIs
 // Intercepta requisições para coletar métricas de performance e uso
-
 import { NextRequest, NextResponse } from 'next/server';
+
 import { applicationMetrics } from '@/lib/services/application-metrics';
 
 // 📈 Configuração de Métricas
@@ -21,14 +21,14 @@ export function withMetrics(
     trackPerformance: true,
     trackUsage: true,
     trackErrors: true,
-    trackBusiness: false
+    trackBusiness: false,
   }
 ) {
   return async (request: NextRequest): Promise<NextResponse> => {
     const startTime = performance.now();
     const url = new URL(request.url);
     const path = url.pathname;
-    const method = request.method;
+    const {method} = request;
 
     // Verificar se deve excluir esta rota
     if (config.excludePaths?.some(excludePath => path.includes(excludePath))) {
@@ -39,23 +39,19 @@ export function withMetrics(
     const baseTags = {
       method,
       path,
-      ...config.customTags
+      ...config.customTags,
     };
 
     try {
       // Registrar início da requisição
       if (config.trackUsage) {
-        await applicationMetrics.recordUsageMetric(
-          'api_calls',
-          1,
-          baseTags
-        );
+        await applicationMetrics.recordUsageMetric('api_calls', 1, baseTags);
       }
 
       // Executar handler
       const response = await handler(request);
       const duration = performance.now() - startTime;
-      const status = response.status;
+      const {status} = response;
 
       // Registrar métricas de performance
       if (config.trackPerformance) {
@@ -68,26 +64,24 @@ export function withMetrics(
 
       // Registrar métricas de erro se status >= 400
       if (config.trackErrors && status >= 400) {
-        await applicationMetrics.recordErrorMetric(
-          'failed_requests',
-          1,
-          { ...baseTags, status: status.toString() }
-        );
+        await applicationMetrics.recordErrorMetric('failed_requests', 1, {
+          ...baseTags,
+          status: status.toString(),
+        });
       }
 
       return response;
-
     } catch (error) {
       const duration = performance.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
 
       // Registrar métricas de erro
       if (config.trackErrors) {
-        await applicationMetrics.recordErrorMetric(
-          'exception_count',
-          1,
-          { ...baseTags, error: errorMessage }
-        );
+        await applicationMetrics.recordErrorMetric('exception_count', 1, {
+          ...baseTags,
+          error: errorMessage,
+        });
 
         await applicationMetrics.recordPerformanceMetric(
           'api_response_time',
@@ -112,7 +106,7 @@ export function withPublicApiMetrics(
     trackUsage: true,
     trackErrors: true,
     trackBusiness: false,
-    customTags: { api_type: 'public' }
+    customTags: { api_type: 'public' },
   });
 }
 
@@ -125,7 +119,7 @@ export function withAuthenticatedApiMetrics(
     trackUsage: true,
     trackErrors: true,
     trackBusiness: true,
-    customTags: { api_type: 'authenticated' }
+    customTags: { api_type: 'authenticated' },
   });
 }
 
@@ -138,7 +132,7 @@ export function withAdminApiMetrics(
     trackUsage: true,
     trackErrors: true,
     trackBusiness: true,
-    customTags: { api_type: 'admin' }
+    customTags: { api_type: 'admin' },
   });
 }
 
@@ -151,7 +145,7 @@ export function withMetricsApiMetrics(
     trackUsage: false, // Evitar loop infinito
     trackErrors: true,
     trackBusiness: false,
-    customTags: { api_type: 'metrics' }
+    customTags: { api_type: 'metrics' },
   });
 }
 
@@ -167,13 +161,13 @@ export function withBusinessMetrics(
     // Registrar métrica de negócio apenas em caso de sucesso
     if (response.status >= 200 && response.status < 300) {
       const value = extractValue ? extractValue(request, response) : 1;
-      
+
       await applicationMetrics.recordBusinessMetric(
         businessMetricName as any,
         value,
         {
           method: request.method,
-          path: new URL(request.url).pathname
+          path: new URL(request.url).pathname,
         }
       );
     }
@@ -184,18 +178,22 @@ export function withBusinessMetrics(
 
 // 🎨 Decorator para Métodos de Classe
 export function ApiMetrics(config?: Partial<MetricsConfig>) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyName: string,
+    descriptor: PropertyDescriptor
+  ) {
     const method = descriptor.value;
 
     descriptor.value = async function (request: NextRequest, ...args: any[]) {
       const wrappedHandler = withMetrics(
-        async (req) => method.apply(this, [req, ...args]),
+        async req => method.apply(this, [req, ...args]),
         {
           trackPerformance: true,
           trackUsage: true,
           trackErrors: true,
           trackBusiness: false,
-          ...config
+          ...config,
         }
       );
 
@@ -222,7 +220,7 @@ export class ApiMetricsCollector {
       name,
       value,
       unit,
-      tags
+      tags,
     });
   }
 
@@ -232,7 +230,11 @@ export class ApiMetricsCollector {
     operation: () => Promise<T>,
     tags: Record<string, string> = {}
   ): Promise<T> {
-    return applicationMetrics.measureExecutionTime(operationName, operation, tags);
+    return applicationMetrics.measureExecutionTime(
+      operationName,
+      operation,
+      tags
+    );
   }
 
   // Registrar evento de negócio
@@ -254,11 +256,11 @@ export class ApiMetricsCollector {
     errorMessage: string,
     tags: Record<string, string> = {}
   ): Promise<void> {
-    await applicationMetrics.recordErrorMetric(
-      'exception_count',
-      1,
-      { ...tags, error_type: errorType, error_message: errorMessage }
-    );
+    await applicationMetrics.recordErrorMetric('exception_count', 1, {
+      ...tags,
+      error_type: errorType,
+      error_message: errorMessage,
+    });
   }
 }
 
@@ -268,7 +270,7 @@ export function withDatabaseMetrics(
 ) {
   return async (request: NextRequest): Promise<NextResponse> => {
     const startTime = performance.now();
-    
+
     try {
       const response = await handler(request);
       const duration = performance.now() - startTime;
@@ -280,7 +282,7 @@ export function withDatabaseMetrics(
         {
           method: request.method,
           path: new URL(request.url).pathname,
-          status: response.status.toString()
+          status: response.status.toString(),
         }
       );
 
@@ -294,7 +296,7 @@ export function withDatabaseMetrics(
         {
           method: request.method,
           path: new URL(request.url).pathname,
-          status: 'error'
+          status: 'error',
         }
       );
 

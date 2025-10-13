@@ -2,7 +2,8 @@
 
 ## 📋 Resumo da Configuração
 
-Este documento detalha a configuração completa do banco de dados **Supabase PostgreSQL**, incluindo a configuração do MCP Context7.
+Este documento detalha a configuração completa do banco de dados **Supabase PostgreSQL**, incluindo
+a configuração do MCP Context7.
 
 ## ✅ Status da Configuração
 
@@ -31,6 +32,7 @@ SUPABASE_SERVICE_ROLE_KEY="[YOUR-SUPABASE-SERVICE-ROLE-KEY]"
 ### 2. Schema Prisma Atualizado
 
 O schema foi otimizado para Supabase com:
+
 - ✅ Configuração do datasource PostgreSQL
 - ✅ Suporte a `directUrl` para conexões diretas
 - ✅ Modelos: User, Cliente, OrdemServico, Pagamento
@@ -52,6 +54,7 @@ O schema foi otimizado para Supabase com:
 ### 2. Atualizar Credenciais
 
 Substitua os placeholders no `.env.local`:
+
 ```env
 DATABASE_URL="postgresql://postgres:SUA_SENHA_AQUI@db.SEU_PROJECT_REF.supabase.co:5432/postgres"
 NEXT_PUBLIC_SUPABASE_URL="https://SEU_PROJECT_REF.supabase.co"
@@ -96,12 +99,14 @@ npm run db:studio
 ## 🚨 Backup e Rollback
 
 ### Backup dos Dados
+
 ```bash
 # Fazer backup do banco atual
 pg_dump $DATABASE_URL > backup_supabase_$(date +%Y%m%d).sql
 ```
 
 ### Rollback (se necessário)
+
 ```bash
 # Restaurar configuração anterior
 cp .env.local.backup .env.local
@@ -111,6 +116,7 @@ npm run db:push
 ## 📊 Vantagens do Supabase
 
 ### Recursos do Supabase
+
 - ✅ **Interface Visual**: Dashboard completo
 - ✅ **Real-time**: Subscriptions automáticas
 - ✅ **Auth Integrado**: Sistema de autenticação nativo

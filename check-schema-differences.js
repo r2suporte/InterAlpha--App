@@ -4,18 +4,18 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL
-    }
-  }
+      url: process.env.DATABASE_URL,
+    },
+  },
 });
 
 async function checkSchemaDifferences() {
   try {
     console.log('🔍 Verificando diferenças no schema...');
-    
+
     await prisma.$connect();
     console.log('✅ Conexão estabelecida');
-    
+
     // Verificar estrutura das tabelas existentes
     const tablesInfo = await prisma.$queryRaw`
       SELECT 
@@ -29,9 +29,9 @@ async function checkSchemaDifferences() {
       AND table_name IN ('users', 'clientes', 'ordens_servico', 'pagamentos')
       ORDER BY table_name, ordinal_position;
     `;
-    
+
     console.log('\n📋 Estrutura atual das tabelas no banco:');
-    
+
     const tablesByName = {};
     tablesInfo.forEach(col => {
       if (!tablesByName[col.table_name]) {
@@ -41,17 +41,19 @@ async function checkSchemaDifferences() {
         name: col.column_name,
         type: col.data_type,
         nullable: col.is_nullable === 'YES',
-        default: col.column_default
+        default: col.column_default,
       });
     });
-    
+
     Object.keys(tablesByName).forEach(tableName => {
       console.log(`\n🗂️  Tabela: ${tableName}`);
       tablesByName[tableName].forEach(col => {
-        console.log(`   - ${col.name}: ${col.type} ${col.nullable ? '(nullable)' : '(not null)'} ${col.default ? `default: ${col.default}` : ''}`);
+        console.log(
+          `   - ${col.name}: ${col.type} ${col.nullable ? '(nullable)' : '(not null)'} ${col.default ? `default: ${col.default}` : ''}`
+        );
       });
     });
-    
+
     // Verificar colunas esperadas pelo Prisma
     console.log('\n🎯 Colunas esperadas pelo schema Prisma:');
     console.log('\n🗂️  Tabela: users');
@@ -62,7 +64,7 @@ async function checkSchemaDifferences() {
     console.log('   - phone: String (nullable)');
     console.log('   - createdAt: DateTime');
     console.log('   - updatedAt: DateTime');
-    
+
     console.log('\n🗂️  Tabela: clientes');
     console.log('   - id: String (cuid)');
     console.log('   - nome: String');
@@ -78,7 +80,6 @@ async function checkSchemaDifferences() {
     console.log('   - userId: String');
     console.log('   - createdAt: DateTime');
     console.log('   - updatedAt: DateTime');
-    
   } catch (error) {
     console.error('❌ Erro:', error.message);
   } finally {

@@ -17,21 +17,23 @@ async function checkTriggers() {
       .eq('event_object_table', 'ordens_servico');
 
     if (triggerError) {
-      console.log('❌ Erro ao buscar triggers via information_schema:', triggerError);
-      
+      console.log(
+        '❌ Erro ao buscar triggers via information_schema:',
+        triggerError
+      );
+
       // Tentar uma abordagem mais direta
       console.log('\n🔍 Tentando buscar triggers diretamente...');
-      
+
       const { data: directTriggers, error: directError } = await supabase
         .from('pg_trigger')
         .select('*');
-        
+
       if (directError) {
         console.log('❌ Erro ao buscar triggers diretamente:', directError);
       } else {
         console.log('📋 Triggers encontrados (direto):', directTriggers);
       }
-      
     } else {
       console.log('📋 Triggers encontrados na tabela ordens_servico:');
       console.log(JSON.stringify(triggers, null, 2));
@@ -39,7 +41,7 @@ async function checkTriggers() {
 
     // Tentar uma inserção simples para ver o erro completo
     console.log('\n🧪 Tentando inserção simples para capturar stack trace...');
-    
+
     const { data: insertData, error: insertError } = await supabase
       .from('ordens_servico')
       .insert({
@@ -48,10 +50,10 @@ async function checkTriggers() {
         descricao: 'Teste simples para debug',
         status: 'aberta',
         prioridade: 'media',
-        valor_servico: 25.00
+        valor_servico: 25.0,
       })
       .select();
-      
+
     if (insertError) {
       console.log('❌ Erro na inserção simples:');
       console.log('Code:', insertError.code);
@@ -62,7 +64,6 @@ async function checkTriggers() {
     } else {
       console.log('✅ Inserção simples bem-sucedida!', insertData);
     }
-
   } catch (error) {
     console.error('❌ Erro geral:', error);
   }

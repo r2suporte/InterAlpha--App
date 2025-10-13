@@ -4,14 +4,14 @@
  */
 
 // Tipos de roles disponíveis no sistema
-export type UserRole = 
-  | 'admin' 
-  | 'user' 
-  | 'technician' 
-  | 'atendente' 
-  | 'gerente_adm' 
-  | 'gerente_financeiro' 
-  | 'supervisor_tecnico' 
+export type UserRole =
+  | 'admin'
+  | 'user'
+  | 'technician'
+  | 'atendente'
+  | 'gerente_adm'
+  | 'gerente_financeiro'
+  | 'supervisor_tecnico'
   | 'diretor';
 
 // Interface para definir uma permissão
@@ -34,64 +34,63 @@ export const ROLE_HIERARCHY: Record<UserRole, RoleHierarchy> = {
   // Nível mais baixo - Usuários básicos
   user: {
     level: 1,
-    description: 'Usuário básico do sistema'
+    description: 'Usuário básico do sistema',
   },
-  
+
   // Nível operacional
   technician: {
     level: 2,
     inheritsFrom: ['user'],
-    description: 'Técnico responsável pela execução de serviços'
+    description: 'Técnico responsável pela execução de serviços',
   },
-  
+
   atendente: {
     level: 3,
     inheritsFrom: ['user'],
-    description: 'Atendente responsável pelo relacionamento com clientes'
+    description: 'Atendente responsável pelo relacionamento com clientes',
   },
-  
+
   // Nível de supervisão
   supervisor_tecnico: {
     level: 5,
     inheritsFrom: ['technician'],
-    description: 'Supervisor técnico com gestão de equipe técnica'
+    description: 'Supervisor técnico com gestão de equipe técnica',
   },
-  
+
   // Nível gerencial
   gerente_financeiro: {
     level: 6,
     inheritsFrom: ['atendente'],
-    description: 'Gerente financeiro com controle sobre pagamentos e relatórios financeiros'
+    description:
+      'Gerente financeiro com controle sobre pagamentos e relatórios financeiros',
   },
-  
+
   gerente_adm: {
     level: 7,
     inheritsFrom: ['atendente', 'supervisor_tecnico'],
-    description: 'Gerente administrativo com controle sobre operações e usuários'
+    description:
+      'Gerente administrativo com controle sobre operações e usuários',
   },
-  
+
   // Nível executivo
   diretor: {
     level: 9,
     inheritsFrom: ['gerente_adm', 'gerente_financeiro'],
-    description: 'Diretor com acesso total ao sistema'
+    description: 'Diretor com acesso total ao sistema',
   },
-  
+
   // Nível de sistema (compatibilidade)
   admin: {
     level: 10,
-    description: 'Administrador do sistema com acesso total'
-  }
+    description: 'Administrador do sistema com acesso total',
+  },
 };
 
 // Mapeamento de permissões por role
 export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   // Usuário básico - acesso mínimo
-  user: [
-    'clientes.read',
-    'relatorios.view_basic'
-  ],
-  
+  user: ['clientes.read', 'relatorios.view_basic'],
+
   // Técnico - foco em execução técnica
   technician: [
     'clientes.read',
@@ -100,9 +99,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'ordens_servico.change_status',
     'pecas.read',
     'pecas.update',
-    'relatorios.view_basic'
+    'relatorios.view_basic',
   ],
-  
+
   // Atendente - foco em clientes e criação de OS
   atendente: [
     'clientes.create',
@@ -111,9 +110,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'ordens_servico.create',
     'ordens_servico.read',
     'ordens_servico.update',
-    'relatorios.view_basic'
+    'relatorios.view_basic',
   ],
-  
+
   // Supervisor Técnico - gestão técnica
   supervisor_tecnico: [
     'clientes.read',
@@ -122,9 +121,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'ordens_servico.change_status',
     'pecas.*', // Wildcard para todas as permissões de peças
     'relatorios.view_technical',
-    'relatorios.view_basic'
+    'relatorios.view_basic',
   ],
-  
+
   // Gerente Financeiro - foco financeiro
   gerente_financeiro: [
     'clientes.read',
@@ -133,9 +132,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'pagamentos.*', // Wildcard para todas as permissões de pagamentos
     'relatorios.view_financial',
     'relatorios.view_basic',
-    'relatorios.export'
+    'relatorios.export',
   ],
-  
+
   // Gerente Administrativo - gestão administrativa
   gerente_adm: [
     'clientes.*', // Wildcard para todas as permissões de clientes
@@ -146,18 +145,18 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'admin.roles.manage',
     'relatorios.*', // Wildcard para todos os relatórios
     'pecas.read',
-    'pecas.update'
+    'pecas.update',
   ],
-  
+
   // Diretor - acesso quase total
   diretor: [
-    '*' // Wildcard para todas as permissões
+    '*', // Wildcard para todas as permissões
   ],
-  
+
   // Admin - acesso total (compatibilidade)
   admin: [
-    '*' // Wildcard para todas as permissões
-  ]
+    '*', // Wildcard para todas as permissões
+  ],
 };
 
 /**
@@ -167,33 +166,36 @@ export class PermissionManager {
   /**
    * Verifica se uma role possui uma permissão específica
    */
-  static hasPermission(userRole: UserRole, requiredPermission: string): boolean {
+  static hasPermission(
+    userRole: UserRole,
+    requiredPermission: string
+  ): boolean {
     // Validar entrada - strings vazias ou inválidas devem retornar false
     if (!requiredPermission || requiredPermission.trim() === '') {
       return false;
     }
-    
+
     const rolePermissions = ROLE_PERMISSIONS[userRole] || [];
-    
+
     // Verifica permissão direta
     if (rolePermissions.includes(requiredPermission)) {
       return true;
     }
-    
+
     // Verifica wildcards
     for (const permission of rolePermissions) {
       if (permission === '*') {
         return true; // Acesso total
       }
-      
+
       if (permission.endsWith('.*')) {
         const resource = permission.slice(0, -2);
-        if (requiredPermission.startsWith(resource + '.')) {
+        if (requiredPermission.startsWith(`${resource  }.`)) {
           return true;
         }
       }
     }
-    
+
     // Verifica permissões herdadas
     const hierarchy = ROLE_HIERARCHY[userRole];
     if (hierarchy.inheritsFrom) {
@@ -203,38 +205,38 @@ export class PermissionManager {
         }
       }
     }
-    
+
     return false;
   }
-  
+
   /**
    * Obtém o nível hierárquico de uma role
    */
   static getRoleLevel(role: UserRole): number {
     return ROLE_HIERARCHY[role]?.level || 0;
   }
-  
+
   /**
    * Verifica se uma role pode gerenciar outra role
    */
   static canManageRole(managerRole: UserRole, targetRole: UserRole): boolean {
     const managerLevel = this.getRoleLevel(managerRole);
     const targetLevel = this.getRoleLevel(targetRole);
-    
+
     // Apenas roles de nível superior podem gerenciar roles de nível inferior
     return managerLevel > targetLevel;
   }
-  
+
   /**
    * Obtém todas as permissões de uma role (incluindo herdadas)
    */
   static getAllPermissions(userRole: UserRole): string[] {
     const permissions = new Set<string>();
-    
+
     // Adiciona permissões diretas
     const rolePermissions = ROLE_PERMISSIONS[userRole] || [];
     rolePermissions.forEach(permission => permissions.add(permission));
-    
+
     // Adiciona permissões herdadas
     const hierarchy = ROLE_HIERARCHY[userRole];
     if (hierarchy.inheritsFrom) {
@@ -243,58 +245,64 @@ export class PermissionManager {
         inheritedPermissions.forEach(permission => permissions.add(permission));
       }
     }
-    
+
     return Array.from(permissions);
   }
-  
+
   /**
    * Verifica se uma role pode acessar um recurso específico
    */
   static canAccessResource(userRole: UserRole, resource: string): boolean {
     const allPermissions = this.getAllPermissions(userRole);
-    
+
     // Verifica acesso total
     if (allPermissions.includes('*')) {
       return true;
     }
-    
+
     // Verifica wildcard do recurso
     if (allPermissions.includes(`${resource}.*`)) {
       return true;
     }
-    
+
     // Verifica se tem pelo menos uma permissão do recurso
-    return allPermissions.some(permission => 
+    return allPermissions.some(permission =>
       permission.startsWith(`${resource}.`)
     );
   }
-  
+
   /**
    * Obtém as roles que um usuário pode gerenciar
    */
   static getManageableRoles(managerRole: UserRole): UserRole[] {
     const manageableRoles: UserRole[] = [];
     const allRoles: UserRole[] = [
-      'user', 'technician', 'atendente', 'supervisor_tecnico', 
-      'gerente_financeiro', 'gerente_adm', 'diretor', 'admin'
+      'user',
+      'technician',
+      'atendente',
+      'supervisor_tecnico',
+      'gerente_financeiro',
+      'gerente_adm',
+      'diretor',
+      'admin',
     ];
-    
+
     for (const role of allRoles) {
       if (this.canManageRole(managerRole, role)) {
         manageableRoles.push(role);
       }
     }
-    
+
     return manageableRoles;
   }
-  
+
   /**
    * Valida se uma role existe no sistema
    */
   static isValidRole(role: string): role is UserRole {
     return Object.keys(ROLE_HIERARCHY).includes(role);
   }
-  
+
   /**
    * Obtém a descrição de uma role
    */
@@ -310,7 +318,7 @@ export const RESOURCES = {
   PAGAMENTOS: 'pagamentos',
   RELATORIOS: 'relatorios',
   ADMIN: 'admin',
-  PECAS: 'pecas'
+  PECAS: 'pecas',
 } as const;
 
 export const ACTIONS = {
@@ -326,7 +334,7 @@ export const ACTIONS = {
   VIEW_FINANCIAL: 'view_financial',
   VIEW_TECHNICAL: 'view_technical',
   VIEW_ALL: 'view_all',
-  EXPORT: 'export'
+  EXPORT: 'export',
 } as const;
 
 // Funções utilitárias para construir permissões
@@ -339,5 +347,5 @@ export const buildResourceWildcard = (resource: string): string => {
 };
 
 // Exportar tipos para uso em outros arquivos
-export type Resource = typeof RESOURCES[keyof typeof RESOURCES];
-export type Action = typeof ACTIONS[keyof typeof ACTIONS];
+export type Resource = (typeof RESOURCES)[keyof typeof RESOURCES];
+export type Action = (typeof ACTIONS)[keyof typeof ACTIONS];

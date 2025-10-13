@@ -1,7 +1,7 @@
 // 📱 Webhook SMS - Status de Entrega
 // Webhook para receber atualizações de status do Twilio
-
 import { NextRequest, NextResponse } from 'next/server';
+
 import { createClient } from '@/lib/supabase/server';
 
 // 📥 POST - Receber status de entrega do SMS
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     // Verificar se é uma requisição do Twilio
     const twilioSignature = request.headers.get('x-twilio-signature');
-    
+
     if (!twilioSignature) {
       return NextResponse.json(
         { error: 'Assinatura Twilio não encontrada' },
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     // Parse do body como form data (Twilio envia como application/x-www-form-urlencoded)
     const formData = await request.formData();
-    
+
     const messageId = formData.get('MessageSid') as string;
     const messageStatus = formData.get('MessageStatus') as string;
     const to = formData.get('To') as string;
@@ -64,12 +64,11 @@ export async function POST(request: NextRequest) {
 
     // Log do status recebido
     console.log(`📱 SMS Status Update: ${messageId} -> ${messageStatus}`);
-    
+
     // Verificar se precisa de ação adicional baseada no status
     await handleStatusAction(messageStatus, messageId, to, supabase);
 
     return NextResponse.json({ success: true });
-
   } catch (error) {
     console.error('❌ Erro no webhook SMS:', error);
     return NextResponse.json(
@@ -81,9 +80,9 @@ export async function POST(request: NextRequest) {
 
 // 🔄 Ações baseadas no status
 async function handleStatusAction(
-  status: string, 
-  messageId: string, 
-  to: string, 
+  status: string,
+  messageId: string,
+  to: string,
   supabase: any
 ) {
   try {
@@ -92,18 +91,18 @@ async function handleStatusAction(
       case 'undelivered':
         // Log de falha para análise
         console.warn(`⚠️ SMS falhou para ${to}: ${messageId}`);
-        
+
         // Aqui poderia implementar retry ou notificação alternativa
         break;
-        
+
       case 'delivered':
         console.log(`✅ SMS entregue com sucesso para ${to}: ${messageId}`);
         break;
-        
+
       case 'sent':
         console.log(`📤 SMS enviado para ${to}: ${messageId}`);
         break;
-        
+
       default:
         console.log(`📱 Status SMS: ${status} para ${to}: ${messageId}`);
     }
@@ -117,6 +116,6 @@ export async function GET() {
   return NextResponse.json({
     message: 'Webhook SMS ativo',
     timestamp: new Date().toISOString(),
-    endpoint: '/api/webhooks/sms'
+    endpoint: '/api/webhooks/sms',
   });
 }

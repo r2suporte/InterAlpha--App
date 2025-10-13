@@ -1,43 +1,66 @@
-'use client'
+'use client';
 
-import React, { useState, useEffect } from 'react'
-import { Plus, Search, Filter, Edit, Trash2, Package, DollarSign, TrendingUp, AlertTriangle, MapPin, Calendar, User, Hash } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { DataField } from '@/components/ui/data-display'
-import { StatusBadge } from '@/components/ui/status-badge'
-import { useLoadingState } from '@/components/ui/loading-states'
-import { useToast } from '@/components/ui/toast-system'
-import { PageLoading } from '@/components/ui/loading'
-import PecaForm from '@/components/PecaForm'
-import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { 
-  ResponsiveContainer, 
-  ResponsiveStack, 
-  ResponsiveText, 
-  useBreakpoint, 
-  ShowHide 
-} from '@/components/ui/responsive-utils'
+import React, { useEffect, useState } from 'react';
+
+import {
+  AlertTriangle,
+  Calendar,
+  DollarSign,
+  Edit,
+  Filter,
+  Hash,
+  MapPin,
+  Package,
+  Plus,
+  Search,
+  Trash2,
+  TrendingUp,
+  User,
+} from 'lucide-react';
+
+import PecaForm from '@/components/PecaForm';
+import { EnhancedSidebar } from '@/components/navigation/enhanced-sidebar';
+import { SiteHeader } from '@/components/site-header';
+import { BackButton } from '@/components/ui/back-button';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DataField } from '@/components/ui/data-display';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { 
-  Peca, 
-  CategoriaPeca, 
-  StatusPeca, 
-  Fornecedor,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { PageLoading } from '@/components/ui/loading';
+import { useLoadingState } from '@/components/ui/loading-states';
+import {
+  ResponsiveContainer,
+  ResponsiveStack,
+  ResponsiveText,
+  ShowHide,
+  useBreakpoint,
+} from '@/components/ui/responsive-utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { useToast } from '@/components/ui/toast-system';
+import {
   CATEGORIA_PECA_LABELS,
+  CategoriaPeca,
+  Fornecedor,
+  Peca,
   STATUS_PECA_LABELS,
-  calcularMargemLucro
-} from '@/types/pecas'
+  StatusPeca,
+  calcularMargemLucro,
+} from '@/types/pecas';
 
 // Dados mock para demonstração
 const mockPecas: Peca[] = [
@@ -49,9 +72,9 @@ const mockPecas: Peca[] = [
     categoria: 'tela',
     marca: 'Apple',
     modelo_compativel: ['MacBook Air 13" M1'],
-    preco_custo: 450.00,
-    preco_venda: 650.00,
-    margem_lucro: calcularMargemLucro(450.00, 650.00),
+    preco_custo: 450.0,
+    preco_venda: 650.0,
+    margem_lucro: calcularMargemLucro(450.0, 650.0),
     quantidade_estoque: 15,
     estoque_minimo: 5,
     status: 'disponivel',
@@ -62,7 +85,7 @@ const mockPecas: Peca[] = [
     ativo: true,
     created_at: new Date('2024-01-15'),
     updated_at: new Date('2024-01-15'),
-    created_by: 'admin'
+    created_by: 'admin',
   },
   {
     id: '2',
@@ -72,9 +95,9 @@ const mockPecas: Peca[] = [
     categoria: 'bateria',
     marca: 'Apple',
     modelo_compativel: ['MacBook Air 13" M2'],
-    preco_custo: 180.00,
-    preco_venda: 280.00,
-    margem_lucro: calcularMargemLucro(180.00, 280.00),
+    preco_custo: 180.0,
+    preco_venda: 280.0,
+    margem_lucro: calcularMargemLucro(180.0, 280.0),
     quantidade_estoque: 8,
     estoque_minimo: 10,
     status: 'baixo_estoque',
@@ -85,7 +108,7 @@ const mockPecas: Peca[] = [
     ativo: true,
     created_at: new Date('2024-01-10'),
     updated_at: new Date('2024-01-10'),
-    created_by: 'admin'
+    created_by: 'admin',
   },
   {
     id: '3',
@@ -95,9 +118,9 @@ const mockPecas: Peca[] = [
     categoria: 'outros',
     marca: 'Apple',
     modelo_compativel: ['MacBook Pro 14" M3'],
-    preco_custo: 320.00,
-    preco_venda: 480.00,
-    margem_lucro: calcularMargemLucro(320.00, 480.00),
+    preco_custo: 320.0,
+    preco_venda: 480.0,
+    margem_lucro: calcularMargemLucro(320.0, 480.0),
     quantidade_estoque: 0,
     estoque_minimo: 3,
     status: 'sem_estoque',
@@ -108,9 +131,9 @@ const mockPecas: Peca[] = [
     ativo: true,
     created_at: new Date('2024-01-05'),
     updated_at: new Date('2024-01-05'),
-    created_by: 'admin'
-  }
-]
+    created_by: 'admin',
+  },
+];
 
 const mockFornecedores: Fornecedor[] = [
   {
@@ -122,7 +145,7 @@ const mockFornecedores: Fornecedor[] = [
     telefone: '(11) 99999-9999',
     ativo: true,
     created_at: new Date(),
-    updated_at: new Date()
+    updated_at: new Date(),
   },
   {
     id: '2',
@@ -133,69 +156,87 @@ const mockFornecedores: Fornecedor[] = [
     telefone: '(11) 88888-8888',
     ativo: true,
     created_at: new Date(),
-    updated_at: new Date()
-  }
-]
+    updated_at: new Date(),
+  },
+];
 
 export default function PecasPage() {
-  const [pecas, setPecas] = useState<Peca[]>(mockPecas)
-  const [fornecedores] = useState<Fornecedor[]>(mockFornecedores)
-  const [mostrarFormulario, setMostrarFormulario] = useState(false)
-  const [pecaEditando, setPecaEditando] = useState<Peca | undefined>()
-  const { isLoading, startLoading, stopLoading } = useLoadingState()
-  const { success, error } = useToast()
-  const { isMobile } = useBreakpoint()
-  
+  const [pecas, setPecas] = useState<Peca[]>(mockPecas);
+  const [fornecedores] = useState<Fornecedor[]>(mockFornecedores);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [pecaEditando, setPecaEditando] = useState<Peca | undefined>();
+  const { isLoading, startLoading, stopLoading } = useLoadingState();
+  const { success, error } = useToast();
+  const { isMobile } = useBreakpoint();
+
   // Filtros
-  const [busca, setBusca] = useState('')
-  const [filtroCategoria, setFiltroCategoria] = useState<CategoriaPeca | 'todas'>('todas')
-  const [filtroStatus, setFiltroStatus] = useState<StatusPeca | 'todos'>('todos')
+  const [busca, setBusca] = useState('');
+  const [filtroCategoria, setFiltroCategoria] = useState<
+    CategoriaPeca | 'todas'
+  >('todas');
+  const [filtroStatus, setFiltroStatus] = useState<StatusPeca | 'todos'>(
+    'todos'
+  );
 
   // Filtrar peças
   const pecasFiltradas = pecas.filter(peca => {
-    const matchBusca = busca === '' || 
+    const matchBusca =
+      busca === '' ||
       peca.nome.toLowerCase().includes(busca.toLowerCase()) ||
       peca.part_number.toLowerCase().includes(busca.toLowerCase()) ||
-      peca.descricao.toLowerCase().includes(busca.toLowerCase())
-    
-    const matchCategoria = filtroCategoria === 'todas' || peca.categoria === filtroCategoria
-    const matchStatus = filtroStatus === 'todos' || peca.status === filtroStatus
-    
-    return matchBusca && matchCategoria && matchStatus
-  })
+      peca.descricao.toLowerCase().includes(busca.toLowerCase());
+
+    const matchCategoria =
+      filtroCategoria === 'todas' || peca.categoria === filtroCategoria;
+    const matchStatus =
+      filtroStatus === 'todos' || peca.status === filtroStatus;
+
+    return matchBusca && matchCategoria && matchStatus;
+  });
 
   // Métricas
   const metricas = {
     totalPecas: pecas.length,
-    valorTotalEstoque: pecas.reduce((total, peca) => total + (peca.preco_custo * peca.quantidade_estoque), 0),
-    pecasBaixoEstoque: pecas.filter(peca => peca.status === 'baixo_estoque').length,
+    valorTotalEstoque: pecas.reduce(
+      (total, peca) => total + peca.preco_custo * peca.quantidade_estoque,
+      0
+    ),
+    pecasBaixoEstoque: pecas.filter(peca => peca.status === 'baixo_estoque')
+      .length,
     pecasSemEstoque: pecas.filter(peca => peca.status === 'sem_estoque').length,
-    margemLucroMedia: pecas.reduce((total, peca) => total + peca.margem_lucro, 0) / pecas.length
-  }
+    margemLucroMedia:
+      pecas.reduce((total, peca) => total + peca.margem_lucro, 0) /
+      pecas.length,
+  };
 
   // Handlers
   const handleSubmitPeca = async (data: any) => {
-    startLoading()
-    
+    startLoading();
+
     try {
       // Simular salvamento
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       if (pecaEditando) {
         // Editar peça existente
-        setPecas(prev => prev.map(peca => 
-          peca.id === pecaEditando.id 
-            ? { 
-                ...peca, 
-                ...data,
-                preco_custo: parseFloat(data.preco_custo),
-                preco_venda: parseFloat(data.preco_venda),
-                margem_lucro: calcularMargemLucro(parseFloat(data.preco_custo), parseFloat(data.preco_venda)),
-                updated_at: new Date()
-              }
-            : peca
-        ))
-        success('Peça atualizada com sucesso!')
+        setPecas(prev =>
+          prev.map(peca =>
+            peca.id === pecaEditando.id
+              ? {
+                  ...peca,
+                  ...data,
+                  preco_custo: parseFloat(data.preco_custo),
+                  preco_venda: parseFloat(data.preco_venda),
+                  margem_lucro: calcularMargemLucro(
+                    parseFloat(data.preco_custo),
+                    parseFloat(data.preco_venda)
+                  ),
+                  updated_at: new Date(),
+                }
+              : peca
+          )
+        );
+        success('Peça atualizada com sucesso!');
       } else {
         // Adicionar nova peça
         const novaPeca: Peca = {
@@ -207,7 +248,10 @@ export default function PecasPage() {
           marca: data.marca || '',
           preco_custo: parseFloat(data.preco_custo),
           preco_venda: parseFloat(data.preco_venda),
-          margem_lucro: calcularMargemLucro(parseFloat(data.preco_custo), parseFloat(data.preco_venda)),
+          margem_lucro: calcularMargemLucro(
+            parseFloat(data.preco_custo),
+            parseFloat(data.preco_venda)
+          ),
           quantidade_estoque: parseInt(data.estoque_atual) || 0,
           estoque_minimo: parseInt(data.estoque_minimo) || 0,
           status: data.status,
@@ -218,47 +262,44 @@ export default function PecasPage() {
           ativo: true,
           created_at: new Date(),
           updated_at: new Date(),
-          created_by: 'admin'
-        }
-        setPecas(prev => [...prev, novaPeca])
-        success('Peça cadastrada com sucesso!')
+          created_by: 'admin',
+        };
+        setPecas(prev => [...prev, novaPeca]);
+        success('Peça cadastrada com sucesso!');
       }
-      
-      setMostrarFormulario(false)
-      setPecaEditando(undefined)
-      
+
+      setMostrarFormulario(false);
+      setPecaEditando(undefined);
     } catch (err) {
-      console.error('Erro ao salvar peça:', err)
-      error('Erro ao salvar peça', 'Tente novamente mais tarde')
+      console.error('Erro ao salvar peça:', err);
+      error('Erro ao salvar peça', 'Tente novamente mais tarde');
     } finally {
-      stopLoading()
+      stopLoading();
     }
-  }
+  };
 
   const handleEditarPeca = (peca: Peca) => {
-    setPecaEditando(peca)
-    setMostrarFormulario(true)
-  }
+    setPecaEditando(peca);
+    setMostrarFormulario(true);
+  };
 
   const handleExcluirPeca = (id: string) => {
     if (confirm('Tem certeza que deseja excluir esta peça?')) {
-      setPecas(prev => prev.filter(peca => peca.id !== id))
+      setPecas(prev => prev.filter(peca => peca.id !== id));
     }
-  }
+  };
 
   const formatarMoeda = (valor: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL'
-    }).format(valor)
-  }
-
-
+      currency: 'BRL',
+    }).format(valor);
+  };
 
   if (mostrarFormulario) {
     return (
       <SidebarProvider>
-        <AppSidebar />
+        <EnhancedSidebar />
         <SidebarInset>
           <SiteHeader />
           <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
@@ -266,8 +307,8 @@ export default function PecasPage() {
               peca={pecaEditando}
               onSubmit={handleSubmitPeca}
               onCancel={() => {
-                setMostrarFormulario(false)
-                setPecaEditando(undefined)
+                setMostrarFormulario(false);
+                setPecaEditando(undefined);
               }}
               fornecedores={fornecedores}
               isLoading={isLoading}
@@ -275,259 +316,336 @@ export default function PecasPage() {
           </ResponsiveContainer>
         </SidebarInset>
       </SidebarProvider>
-    )
+    );
   }
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <EnhancedSidebar />
       <SidebarInset>
         <SiteHeader />
         <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
           {/* Cabeçalho */}
-          <ResponsiveStack direction="responsive" align="center" className="justify-between">
-            <div className="space-y-2">
-              <ResponsiveText 
-                size={isMobile ? "2xl" : "3xl"}
-                className="font-bold tracking-tight"
-              >
-                Gerenciamento de Peças
-              </ResponsiveText>
-              <ResponsiveText 
-                size={isMobile ? "sm" : "base"}
-                className="text-muted-foreground"
-              >
-                Cadastro e controle de estoque de peças para assistência técnica Apple
-              </ResponsiveText>
+          <ResponsiveStack
+            direction="responsive"
+            align="center"
+            className="justify-between"
+          >
+            <div className="flex items-center gap-4">
+              <BackButton href="/dashboard" />
+              <div className="space-y-2">
+                <ResponsiveText
+                  size={isMobile ? '2xl' : '3xl'}
+                  className="font-bold tracking-tight"
+                >
+                  Gerenciamento de Peças
+                </ResponsiveText>
+                <ResponsiveText
+                  size={isMobile ? 'sm' : 'base'}
+                  className="text-muted-foreground"
+                >
+                  Cadastro e controle de estoque de peças para assistência
+                  técnica Apple
+                </ResponsiveText>
+              </div>
             </div>
-            
+
             <ShowHide hide={['sm']}>
-              <Button 
+              <Button
                 onClick={() => setMostrarFormulario(true)}
                 className="flex items-center gap-2"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="h-4 w-4" />
                 Nova Peça
               </Button>
             </ShowHide>
-            
+
             <ShowHide on={['sm']}>
-              <Button 
+              <Button
                 onClick={() => setMostrarFormulario(true)}
-                className="flex items-center gap-2 w-full"
+                className="flex w-full items-center gap-2"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="h-4 w-4" />
                 Nova
               </Button>
             </ShowHide>
           </ResponsiveStack>
 
-      {/* Métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Peças</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metricas.totalPecas}</div>
-          </CardContent>
-        </Card>
+          {/* Métricas */}
+          <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total de Peças
+                </CardTitle>
+                <Package className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{metricas.totalPecas}</div>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Valor do Estoque</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatarMoeda(metricas.valorTotalEstoque)}</div>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Valor do Estoque
+                </CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatarMoeda(metricas.valorTotalEstoque)}
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Margem Média</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metricas.margemLucroMedia.toFixed(1)}%</div>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Margem Média
+                </CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {metricas.margemLucroMedia.toFixed(1)}%
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Baixo Estoque</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{metricas.pecasBaixoEstoque}</div>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Baixo Estoque
+                </CardTitle>
+                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">
+                  {metricas.pecasBaixoEstoque}
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sem Estoque</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{metricas.pecasSemEstoque}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filtros */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Buscar por nome, part number ou descrição..."
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            <Select value={filtroCategoria} onValueChange={(value) => setFiltroCategoria(value as CategoriaPeca | 'todas')}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas as categorias</SelectItem>
-                {Object.entries(CATEGORIA_PECA_LABELS).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filtroStatus} onValueChange={(value) => setFiltroStatus(value as StatusPeca | 'todos')}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os status</SelectItem>
-                {Object.entries(STATUS_PECA_LABELS).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Sem Estoque
+                </CardTitle>
+                <AlertTriangle className="h-4 w-4 text-red-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">
+                  {metricas.pecasSemEstoque}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Lista de Peças */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Peças Cadastradas ({pecasFiltradas.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {pecasFiltradas.length === 0 ? (
-            <div className="text-center py-8">
-              <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Nenhuma peça encontrada</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium">Part Number</th>
-                    <th className="text-left py-3 px-4 font-medium">Nome</th>
-                    <th className="text-left py-3 px-4 font-medium">Categoria</th>
-                    <th className="text-left py-3 px-4 font-medium">Estoque</th>
-                    <th className="text-left py-3 px-4 font-medium">Custo</th>
-                    <th className="text-left py-3 px-4 font-medium">Venda</th>
-                    <th className="text-left py-3 px-4 font-medium">Lucro</th>
-                    <th className="text-left py-3 px-4 font-medium">Status</th>
-                    <th className="text-left py-3 px-4 font-medium">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pecasFiltradas.map((peca) => (
-                    <tr key={peca.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <div className="font-medium">{peca.part_number}</div>
-                        <DataField 
-                          label="Código Fornecedor"
-                          icon="hash" 
-                          value={peca.codigo_fornecedor} 
-                          className="text-sm"
-                        />
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="font-medium">{peca.nome}</div>
-                        <div className="text-sm text-gray-500 max-w-xs truncate">{peca.descricao}</div>
-                        <DataField 
-                          label="Localização"
-                          icon="mapPin" 
-                          value={peca.localizacao_estoque} 
-                          className="text-sm mt-1"
-                        />
-                      </td>
-                      <td className="py-3 px-4">
-                        <Badge variant="outline">
-                          {CATEGORIA_PECA_LABELS[peca.categoria]}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="font-medium">{peca.quantidade_estoque}</div>
-                        <div className="text-sm text-gray-500">Min: {peca.estoque_minimo}</div>
-                      </td>
-                      <td className="py-3 px-4 font-medium">
-                        {formatarMoeda(peca.preco_custo)}
-                      </td>
-                      <td className="py-3 px-4 font-medium">
-                        {formatarMoeda(peca.preco_venda)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="font-medium text-green-600">
-                          {peca.margem_lucro.toFixed(1)}%
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {formatarMoeda(peca.preco_venda - peca.preco_custo)}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <StatusBadge 
-                          status={peca.status === 'disponivel' ? 'success' : 
-                                 peca.status === 'baixo_estoque' ? 'warning' :
-                                 peca.status === 'sem_estoque' ? 'error' :
-                                 peca.status === 'em_pedido' ? 'pending' : 'info'}
-                          text={STATUS_PECA_LABELS[peca.status]}
-                        />
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditarPeca(peca)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleExcluirPeca(peca.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          {/* Filtros */}
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex flex-col gap-4 md:flex-row">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                    <Input
+                      placeholder="Buscar por nome, part number ou descrição..."
+                      value={busca}
+                      onChange={e => setBusca(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <Select
+                  value={filtroCategoria}
+                  onValueChange={value =>
+                    setFiltroCategoria(value as CategoriaPeca | 'todas')
+                  }
+                >
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue placeholder="Categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as categorias</SelectItem>
+                    {Object.entries(CATEGORIA_PECA_LABELS).map(
+                      ([key, label]) => (
+                        <SelectItem key={key} value={key}>
+                          {label}
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={filtroStatus}
+                  onValueChange={value =>
+                    setFiltroStatus(value as StatusPeca | 'todos')
+                  }
+                >
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os status</SelectItem>
+                    {Object.entries(STATUS_PECA_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Lista de Peças */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Peças Cadastradas ({pecasFiltradas.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {pecasFiltradas.length === 0 ? (
+                <div className="py-8 text-center">
+                  <Package className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                  <p className="text-gray-500">Nenhuma peça encontrada</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="px-4 py-3 text-left font-medium">
+                          Part Number
+                        </th>
+                        <th className="px-4 py-3 text-left font-medium">
+                          Nome
+                        </th>
+                        <th className="px-4 py-3 text-left font-medium">
+                          Categoria
+                        </th>
+                        <th className="px-4 py-3 text-left font-medium">
+                          Estoque
+                        </th>
+                        <th className="px-4 py-3 text-left font-medium">
+                          Custo
+                        </th>
+                        <th className="px-4 py-3 text-left font-medium">
+                          Venda
+                        </th>
+                        <th className="px-4 py-3 text-left font-medium">
+                          Lucro
+                        </th>
+                        <th className="px-4 py-3 text-left font-medium">
+                          Status
+                        </th>
+                        <th className="px-4 py-3 text-left font-medium">
+                          Ações
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pecasFiltradas.map(peca => (
+                        <tr key={peca.id} className="border-b hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <div className="font-medium">
+                              {peca.part_number}
+                            </div>
+                            <DataField
+                              label="Código Fornecedor"
+                              icon="hash"
+                              value={peca.codigo_fornecedor}
+                              className="text-sm"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium">{peca.nome}</div>
+                            <div className="max-w-xs truncate text-sm text-gray-500">
+                              {peca.descricao}
+                            </div>
+                            <DataField
+                              label="Localização"
+                              icon="mapPin"
+                              value={peca.localizacao_estoque}
+                              className="mt-1 text-sm"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge variant="outline">
+                              {CATEGORIA_PECA_LABELS[peca.categoria]}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium">
+                              {peca.quantidade_estoque}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              Min: {peca.estoque_minimo}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 font-medium">
+                            {formatarMoeda(peca.preco_custo)}
+                          </td>
+                          <td className="px-4 py-3 font-medium">
+                            {formatarMoeda(peca.preco_venda)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-green-600">
+                              {peca.margem_lucro.toFixed(1)}%
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {formatarMoeda(
+                                peca.preco_venda - peca.preco_custo
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusBadge
+                              status={
+                                peca.status === 'disponivel'
+                                  ? 'success'
+                                  : peca.status === 'baixo_estoque'
+                                    ? 'warning'
+                                    : peca.status === 'sem_estoque'
+                                      ? 'error'
+                                      : peca.status === 'em_pedido'
+                                        ? 'pending'
+                                        : 'info'
+                              }
+                              text={STATUS_PECA_LABELS[peca.status]}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditarPeca(peca)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleExcluirPeca(peca.id)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </ResponsiveContainer>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }

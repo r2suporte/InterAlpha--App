@@ -16,8 +16,6 @@
   }
 }
 
-
-
 @layer base {
   :root {
     /* Sistema de cores moderno inspirado no design da OS */
@@ -27,22 +25,22 @@
     --card-foreground: 222 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 84% 4.9%;
-    
+
     /* Azul profissional como cor primária */
     --primary: 221 83% 53%;
     --primary-foreground: 210 40% 98%;
     --primary-hover: 221 83% 48%;
-    
+
     /* Cinza moderno para elementos secundários */
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 84% 4.9%;
-    
+
     /* Tons neutros refinados */
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
     --accent: 210 40% 96%;
     --accent-foreground: 222 84% 4.9%;
-    
+
     /* Estados de sucesso, aviso e erro */
     --success: 142 76% 36%;
     --success-foreground: 355 100% 97%;
@@ -50,22 +48,22 @@
     --warning-foreground: 48 96% 89%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    
+
     /* Bordas e inputs mais suaves */
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 221 83% 53%;
-    
+
     /* Cores para gráficos e dashboards */
     --chart-1: 221 83% 53%;
     --chart-2: 142 76% 36%;
     --chart-3: 38 92% 50%;
     --chart-4: 262 83% 58%;
     --chart-5: 0 84% 60%;
-    
+
     /* Raio de borda mais moderno */
     --radius: 0.75rem;
-    
+
     /* Sidebar com design mais elegante */
     --sidebar-background: 222 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;
@@ -75,11 +73,11 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 215 28% 17%;
     --sidebar-ring: 221 83% 53%;
-    
+
     /* Gradientes para elementos especiais */
     --gradient-primary: linear-gradient(135deg, hsl(221 83% 53%) 0%, hsl(221 83% 48%) 100%);
     --gradient-secondary: linear-gradient(135deg, hsl(210 40% 96%) 0%, hsl(214 32% 91%) 100%);
-    
+
     /* Sombras modernas */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
@@ -87,7 +85,7 @@
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   }
-  
+
   .dark {
     --background: 222 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -95,37 +93,37 @@
     --card-foreground: 210 40% 98%;
     --popover: 222 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    
+
     /* Azul mais claro para modo escuro */
     --primary: 217 91% 60%;
     --primary-foreground: 222 84% 4.9%;
     --primary-hover: 217 91% 55%;
-    
+
     --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
-    
+
     --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
     --accent: 217 33% 17%;
     --accent-foreground: 210 40% 98%;
-    
+
     --success: 142 76% 36%;
     --success-foreground: 355 100% 97%;
     --warning: 38 92% 50%;
     --warning-foreground: 48 96% 89%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
-    
+
     --border: 217 33% 17%;
     --input: 217 33% 17%;
     --ring: 217 91% 60%;
-    
+
     --chart-1: 217 91% 60%;
     --chart-2: 142 76% 36%;
     --chart-3: 38 92% 50%;
     --chart-4: 262 83% 58%;
     --chart-5: 0 63% 31%;
-    
+
     --sidebar-background: 222 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 217 91% 60%;
@@ -134,11 +132,11 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217 33% 17%;
     --sidebar-ring: 217 91% 60%;
-    
+
     /* Gradientes para modo escuro */
     --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(217 91% 55%) 100%);
     --gradient-secondary: linear-gradient(135deg, hsl(217 33% 17%) 0%, hsl(215 28% 17%) 100%);
-    
+
     /* Sombras para modo escuro */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
     --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
@@ -148,8 +146,6 @@
   }
 }
 
-
-
 @layer base {
   * {
     @apply border-border;
@@ -157,44 +153,45 @@
   body {
     @apply bg-background text-foreground;
   }
-  
+
   /* Correções para layout da sidebar */
-  html, body {
+  html,
+  body {
     height: 100%;
     overflow-x: hidden;
   }
-  
+
   /* Garantir que a sidebar não seja cortada */
   [data-sidebar] {
     min-height: 100vh;
     height: 100vh;
     overflow-y: auto;
   }
-  
+
   /* Melhorar o scroll da sidebar */
   [data-sidebar]::-webkit-scrollbar {
     width: 6px;
   }
-  
+
   [data-sidebar]::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   [data-sidebar]::-webkit-scrollbar-thumb {
     background: hsl(var(--muted-foreground) / 0.3);
     border-radius: 3px;
   }
-  
+
   [data-sidebar]::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground) / 0.5);
   }
-  
+
   /* Garantir que o conteúdo principal não sobreponha a sidebar */
   .sidebar-wrapper {
     display: flex;
     min-height: 100vh;
   }
-  
+
   /* Melhorar a transição da sidebar */
   .sidebar-transition {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["jest", "node"],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "strict": false,
+    "skipLibCheck": true
+  },
+  "include": [
+    "types/**/*.d.ts",
+    "types/test-globals.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "cypress",
+    "public",
+    "dist"
+  ]
+}

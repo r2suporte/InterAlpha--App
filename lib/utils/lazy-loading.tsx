@@ -1,6 +1,7 @@
 'use client';
 
-import React, { Suspense, ComponentType } from 'react';
+import React, { ComponentType, Suspense } from 'react';
+
 import { PageLoading } from '@/components/ui/loading';
 
 interface LazyComponentOptions {
@@ -19,7 +20,11 @@ class LazyErrorBoundary extends React.Component<
   { children: React.ReactNode; onRetry: () => void; maxRetries: number },
   LazyComponentState
 > {
-  constructor(props: { children: React.ReactNode; onRetry: () => void; maxRetries: number }) {
+  constructor(props: {
+    children: React.ReactNode;
+    onRetry: () => void;
+    maxRetries: number;
+  }) {
     super(props);
     this.state = { hasError: false, retryCount: 0 };
   }
@@ -36,7 +41,7 @@ class LazyErrorBoundary extends React.Component<
     if (this.state.retryCount < this.props.maxRetries) {
       this.setState(prevState => ({
         hasError: false,
-        retryCount: prevState.retryCount + 1
+        retryCount: prevState.retryCount + 1,
       }));
       this.props.onRetry();
     }
@@ -45,21 +50,22 @@ class LazyErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center p-8 space-y-4">
+        <div className="flex flex-col items-center justify-center space-y-4 p-8">
           <div className="text-center">
             <h3 className="text-lg font-semibold text-red-600">
               Erro ao carregar componente
             </h3>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="mt-2 text-sm text-muted-foreground">
               Ocorreu um erro ao carregar este componente.
             </p>
           </div>
           {this.state.retryCount < this.props.maxRetries && (
             <button
               onClick={this.handleRetry}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
             >
-              Tentar novamente ({this.state.retryCount + 1}/{this.props.maxRetries})
+              Tentar novamente ({this.state.retryCount + 1}/
+              {this.props.maxRetries})
             </button>
           )}
         </div>
@@ -81,7 +87,7 @@ export function createLazyComponent<T extends ComponentType<any>>(
     fallback = <PageLoading text="Carregando componente..." />,
     errorBoundary = true,
     retryDelay = 1000,
-    maxRetries = 3
+    maxRetries = 3,
   } = options;
 
   const LazyComponent = React.lazy(() => {
@@ -89,22 +95,27 @@ export function createLazyComponent<T extends ComponentType<any>>(
       const attemptImport = (attempt: number = 1) => {
         importFn()
           .then(resolve)
-          .catch((error) => {
+          .catch(error => {
             if (attempt < maxRetries) {
-              console.warn(`Lazy loading attempt ${attempt} failed, retrying in ${retryDelay}ms...`);
+              console.warn(
+                `Lazy loading attempt ${attempt} failed, retrying in ${retryDelay}ms...`
+              );
               setTimeout(() => attemptImport(attempt + 1), retryDelay);
             } else {
-              console.error('Lazy loading failed after maximum retries:', error);
+              console.error(
+                'Lazy loading failed after maximum retries:',
+                error
+              );
               reject(error);
             }
           });
       };
-      
+
       attemptImport();
     });
   });
 
-  const WrappedComponent: ComponentType<React.ComponentProps<T>> = (props) => {
+  const WrappedComponent: ComponentType<React.ComponentProps<T>> = props => {
     const [retryKey, setRetryKey] = React.useState(0);
 
     const handleRetry = React.useCallback(() => {
@@ -147,7 +158,7 @@ export function useLazyData<T>(
   const fetchData = React.useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const result = await fetchFn();
       setData(result);
@@ -181,7 +192,7 @@ export function LazySection({
   threshold = 0.1,
   rootMargin = '50px',
   fallback = <PageLoading />,
-  className
+  className,
 }: LazySectionProps) {
   const [isVisible, setIsVisible] = React.useState(false);
   const [hasLoaded, setHasLoaded] = React.useState(false);
@@ -197,7 +208,7 @@ export function LazySection({
       },
       {
         threshold,
-        rootMargin
+        rootMargin,
       }
     );
 
@@ -226,7 +237,10 @@ export function withLazyLoading<P extends object>(
   Component: ComponentType<P>,
   options: LazyComponentOptions = {}
 ) {
-  return createLazyComponent(() => Promise.resolve({ default: Component }), options);
+  return createLazyComponent(
+    () => Promise.resolve({ default: Component }),
+    options
+  );
 }
 
 /**
@@ -238,39 +252,39 @@ export const LazyPresets = {
     fallback: <PageLoading text="Carregando dashboard..." />,
     errorBoundary: true,
     retryDelay: 2000,
-    maxRetries: 3
+    maxRetries: 3,
   },
-  
+
   // Para formulários
   form: {
     fallback: <PageLoading text="Carregando formulário..." />,
     errorBoundary: true,
     retryDelay: 1000,
-    maxRetries: 2
+    maxRetries: 2,
   },
-  
+
   // Para tabelas e listas
   table: {
     fallback: <PageLoading text="Carregando dados..." />,
     errorBoundary: true,
     retryDelay: 1500,
-    maxRetries: 3
+    maxRetries: 3,
   },
-  
+
   // Para gráficos e visualizações
   chart: {
     fallback: <PageLoading text="Carregando gráficos..." />,
     errorBoundary: true,
     retryDelay: 2000,
-    maxRetries: 2
+    maxRetries: 2,
   },
-  
+
   // Para componentes críticos (sem retry)
   critical: {
     fallback: <PageLoading text="Carregando..." />,
     errorBoundary: false,
-    maxRetries: 1
-  }
+    maxRetries: 1,
+  },
 };
 
 export default {
@@ -278,5 +292,5 @@ export default {
   useLazyData,
   LazySection,
   withLazyLoading,
-  LazyPresets
+  LazyPresets,
 };

@@ -1,0 +1,52 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Ler a mensagem do commit
+commit_msg=$(cat "$1")
+
+echo "📝 Validando mensagem do commit..."
+
+# Verificar se a mensagem não está vazia
+if [ -z "$commit_msg" ]; then
+  echo "❌ Mensagem de commit não pode estar vazia"
+  exit 1
+fi
+
+# Verificar comprimento mínimo
+if [ ${#commit_msg} -lt 10 ]; then
+  echo "❌ Mensagem de commit muito curta (mínimo 10 caracteres)"
+  echo "💡 Dica: Descreva claramente o que foi alterado"
+  exit 1
+fi
+
+# Verificar comprimento máximo da primeira linha
+first_line=$(echo "$commit_msg" | head -n1)
+if [ ${#first_line} -gt 72 ]; then
+  echo "❌ Primeira linha da mensagem muito longa (máximo 72 caracteres)"
+  echo "💡 Dica: Mantenha o título conciso e use o corpo para detalhes"
+  exit 1
+fi
+
+# Verificar padrões de commit convencionais (opcional, mas recomendado)
+if echo "$first_line" | grep -qE '^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+'; then
+  echo "✅ Formato de commit convencional detectado"
+elif echo "$first_line" | grep -qE '^(add|update|remove|fix|improve|implement|create|delete): .+'; then
+  echo "✅ Formato de commit descritivo detectado"
+else
+  echo "⚠️  Considere usar commits convencionais:"
+  echo "   feat: nova funcionalidade"
+  echo "   fix: correção de bug"
+  echo "   docs: documentação"
+  echo "   style: formatação"
+  echo "   refactor: refatoração"
+  echo "   test: testes"
+  echo "   chore: manutenção"
+fi
+
+# Verificar se não contém palavras proibidas
+if echo "$commit_msg" | grep -iqE '(wip|todo|fixme|hack|temp|debug)'; then
+  echo "⚠️  Mensagem contém palavras que indicam trabalho incompleto"
+  echo "💡 Considere finalizar o trabalho antes do commit"
+fi
+
+echo "✅ Mensagem de commit validada!"

@@ -1,7 +1,17 @@
 'use client';
 
 import React from 'react';
-import { Loader2, FileText, Users, Package, DollarSign, Settings, BarChart3 } from 'lucide-react';
+
+import {
+  BarChart3,
+  DollarSign,
+  FileText,
+  Loader2,
+  Package,
+  Settings,
+  Users,
+} from 'lucide-react';
+
 import { cn } from '@/lib/utils';
 
 interface LoadingSpinnerProps {
@@ -9,17 +19,24 @@ interface LoadingSpinnerProps {
   className?: string;
 }
 
-export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) {
+export function LoadingSpinner({
+  size = 'md',
+  className,
+}: LoadingSpinnerProps) {
   const sizeClasses = {
     sm: 'h-4 w-4',
     md: 'h-6 w-6',
     lg: 'h-8 w-8',
-    xl: 'h-12 w-12'
+    xl: 'h-12 w-12',
   };
 
   return (
-    <Loader2 
-      className={cn('animate-spin text-muted-foreground', sizeClasses[size], className)} 
+    <Loader2
+      className={cn(
+        'animate-spin text-muted-foreground',
+        sizeClasses[size],
+        className
+      )}
     />
   );
 }
@@ -29,21 +46,24 @@ interface LoadingSkeletonProps {
   variant?: 'text' | 'card' | 'avatar' | 'button';
 }
 
-export function LoadingSkeleton({ className, variant = 'text' }: LoadingSkeletonProps) {
+export function LoadingSkeleton({
+  className,
+  variant = 'text',
+}: LoadingSkeletonProps) {
   const variantClasses = {
     text: 'h-4 w-full',
     card: 'h-32 w-full',
     avatar: 'h-10 w-10 rounded-full',
-    button: 'h-10 w-24'
+    button: 'h-10 w-24',
   };
 
   return (
-    <div 
+    <div
       className={cn(
-        'animate-pulse bg-muted rounded',
+        'animate-pulse rounded bg-muted',
         variantClasses[variant],
         className
-      )} 
+      )}
     />
   );
 }
@@ -55,17 +75,22 @@ interface LoadingCardProps {
   className?: string;
 }
 
-export function LoadingCard({ 
-  title = 'Carregando...', 
+export function LoadingCard({
+  title = 'Carregando...',
   description = 'Aguarde enquanto os dados são carregados',
   icon: Icon = Loader2,
-  className 
+  className,
 }: LoadingCardProps) {
   return (
-    <div className={cn('flex flex-col items-center justify-center p-8 text-center', className)}>
-      <Icon className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-      <h3 className="text-lg font-medium text-foreground mb-2">{title}</h3>
-      <p className="text-sm text-muted-foreground max-w-sm">{description}</p>
+    <div
+      className={cn(
+        'flex flex-col items-center justify-center p-8 text-center',
+        className
+      )}
+    >
+      <Icon className="mb-4 h-8 w-8 animate-spin text-muted-foreground" />
+      <h3 className="mb-2 text-lg font-medium text-foreground">{title}</h3>
+      <p className="max-w-sm text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }
@@ -76,7 +101,11 @@ interface LoadingTableProps {
   className?: string;
 }
 
-export function LoadingTable({ rows = 5, columns = 4, className }: LoadingTableProps) {
+export function LoadingTable({
+  rows = 5,
+  columns = 4,
+  className,
+}: LoadingTableProps) {
   return (
     <div className={cn('space-y-3', className)}>
       {/* Header */}
@@ -85,7 +114,7 @@ export function LoadingTable({ rows = 5, columns = 4, className }: LoadingTableP
           <LoadingSkeleton key={i} className="h-4 flex-1" />
         ))}
       </div>
-      
+
       {/* Rows */}
       {Array.from({ length: rows }).map((_, rowIndex) => (
         <div key={rowIndex} className="flex space-x-4">
@@ -134,9 +163,9 @@ export function LoadingDashboard({ className }: LoadingDashboardProps) {
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="p-6 border rounded-lg space-y-3">
+          <div key={i} className="space-y-3 rounded-lg border p-6">
             <div className="flex items-center justify-between">
               <LoadingSkeleton className="h-4 w-20" />
               <LoadingSkeleton variant="avatar" className="h-8 w-8" />
@@ -148,19 +177,19 @@ export function LoadingDashboard({ className }: LoadingDashboardProps) {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="p-6 border rounded-lg space-y-4">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="space-y-4 rounded-lg border p-6">
           <LoadingSkeleton className="h-6 w-32" />
           <LoadingSkeleton className="h-64 w-full" />
         </div>
-        <div className="p-6 border rounded-lg space-y-4">
+        <div className="space-y-4 rounded-lg border p-6">
           <LoadingSkeleton className="h-6 w-32" />
           <LoadingSkeleton className="h-64 w-full" />
         </div>
       </div>
 
       {/* Table */}
-      <div className="p-6 border rounded-lg space-y-4">
+      <div className="space-y-4 rounded-lg border p-6">
         <LoadingSkeleton className="h-6 w-40" />
         <LoadingTable rows={8} columns={5} />
       </div>
@@ -172,7 +201,7 @@ export function LoadingDashboard({ className }: LoadingDashboardProps) {
 export const LoadingStates = {
   // Clientes
   Clientes: () => (
-    <LoadingCard 
+    <LoadingCard
       title="Carregando clientes..."
       description="Buscando informações dos clientes"
       icon={Users}
@@ -181,7 +210,7 @@ export const LoadingStates = {
 
   // Ordens de Serviço
   OrdensServico: () => (
-    <LoadingCard 
+    <LoadingCard
       title="Carregando ordens de serviço..."
       description="Buscando dados das ordens de serviço"
       icon={FileText}
@@ -190,7 +219,7 @@ export const LoadingStates = {
 
   // Peças
   Pecas: () => (
-    <LoadingCard 
+    <LoadingCard
       title="Carregando peças..."
       description="Carregando inventário de peças"
       icon={Package}
@@ -199,7 +228,7 @@ export const LoadingStates = {
 
   // Financeiro
   Financeiro: () => (
-    <LoadingCard 
+    <LoadingCard
       title="Carregando dados financeiros..."
       description="Processando informações financeiras"
       icon={DollarSign}
@@ -208,7 +237,7 @@ export const LoadingStates = {
 
   // Métricas
   Metricas: () => (
-    <LoadingCard 
+    <LoadingCard
       title="Carregando métricas..."
       description="Calculando métricas de performance"
       icon={BarChart3}
@@ -217,7 +246,7 @@ export const LoadingStates = {
 
   // Configurações
   Configuracoes: () => (
-    <LoadingCard 
+    <LoadingCard
       title="Carregando configurações..."
       description="Buscando configurações do sistema"
       icon={Settings}
@@ -225,9 +254,7 @@ export const LoadingStates = {
   ),
 
   // Genérico
-  Generic: () => (
-    <LoadingCard />
-  )
+  Generic: () => <LoadingCard />,
 };
 
 // Hook para estados de loading
@@ -236,14 +263,17 @@ export function useLoadingState(initialState = false) {
 
   const startLoading = React.useCallback(() => setIsLoading(true), []);
   const stopLoading = React.useCallback(() => setIsLoading(false), []);
-  const toggleLoading = React.useCallback(() => setIsLoading(prev => !prev), []);
+  const toggleLoading = React.useCallback(
+    () => setIsLoading(prev => !prev),
+    []
+  );
 
   return {
     isLoading,
     startLoading,
     stopLoading,
     toggleLoading,
-    setIsLoading
+    setIsLoading,
   };
 }
 
@@ -254,11 +284,11 @@ export function withLoadingState<T extends object>(
 ) {
   return function WrappedComponent(props: T & { isLoading?: boolean }) {
     const { isLoading, ...componentProps } = props;
-    
+
     if (isLoading) {
       return <LoadingComponent />;
     }
-    
+
     return <Component {...(componentProps as T)} />;
   };
 }

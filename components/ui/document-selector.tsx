@@ -1,136 +1,165 @@
-'use client'
+'use client';
 
-import React, { useState, useEffect } from 'react'
-import { InputMask } from './input-mask'
-import { Button } from './button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './dialog'
-import { Label } from './label'
-import { FileText, User, Building, CheckCircle, AlertCircle } from 'lucide-react'
-import { getMascaraCpfCnpj, getMascaraPorTipo, determinarTipoPessoa, validarCpfCnpj, type TipoPessoa } from '@/lib/validators'
+import React, { useEffect, useState } from 'react';
+
+import {
+  AlertCircle,
+  Building,
+  CheckCircle,
+  FileText,
+  User,
+} from 'lucide-react';
+
+import {
+  type TipoPessoa,
+  determinarTipoPessoa,
+  getMascaraCpfCnpj,
+  getMascaraPorTipo,
+  validarCpfCnpj,
+} from '@/lib/validators';
+
+import { Button } from './button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './dialog';
+import { InputMask } from './input-mask';
+import { Label } from './label';
 
 interface DocumentSelectorProps {
-  value: string
-  onChange: (value: string, tipoPessoa: TipoPessoa) => void
-  id?: string
-  placeholder?: string
-  required?: boolean
-  className?: string
+  value: string;
+  onChange: (value: string, tipoPessoa: TipoPessoa) => void;
+  id?: string;
+  placeholder?: string;
+  required?: boolean;
+  className?: string;
 }
 
 export function DocumentSelector({
   value,
   onChange,
   id,
-  placeholder = "Selecione o tipo de documento",
+  placeholder = 'Selecione o tipo de documento',
   required = false,
-  className
+  className,
 }: DocumentSelectorProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [documentType, setDocumentType] = useState<'cpf' | 'cnpj' | null>(() => {
-    // Inicializar o tipo baseado no valor inicial, se houver
-    if (value) {
-      const cleanValue = value.replace(/\D/g, '')
-      // Só determinar automaticamente se o documento estiver completo
-      if (cleanValue.length === 11) {
-        return 'cpf'
-      } else if (cleanValue.length === 14) {
-        return 'cnpj'
+  const [isOpen, setIsOpen] = useState(false);
+  const [documentType, setDocumentType] = useState<'cpf' | 'cnpj' | null>(
+    () => {
+      // Inicializar o tipo baseado no valor inicial, se houver
+      if (value) {
+        const cleanValue = value.replace(/\D/g, '');
+        // Só determinar automaticamente se o documento estiver completo
+        if (cleanValue.length === 11) {
+          return 'cpf';
+        } else if (cleanValue.length === 14) {
+          return 'cnpj';
+        }
       }
+      return null;
     }
-    return null
-  })
-  const [inputValue, setInputValue] = useState(value)
-  const [isValid, setIsValid] = useState<boolean | null>(null)
-  const [showValidation, setShowValidation] = useState(false)
+  );
+  const [inputValue, setInputValue] = useState(value);
+  const [isValid, setIsValid] = useState<boolean | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
 
   // Função para validar o documento
-  const validateDocument = (docValue: string, docType: 'cpf' | 'cnpj' | null) => {
+  const validateDocument = (
+    docValue: string,
+    docType: 'cpf' | 'cnpj' | null
+  ) => {
     if (!docValue || !docType) {
-      setIsValid(null)
-      setShowValidation(false)
-      return
+      setIsValid(null);
+      setShowValidation(false);
+      return;
     }
 
-    const cleanValue = docValue.replace(/\D/g, '')
-    const tipoPessoa = docType === 'cpf' ? 'fisica' : 'juridica'
-    
+    const cleanValue = docValue.replace(/\D/g, '');
+    const tipoPessoa = docType === 'cpf' ? 'fisica' : 'juridica';
+
     // Só mostrar validação se o documento tiver pelo menos alguns dígitos
     if (cleanValue.length >= 3) {
-      setShowValidation(true)
-      const valid = validarCpfCnpj(cleanValue, tipoPessoa)
-      setIsValid(valid)
+      setShowValidation(true);
+      const valid = validarCpfCnpj(cleanValue, tipoPessoa);
+      setIsValid(valid);
     } else {
-      setShowValidation(false)
-      setIsValid(null)
+      setShowValidation(false);
+      setIsValid(null);
     }
-  }
+  };
 
   // Sincronizar com valor externo
   useEffect(() => {
     // Só atualizar se o valor externo for diferente do valor local
     if (value !== inputValue) {
-      setInputValue(value)
+      setInputValue(value);
     }
-    
+
     // Resetar tipo se valor for limpo externamente
     if (!value && documentType) {
-      setDocumentType(null)
-      setIsValid(null)
-      setShowValidation(false)
+      setDocumentType(null);
+      setIsValid(null);
+      setShowValidation(false);
     } else if (value && documentType) {
-      validateDocument(value, documentType)
+      validateDocument(value, documentType);
     }
-  }, [value])
+  }, [value]);
 
   const handleDocumentTypeSelect = (type: 'cpf' | 'cnpj') => {
-    setDocumentType(type)
-    setInputValue('')
-    setIsValid(null)
-    setShowValidation(false)
-    setIsOpen(false)
+    setDocumentType(type);
+    setInputValue('');
+    setIsValid(null);
+    setShowValidation(false);
+    setIsOpen(false);
     // Limpar o valor quando trocar o tipo
-    onChange('', type === 'cpf' ? 'fisica' : 'juridica')
-  }
+    onChange('', type === 'cpf' ? 'fisica' : 'juridica');
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value
-    
+    const newValue = e.target.value;
+
     // Atualizar estado local
-    setInputValue(newValue)
-    
+    setInputValue(newValue);
+
     // Validar em tempo real se há tipo selecionado
     if (documentType) {
-      validateDocument(newValue, documentType)
+      validateDocument(newValue, documentType);
     }
-    
+
     // Notificar o componente pai
-    onChange(newValue, documentType === 'cpf' ? 'fisica' : 'juridica')
-  }
+    onChange(newValue, documentType === 'cpf' ? 'fisica' : 'juridica');
+  };
 
   const handleClearDocument = () => {
-    setDocumentType(null)
-    setInputValue('')
-    setIsValid(null)
-    setShowValidation(false)
-    onChange('', 'fisica')
-  }
+    setDocumentType(null);
+    setInputValue('');
+    setIsValid(null);
+    setShowValidation(false);
+    onChange('', 'fisica');
+  };
 
   const getPlaceholderText = () => {
-    if (documentType === 'cpf') return '000.000.000-00'
-    if (documentType === 'cnpj') return '00.000.000/0000-00'
-    return placeholder
-  }
+    if (documentType === 'cpf') return '000.000.000-00';
+    if (documentType === 'cnpj') return '00.000.000/0000-00';
+    return placeholder;
+  };
 
   const getDocumentLabel = () => {
-    if (documentType === 'cpf') return 'CPF'
-    if (documentType === 'cnpj') return 'CNPJ'
-    return 'CPF/CNPJ'
-  }
+    if (documentType === 'cpf') return 'CPF';
+    if (documentType === 'cnpj') return 'CNPJ';
+    return 'CPF/CNPJ';
+  };
 
   return (
     <div className={className}>
-      <div className="flex items-center gap-2 mb-2">
-        <Label htmlFor={id}>{getDocumentLabel()} {required && '*'}</Label>
+      <div className="mb-2 flex items-center gap-2">
+        <Label htmlFor={id}>
+          {getDocumentLabel()} {required && '*'}
+        </Label>
         {documentType && (
           <Button
             type="button"
@@ -154,9 +183,9 @@ export function DocumentSelector({
             placeholder={getPlaceholderText()}
             required={required}
             className={`w-full pr-10 ${
-              showValidation 
-                ? isValid 
-                  ? 'border-green-500 focus:border-green-500 focus:ring-green-500' 
+              showValidation
+                ? isValid
+                  ? 'border-green-500 focus:border-green-500 focus:ring-green-500'
                   : 'border-red-500 focus:border-red-500 focus:ring-red-500'
                 : ''
             }`}
@@ -206,7 +235,9 @@ export function DocumentSelector({
                 <User className="h-8 w-8" />
                 <div className="text-center">
                   <div className="font-semibold">CPF</div>
-                  <div className="text-sm text-muted-foreground">Pessoa Física</div>
+                  <div className="text-sm text-muted-foreground">
+                    Pessoa Física
+                  </div>
                 </div>
               </Button>
               <Button
@@ -218,7 +249,9 @@ export function DocumentSelector({
                 <Building className="h-8 w-8" />
                 <div className="text-center">
                   <div className="font-semibold">CNPJ</div>
-                  <div className="text-sm text-muted-foreground">Pessoa Jurídica</div>
+                  <div className="text-sm text-muted-foreground">
+                    Pessoa Jurídica
+                  </div>
                 </div>
               </Button>
             </div>
@@ -226,5 +259,5 @@ export function DocumentSelector({
         </Dialog>
       )}
     </div>
-  )
+  );
 }

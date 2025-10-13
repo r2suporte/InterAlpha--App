@@ -1,41 +1,40 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server';
+
+import { createClient } from '@/lib/supabase/server';
 
 // GET - Listar equipamentos
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const search = searchParams.get('search')
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search');
 
-    const supabase = await createClient()
+    const supabase = await createClient();
 
-    let query = supabase
-      .from('equipamentos')
-      .select('*')
+    let query = supabase.from('equipamentos').select('*');
 
     // Aplicar filtro de busca
     if (search) {
-      query = query.or(`modelo.ilike.%${search}%,serial_number.ilike.%${search}%,imei.ilike.%${search}%`)
+      query = query.or(
+        `modelo.ilike.%${search}%,serial_number.ilike.%${search}%,imei.ilike.%${search}%`
+      );
     }
 
     // Aplicar paginação
-    const from = (page - 1) * limit
-    const to = from + limit - 1
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
 
-    query = query
-      .order('created_at', { ascending: false })
-      .range(from, to)
+    query = query.order('created_at', { ascending: false }).range(from, to);
 
-    const { data: equipamentos, error, count } = await query
+    const { data: equipamentos, error, count } = await query;
 
     if (error) {
-      console.error('Erro ao buscar equipamentos:', error)
+      console.error('Erro ao buscar equipamentos:', error);
       return NextResponse.json(
         { error: 'Erro ao buscar equipamentos' },
         { status: 500 }
-      )
+      );
     }
 
     return NextResponse.json({
@@ -45,26 +44,25 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit)
-      }
-    })
-
+        totalPages: Math.ceil((count || 0) / limit),
+      },
+    });
   } catch (error) {
-    console.error('Erro na listagem de equipamentos:', error)
+    console.error('Erro na listagem de equipamentos:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
-    )
+    );
   }
 }
 
 // POST - Criar novo equipamento
 export async function POST(request: NextRequest) {
   try {
-    const { 
-      tipo, 
-      modelo, 
-      serial_number, 
+    const {
+      tipo,
+      modelo,
+      serial_number,
       ano_fabricacao,
       cor,
       configuracao,
@@ -81,53 +79,60 @@ export async function POST(request: NextRequest) {
       versao_sistema,
       senha_desbloqueio,
       icloud_removido,
-      find_my_desabilitado
-    } = await request.json()
+      find_my_desabilitado,
+    } = await request.json();
 
     // Validação dos campos obrigatórios
     if (!tipo || !modelo || !serial_number) {
       return NextResponse.json(
         { error: 'Tipo, modelo e serial number são obrigatórios' },
         { status: 400 }
-      )
+      );
     }
 
     // Validar tipo de equipamento
     const tiposValidos = [
-      'macbook_air', 'macbook_pro', 'mac_mini', 'imac', 
-      'mac_studio', 'mac_pro', 'ipad', 'ipad_air', 
-      'ipad_pro', 'ipad_mini'
-    ]
-    
+      'macbook_air',
+      'macbook_pro',
+      'mac_mini',
+      'imac',
+      'mac_studio',
+      'mac_pro',
+      'ipad',
+      'ipad_air',
+      'ipad_pro',
+      'ipad_mini',
+    ];
+
     if (!tiposValidos.includes(tipo)) {
       return NextResponse.json(
         { error: `Tipo inválido. Tipos válidos: ${tiposValidos.join(', ')}` },
         { status: 400 }
-      )
+      );
     }
 
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     // Verificar se já existe equipamento com o mesmo serial number
     const { data: equipamentoExistente, error: errorBusca } = await supabase
       .from('equipamentos')
       .select('*')
       .eq('serial_number', serial_number)
-      .single()
+      .single();
 
     if (errorBusca && errorBusca.code !== 'PGRST116') {
-      console.error('Erro ao buscar equipamento:', errorBusca)
+      console.error('Erro ao buscar equipamento:', errorBusca);
       return NextResponse.json(
         { error: 'Erro interno do servidor' },
         { status: 500 }
-      )
+      );
     }
 
     if (equipamentoExistente) {
       return NextResponse.json(
         { error: 'Já existe um equipamento cadastrado com este serial number' },
         { status: 409 }
-      )
+      );
     }
 
     // Preparar dados para inserção
@@ -151,35 +156,37 @@ export async function POST(request: NextRequest) {
       versao_sistema: versao_sistema?.trim() || null,
       senha_desbloqueio: senha_desbloqueio?.trim() || null,
       icloud_removido: icloud_removido || false,
-      find_my_desabilitado: find_my_desabilitado || false
-    }
+      find_my_desabilitado: find_my_desabilitado || false,
+    };
 
     // Inserir novo equipamento
     const { data: novoEquipamento, error: errorCriacao } = await supabase
       .from('equipamentos')
       .insert(equipamentoData)
       .select()
-      .single()
+      .single();
 
     if (errorCriacao) {
-      console.error('Erro ao criar equipamento:', errorCriacao)
+      console.error('Erro ao criar equipamento:', errorCriacao);
       return NextResponse.json(
         { error: 'Erro ao criar equipamento' },
         { status: 500 }
-      )
+      );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Equipamento criado com sucesso',
-      data: novoEquipamento
-    }, { status: 201 })
-
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Equipamento criado com sucesso',
+        data: novoEquipamento,
+      },
+      { status: 201 }
+    );
   } catch (error) {
-    console.error('Erro na criação do equipamento:', error)
+    console.error('Erro na criação do equipamento:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
-    )
+    );
   }
 }

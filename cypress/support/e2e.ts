@@ -12,9 +12,8 @@
 // You can read more here:
 // https://on.cypress.io/configuration
 // ***********************************************************
-
 // Import commands.js using ES2015 syntax:
-import './commands'
+import './commands';
 
 // Alternatively you can use CommonJS syntax:
 // require('./commands')
@@ -23,18 +22,18 @@ import './commands'
 Cypress.on('uncaught:exception', (err, runnable) => {
   // returning false here prevents Cypress from
   // failing the test on uncaught exceptions
-  return false
-})
+  return false;
+});
 
 // Comandos personalizados para autenticação
 declare global {
   namespace Cypress {
     interface Chainable {
-      login(email?: string, password?: string): Chainable<void>
-      logout(): Chainable<void>
-      getByTestId(testId: string): Chainable<JQuery<HTMLElement>>
-      waitForPageLoad(): Chainable<void>
-      interceptCommonAPIs(): Chainable<void>
+      login(email?: string, password?: string): Chainable<void>;
+      logout(): Chainable<void>;
+      getByTestId(testId: string): Chainable<JQuery<HTMLElement>>;
+      waitForPageLoad(): Chainable<void>;
+      interceptCommonAPIs(): Chainable<void>;
     }
   }
 }

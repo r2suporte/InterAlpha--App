@@ -10,15 +10,17 @@ const mockSupabaseUpdate = jest.fn();
 const mockSupabaseFrom = jest.fn(() => ({
   update: mockSupabaseUpdate.mockReturnValue({
     eq: jest.fn().mockReturnValue({
-      eq: jest.fn().mockResolvedValue({ error: null })
-    })
-  })
+      eq: jest.fn().mockResolvedValue({ error: null }),
+    }),
+  }),
 }));
 
 jest.mock('@/lib/supabase/server', () => ({
-  createClient: jest.fn(() => Promise.resolve({
-    from: mockSupabaseFrom
-  }))
+  createClient: jest.fn(() =>
+    Promise.resolve({
+      from: mockSupabaseFrom,
+    })
+  ),
 }));
 
 // Mock do console para verificar logs
@@ -45,7 +47,7 @@ describe('Webhook SMS - Testes de Integração', () => {
         MessageSid: 'SM123456789',
         MessageStatus: 'delivered',
         To: '+5511993804816',
-        From: '+15551234567'
+        From: '+15551234567',
       };
 
       // Simular o processamento do webhook
@@ -54,10 +56,13 @@ describe('Webhook SMS - Testes de Integração', () => {
       const to = webhookData.To;
 
       // Simular atualização no Supabase
-      await mockSupabaseFrom().update({
-        status_entrega: messageStatus,
-        data_atualizacao: new Date().toISOString()
-      }).eq('message_id', messageId).eq('numero_telefone', to);
+      await mockSupabaseFrom()
+        .update({
+          status_entrega: messageStatus,
+          data_atualizacao: new Date().toISOString(),
+        })
+        .eq('message_id', messageId)
+        .eq('numero_telefone', to);
 
       // Simular logs baseados no status
       if (messageStatus === 'delivered') {
@@ -67,10 +72,14 @@ describe('Webhook SMS - Testes de Integração', () => {
 
       expect(mockSupabaseUpdate).toHaveBeenCalledWith({
         status_entrega: 'delivered',
-        data_atualizacao: expect.any(String)
+        data_atualizacao: expect.any(String),
       });
-      expect(consoleSpy).toHaveBeenCalledWith('📱 SMS Status Update: SM123456789 -> delivered');
-      expect(consoleSpy).toHaveBeenCalledWith('✅ SMS entregue com sucesso para +5511993804816: SM123456789');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '📱 SMS Status Update: SM123456789 -> delivered'
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '✅ SMS entregue com sucesso para +5511993804816: SM123456789'
+      );
     });
 
     it('deve processar status "failed" com código de erro', async () => {
@@ -80,7 +89,7 @@ describe('Webhook SMS - Testes de Integração', () => {
         To: '+5511993804816',
         From: '+15551234567',
         ErrorCode: '30008',
-        ErrorMessage: 'Unknown error'
+        ErrorMessage: 'Unknown error',
       };
 
       const messageId = webhookData.MessageSid;
@@ -90,12 +99,15 @@ describe('Webhook SMS - Testes de Integração', () => {
       const errorMessage = webhookData.ErrorMessage;
 
       // Simular atualização no Supabase com erro
-      await mockSupabaseFrom().update({
-        status_entrega: messageStatus,
-        data_atualizacao: new Date().toISOString(),
-        erro_codigo: errorCode,
-        erro_mensagem: errorMessage
-      }).eq('message_id', messageId).eq('numero_telefone', to);
+      await mockSupabaseFrom()
+        .update({
+          status_entrega: messageStatus,
+          data_atualizacao: new Date().toISOString(),
+          erro_codigo: errorCode,
+          erro_mensagem: errorMessage,
+        })
+        .eq('message_id', messageId)
+        .eq('numero_telefone', to);
 
       // Simular logs de falha
       if (messageStatus === 'failed' || messageStatus === 'undelivered') {
@@ -106,9 +118,11 @@ describe('Webhook SMS - Testes de Integração', () => {
         status_entrega: 'failed',
         data_atualizacao: expect.any(String),
         erro_codigo: '30008',
-        erro_mensagem: 'Unknown error'
+        erro_mensagem: 'Unknown error',
       });
-      expect(consoleWarnSpy).toHaveBeenCalledWith('⚠️ SMS falhou para +5511993804816: SM987654321');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '⚠️ SMS falhou para +5511993804816: SM987654321'
+      );
     });
 
     it('deve processar status "sent"', async () => {
@@ -116,23 +130,28 @@ describe('Webhook SMS - Testes de Integração', () => {
         MessageSid: 'SM111222333',
         MessageStatus: 'sent',
         To: '+5511993804816',
-        From: '+15551234567'
+        From: '+15551234567',
       };
 
       const messageId = webhookData.MessageSid;
       const messageStatus = webhookData.MessageStatus;
       const to = webhookData.To;
 
-      await mockSupabaseFrom().update({
-        status_entrega: messageStatus,
-        data_atualizacao: new Date().toISOString()
-      }).eq('message_id', messageId).eq('numero_telefone', to);
+      await mockSupabaseFrom()
+        .update({
+          status_entrega: messageStatus,
+          data_atualizacao: new Date().toISOString(),
+        })
+        .eq('message_id', messageId)
+        .eq('numero_telefone', to);
 
       if (messageStatus === 'sent') {
         console.log(`📤 SMS enviado para ${to}: ${messageId}`);
       }
 
-      expect(consoleSpy).toHaveBeenCalledWith('📤 SMS enviado para +5511993804816: SM111222333');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '📤 SMS enviado para +5511993804816: SM111222333'
+      );
     });
 
     it('deve processar status "undelivered"', async () => {
@@ -140,23 +159,28 @@ describe('Webhook SMS - Testes de Integração', () => {
         MessageSid: 'SM444555666',
         MessageStatus: 'undelivered',
         To: '+5511993804816',
-        From: '+15551234567'
+        From: '+15551234567',
       };
 
       const messageId = webhookData.MessageSid;
       const messageStatus = webhookData.MessageStatus;
       const to = webhookData.To;
 
-      await mockSupabaseFrom().update({
-        status_entrega: messageStatus,
-        data_atualizacao: new Date().toISOString()
-      }).eq('message_id', messageId).eq('numero_telefone', to);
+      await mockSupabaseFrom()
+        .update({
+          status_entrega: messageStatus,
+          data_atualizacao: new Date().toISOString(),
+        })
+        .eq('message_id', messageId)
+        .eq('numero_telefone', to);
 
       if (messageStatus === 'failed' || messageStatus === 'undelivered') {
         console.warn(`⚠️ SMS falhou para ${to}: ${messageId}`);
       }
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith('⚠️ SMS falhou para +5511993804816: SM444555666');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '⚠️ SMS falhou para +5511993804816: SM444555666'
+      );
     });
 
     it('deve processar status desconhecido', async () => {
@@ -164,29 +188,34 @@ describe('Webhook SMS - Testes de Integração', () => {
         MessageSid: 'SM777888999',
         MessageStatus: 'queued',
         To: '+5511993804816',
-        From: '+15551234567'
+        From: '+15551234567',
       };
 
       const messageId = webhookData.MessageSid;
       const messageStatus = webhookData.MessageStatus;
       const to = webhookData.To;
 
-      await mockSupabaseFrom().update({
-        status_entrega: messageStatus,
-        data_atualizacao: new Date().toISOString()
-      }).eq('message_id', messageId).eq('numero_telefone', to);
+      await mockSupabaseFrom()
+        .update({
+          status_entrega: messageStatus,
+          data_atualizacao: new Date().toISOString(),
+        })
+        .eq('message_id', messageId)
+        .eq('numero_telefone', to);
 
       // Status desconhecido
       console.log(`📱 Status SMS: ${messageStatus} para ${to}: ${messageId}`);
 
-      expect(consoleSpy).toHaveBeenCalledWith('📱 Status SMS: queued para +5511993804816: SM777888999');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '📱 Status SMS: queued para +5511993804816: SM777888999'
+      );
     });
   });
 
   describe('Validação de Dados', () => {
     it('deve validar presença de MessageSid', () => {
       const webhookData = {
-        MessageStatus: 'delivered'
+        MessageStatus: 'delivered',
       };
 
       const messageId = webhookData.MessageSid;
@@ -200,7 +229,7 @@ describe('Webhook SMS - Testes de Integração', () => {
 
     it('deve validar presença de MessageStatus', () => {
       const webhookData = {
-        MessageSid: 'SM123456789'
+        MessageSid: 'SM123456789',
       };
 
       const messageId = webhookData.MessageSid;
@@ -228,28 +257,35 @@ describe('Webhook SMS - Testes de Integração', () => {
       mockSupabaseFrom.mockReturnValueOnce({
         update: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
-            eq: jest.fn().mockResolvedValue({ error: { message: 'Database error' } })
-          })
-        })
+            eq: jest
+              .fn()
+              .mockResolvedValue({ error: { message: 'Database error' } }),
+          }),
+        }),
       });
 
       const webhookData = {
         MessageSid: 'SM123456789',
-        MessageStatus: 'delivered'
+        MessageStatus: 'delivered',
       };
 
       try {
-        const result = await mockSupabaseFrom().update({
-          status_entrega: webhookData.MessageStatus,
-          data_atualizacao: new Date().toISOString()
-        }).eq('message_id', webhookData.MessageSid);
+        const result = await mockSupabaseFrom()
+          .update({
+            status_entrega: webhookData.MessageStatus,
+            data_atualizacao: new Date().toISOString(),
+          })
+          .eq('message_id', webhookData.MessageSid);
 
         if (result.error) {
           console.error('❌ Erro ao atualizar status SMS:', result.error);
           throw new Error('Erro ao atualizar status');
         }
       } catch (error) {
-        expect(consoleErrorSpy).toHaveBeenCalledWith('❌ Erro ao atualizar status SMS:', { message: 'Database error' });
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          '❌ Erro ao atualizar status SMS:',
+          { message: 'Database error' }
+        );
       }
     });
   });
@@ -260,23 +296,28 @@ describe('Webhook SMS - Testes de Integração', () => {
         MessageSid: 'SM_TEST_123',
         MessageStatus: 'delivered',
         To: '+5511993804816',
-        From: '+15551234567'
+        From: '+15551234567',
       };
 
       const messageId = webhookData.MessageSid;
       const messageStatus = webhookData.MessageStatus;
       const to = webhookData.To;
 
-      await mockSupabaseFrom().update({
-        status_entrega: messageStatus,
-        data_atualizacao: new Date().toISOString()
-      }).eq('message_id', messageId).eq('numero_telefone', to);
+      await mockSupabaseFrom()
+        .update({
+          status_entrega: messageStatus,
+          data_atualizacao: new Date().toISOString(),
+        })
+        .eq('message_id', messageId)
+        .eq('numero_telefone', to);
 
       if (messageStatus === 'delivered') {
         console.log(`✅ SMS entregue com sucesso para ${to}: ${messageId}`);
       }
 
-      expect(consoleSpy).toHaveBeenCalledWith('✅ SMS entregue com sucesso para +5511993804816: SM_TEST_123');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '✅ SMS entregue com sucesso para +5511993804816: SM_TEST_123'
+      );
     });
 
     it('deve processar webhook de falha para número de teste', async () => {
@@ -286,7 +327,7 @@ describe('Webhook SMS - Testes de Integração', () => {
         To: '+5511993804816',
         From: '+15551234567',
         ErrorCode: '21211',
-        ErrorMessage: 'Invalid To phone number'
+        ErrorMessage: 'Invalid To phone number',
       };
 
       const messageId = webhookData.MessageSid;
@@ -295,12 +336,15 @@ describe('Webhook SMS - Testes de Integração', () => {
       const errorCode = webhookData.ErrorCode;
       const errorMessage = webhookData.ErrorMessage;
 
-      await mockSupabaseFrom().update({
-        status_entrega: messageStatus,
-        data_atualizacao: new Date().toISOString(),
-        erro_codigo: errorCode,
-        erro_mensagem: errorMessage
-      }).eq('message_id', messageId).eq('numero_telefone', to);
+      await mockSupabaseFrom()
+        .update({
+          status_entrega: messageStatus,
+          data_atualizacao: new Date().toISOString(),
+          erro_codigo: errorCode,
+          erro_mensagem: errorMessage,
+        })
+        .eq('message_id', messageId)
+        .eq('numero_telefone', to);
 
       if (messageStatus === 'failed' || messageStatus === 'undelivered') {
         console.warn(`⚠️ SMS falhou para ${to}: ${messageId}`);
@@ -310,9 +354,11 @@ describe('Webhook SMS - Testes de Integração', () => {
         status_entrega: 'failed',
         data_atualizacao: expect.any(String),
         erro_codigo: '21211',
-        erro_mensagem: 'Invalid To phone number'
+        erro_mensagem: 'Invalid To phone number',
       });
-      expect(consoleWarnSpy).toHaveBeenCalledWith('⚠️ SMS falhou para +5511993804816: SM_TEST_FAIL');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '⚠️ SMS falhou para +5511993804816: SM_TEST_FAIL'
+      );
     });
   });
 
@@ -321,7 +367,7 @@ describe('Webhook SMS - Testes de Integração', () => {
       const webhookStatus = {
         message: 'Webhook SMS ativo',
         endpoint: '/api/webhooks/sms',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       expect(webhookStatus.message).toBe('Webhook SMS ativo');
@@ -336,7 +382,7 @@ describe('Webhook SMS - Testes de Integração', () => {
         To: '+5511993804816',
         From: '+15551234567',
         ErrorCode: '',
-        ErrorMessage: ''
+        ErrorMessage: '',
       };
 
       // Verificar que todos os campos estão presentes
@@ -349,7 +395,7 @@ describe('Webhook SMS - Testes de Integração', () => {
     it('deve processar dados mínimos do webhook', () => {
       const webhookData = {
         MessageSid: 'SM123456789',
-        MessageStatus: 'delivered'
+        MessageStatus: 'delivered',
       };
 
       // Verificar campos obrigatórios

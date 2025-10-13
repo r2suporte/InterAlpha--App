@@ -1,14 +1,14 @@
-'use client'
+'use client';
 
-import { useCallback } from 'react'
-import { OrdemServico } from '@/types/ordens-servico'
+import { useCallback } from 'react';
+
+import { OrdemServico } from '@/types/ordens-servico';
 
 interface UseOrdemAssinaturaProps {
-  ordem: OrdemServico
+  ordem: OrdemServico;
 }
 
 export function useOrdemAssinatura({ ordem }: UseOrdemAssinaturaProps) {
-  
   const handlePrint = useCallback(() => {
     // Configurações específicas para impressão
     const printStyles = `
@@ -24,21 +24,21 @@ export function useOrdemAssinatura({ ordem }: UseOrdemAssinaturaProps) {
           }
         }
       </style>
-    `
-    
+    `;
+
     // Adiciona estilos de impressão temporariamente
-    const styleElement = document.createElement('style')
-    styleElement.innerHTML = printStyles
-    document.head.appendChild(styleElement)
-    
+    const styleElement = document.createElement('style');
+    styleElement.innerHTML = printStyles;
+    document.head.appendChild(styleElement);
+
     // Executa a impressão
-    window.print()
-    
+    window.print();
+
     // Remove os estilos após a impressão
     setTimeout(() => {
-      document.head.removeChild(styleElement)
-    }, 1000)
-  }, [])
+      document.head.removeChild(styleElement);
+    }, 1000);
+  }, []);
 
   const handleDownloadPDF = useCallback(async () => {
     try {
@@ -57,34 +57,34 @@ export function useOrdemAssinatura({ ordem }: UseOrdemAssinaturaProps) {
             }
           }
         </style>
-      `
-      
-      const styleElement = document.createElement('style')
-      styleElement.innerHTML = printStyles
-      document.head.appendChild(styleElement)
-      
+      `;
+
+      const styleElement = document.createElement('style');
+      styleElement.innerHTML = printStyles;
+      document.head.appendChild(styleElement);
+
       // Abre a janela de impressão (usuário pode escolher "Salvar como PDF")
-      window.print()
-      
+      window.print();
+
       setTimeout(() => {
-        document.head.removeChild(styleElement)
-      }, 1000)
-      
+        document.head.removeChild(styleElement);
+      }, 1000);
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error)
+      console.error('Erro ao gerar PDF:', error);
       // Fallback para impressão normal
-      handlePrint()
+      handlePrint();
     }
-  }, [handlePrint])
+  }, [handlePrint]);
 
   const generateFileName = useCallback(() => {
-    const cliente = ordem.cliente || ordem.cliente_portal
-    const clienteNome = cliente?.nome?.replace(/[^a-zA-Z0-9]/g, '_') || 'Cliente'
-    const numeroOS = ordem.numero_os.replace(/[^a-zA-Z0-9]/g, '_')
-    const data = new Date().toISOString().split('T')[0]
-    
-    return `OS_${numeroOS}_${clienteNome}_${data}.pdf`
-  }, [ordem])
+    const cliente = ordem.cliente || ordem.cliente_portal;
+    const clienteNome =
+      cliente?.nome?.replace(/[^a-zA-Z0-9]/g, '_') || 'Cliente';
+    const numeroOS = ordem.numero_os.replace(/[^a-zA-Z0-9]/g, '_');
+    const data = new Date().toISOString().split('T')[0];
+
+    return `OS_${numeroOS}_${clienteNome}_${data}.pdf`;
+  }, [ordem]);
 
   const canGenerateSignature = useCallback(() => {
     // Verifica se a ordem está em status que permite gerar assinatura
@@ -93,43 +93,43 @@ export function useOrdemAssinatura({ ordem }: UseOrdemAssinaturaProps) {
       'aguardando_cliente',
       'em_andamento',
       'em_teste',
-      'concluida'
-    ]
-    
-    return statusPermitidos.includes(ordem.status)
-  }, [ordem.status])
+      'concluida',
+    ];
+
+    return statusPermitidos.includes(ordem.status);
+  }, [ordem.status]);
 
   const getSignatureStatus = useCallback(() => {
     if (ordem.aprovacao_cliente && ordem.assinatura_cliente) {
       return {
         status: 'assinado',
         message: 'Ordem já assinada pelo cliente',
-        color: 'green'
-      }
+        color: 'green',
+      };
     }
-    
+
     if (ordem.status === 'aguardando_aprovacao') {
       return {
         status: 'pendente',
         message: 'Aguardando assinatura do cliente',
-        color: 'yellow'
-      }
+        color: 'yellow',
+      };
     }
-    
+
     if (canGenerateSignature()) {
       return {
         status: 'disponivel',
         message: 'Disponível para assinatura',
-        color: 'blue'
-      }
+        color: 'blue',
+      };
     }
-    
+
     return {
       status: 'indisponivel',
       message: 'Assinatura não disponível para este status',
-      color: 'gray'
-    }
-  }, [ordem, canGenerateSignature])
+      color: 'gray',
+    };
+  }, [ordem, canGenerateSignature]);
 
   return {
     handlePrint,
@@ -137,6 +137,6 @@ export function useOrdemAssinatura({ ordem }: UseOrdemAssinaturaProps) {
     generateFileName,
     canGenerateSignature,
     getSignatureStatus,
-    signatureInfo: getSignatureStatus()
-  }
+    signatureInfo: getSignatureStatus(),
+  };
 }

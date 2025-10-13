@@ -1,33 +1,34 @@
-"use client"
+'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
+import {
+  Area,
+  AreaChart,
   Bar,
-  Legend
-} from "recharts"
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface GraficosFinanceirosProps {
-  className?: string
+  className?: string;
 }
 
 const formatarMoeda = (valor: number): string => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: 'BRL'
-  }).format(valor)
-}
+    currency: 'BRL',
+  }).format(valor);
+};
 
 // Dados simulados para os gráficos
 const dadosReceita = [
@@ -37,26 +38,28 @@ const dadosReceita = [
   { mes: 'Out', receita: 33000, despesas: 17200 },
   { mes: 'Nov', receita: 36500, despesas: 18000 },
   { mes: 'Dez', receita: 34000, despesas: 16800 },
-  { mes: 'Jan', receita: 35000, despesas: 17500 }
-]
+  { mes: 'Jan', receita: 35000, despesas: 17500 },
+];
 
 const dadosFormasPagamento = [
   { nome: 'PIX', valor: 15750, cor: '#10B981' },
   { nome: 'Cartão Crédito', valor: 11200, cor: '#3B82F6' },
   { nome: 'Dinheiro', valor: 6300, cor: '#F59E0B' },
-  { nome: 'Cartão Débito', valor: 1750, cor: '#EF4444' }
-]
+  { nome: 'Cartão Débito', valor: 1750, cor: '#EF4444' },
+];
 
 const dadosStatusOrdens = [
   { status: 'Pagas', quantidade: 156, valor: 35000 },
   { status: 'Aguardando Pagamento', quantidade: 12, valor: 28000 },
   { status: 'Orçamento Pendente', quantidade: 7, valor: 15000 },
-  { status: 'Canceladas', quantidade: 3, valor: 2500 }
-]
+  { status: 'Canceladas', quantidade: 3, valor: 2500 },
+];
 
-const CORES_GRAFICOS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6']
+const CORES_GRAFICOS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'];
 
-export function GraficosFinanceiros({ className = '' }: GraficosFinanceirosProps) {
+export function GraficosFinanceiros({
+  className = '',
+}: GraficosFinanceirosProps) {
   return (
     <div className={`grid gap-6 md:grid-cols-2 lg:grid-cols-3 ${className}`}>
       {/* Gráfico de Receita vs Despesas */}
@@ -64,7 +67,10 @@ export function GraficosFinanceiros({ className = '' }: GraficosFinanceirosProps
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Receita vs Despesas
-            <Badge variant="outline" className="text-green-600 border-green-200">
+            <Badge
+              variant="outline"
+              className="border-green-200 text-green-600"
+            >
               +12.5% este mês
             </Badge>
           </CardTitle>
@@ -73,41 +79,41 @@ export function GraficosFinanceiros({ className = '' }: GraficosFinanceirosProps
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={dadosReceita}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis 
-                dataKey="mes" 
+              <XAxis
+                dataKey="mes"
                 axisLine={false}
                 tickLine={false}
                 className="text-sm text-gray-500"
               />
-              <YAxis 
+              <YAxis
                 axisLine={false}
                 tickLine={false}
                 className="text-sm text-gray-500"
-                tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
+                tickFormatter={value => `R$ ${(value / 1000).toFixed(0)}k`}
               />
-              <Tooltip 
+              <Tooltip
                 formatter={(value: number) => [formatarMoeda(value), '']}
                 labelStyle={{ color: '#374151' }}
-                contentStyle={{ 
-                  backgroundColor: 'white', 
+                contentStyle={{
+                  backgroundColor: 'white',
                   border: '1px solid #E5E7EB',
-                  borderRadius: '8px'
+                  borderRadius: '8px',
                 }}
               />
-              <Area 
-                type="monotone" 
-                dataKey="receita" 
+              <Area
+                type="monotone"
+                dataKey="receita"
                 stackId="1"
-                stroke="#10B981" 
+                stroke="#10B981"
                 fill="#10B981"
                 fillOpacity={0.6}
                 name="Receita"
               />
-              <Area 
-                type="monotone" 
-                dataKey="despesas" 
+              <Area
+                type="monotone"
+                dataKey="despesas"
                 stackId="2"
-                stroke="#EF4444" 
+                stroke="#EF4444"
                 fill="#EF4444"
                 fillOpacity={0.6}
                 name="Despesas"
@@ -143,10 +149,13 @@ export function GraficosFinanceiros({ className = '' }: GraficosFinanceirosProps
           </ResponsiveContainer>
           <div className="mt-4 space-y-2">
             {dadosFormasPagamento.map((item, index) => (
-              <div key={index} className="flex items-center justify-between text-sm">
+              <div
+                key={index}
+                className="flex items-center justify-between text-sm"
+              >
                 <div className="flex items-center">
-                  <div 
-                    className="w-3 h-3 rounded-full mr-2" 
+                  <div
+                    className="mr-2 h-3 w-3 rounded-full"
                     style={{ backgroundColor: item.cor }}
                   />
                   <span className="text-gray-600">{item.nome}</span>
@@ -167,49 +176,49 @@ export function GraficosFinanceiros({ className = '' }: GraficosFinanceirosProps
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={dadosStatusOrdens}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis 
-                dataKey="status" 
+              <XAxis
+                dataKey="status"
                 axisLine={false}
                 tickLine={false}
                 className="text-sm text-gray-500"
               />
-              <YAxis 
+              <YAxis
                 yAxisId="left"
                 axisLine={false}
                 tickLine={false}
                 className="text-sm text-gray-500"
               />
-              <YAxis 
+              <YAxis
                 yAxisId="right"
                 orientation="right"
                 axisLine={false}
                 tickLine={false}
                 className="text-sm text-gray-500"
-                tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
+                tickFormatter={value => `R$ ${(value / 1000).toFixed(0)}k`}
               />
-              <Tooltip 
+              <Tooltip
                 formatter={(value: number, name: string) => [
                   name === 'valor' ? formatarMoeda(value) : value,
-                  name === 'valor' ? 'Valor Total' : 'Quantidade'
+                  name === 'valor' ? 'Valor Total' : 'Quantidade',
                 ]}
                 labelStyle={{ color: '#374151' }}
-                contentStyle={{ 
-                  backgroundColor: 'white', 
+                contentStyle={{
+                  backgroundColor: 'white',
                   border: '1px solid #E5E7EB',
-                  borderRadius: '8px'
+                  borderRadius: '8px',
                 }}
               />
               <Legend />
-              <Bar 
-                dataKey="quantidade" 
-                fill="#3B82F6" 
+              <Bar
+                dataKey="quantidade"
+                fill="#3B82F6"
                 name="Quantidade"
                 radius={[4, 4, 0, 0]}
                 yAxisId="left"
               />
-              <Bar 
-                dataKey="valor" 
-                fill="#10B981" 
+              <Bar
+                dataKey="valor"
+                fill="#10B981"
                 name="Valor (R$)"
                 radius={[4, 4, 0, 0]}
                 yAxisId="right"
@@ -219,5 +228,5 @@ export function GraficosFinanceiros({ className = '' }: GraficosFinanceirosProps
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

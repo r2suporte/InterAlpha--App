@@ -1,7 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = 'http://127.0.0.1:54321';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+const supabaseKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -21,8 +22,13 @@ async function checkTableStructure() {
     } else {
       console.log('📋 Colunas da tabela:');
       columns.forEach(col => {
-        if (col.column_name === 'cliente_id' || col.column_name === 'cliente_portal_id') {
-          console.log(`  - ${col.column_name}: ${col.data_type}, nullable: ${col.is_nullable}, default: ${col.column_default}`);
+        if (
+          col.column_name === 'cliente_id' ||
+          col.column_name === 'cliente_portal_id'
+        ) {
+          console.log(
+            `  - ${col.column_name}: ${col.data_type}, nullable: ${col.is_nullable}, default: ${col.column_default}`
+          );
         }
       });
     }
@@ -39,7 +45,9 @@ async function checkTableStructure() {
     } else {
       console.log('\n🔒 Constraints da tabela:');
       constraints.forEach(constraint => {
-        console.log(`  - ${constraint.constraint_name}: ${constraint.constraint_type}`);
+        console.log(
+          `  - ${constraint.constraint_name}: ${constraint.constraint_type}`
+        );
       });
     }
 
@@ -56,14 +64,18 @@ async function checkTableStructure() {
       checkConstraints
         .filter(c => c.constraint_name.includes('cliente'))
         .forEach(constraint => {
-          console.log(`  - ${constraint.constraint_name}: ${constraint.check_clause}`);
+          console.log(
+            `  - ${constraint.constraint_name}: ${constraint.check_clause}`
+          );
         });
     }
 
     // Tentar inserção direta via SQL
     console.log('\n🧪 Testando inserção direta via SQL...');
-    const { data: insertResult, error: insertError } = await supabase.rpc('exec_sql', {
-      sql: `
+    const { data: insertResult, error: insertError } = await supabase.rpc(
+      'exec_sql',
+      {
+        sql: `
         INSERT INTO ordens_servico (
           cliente_portal_id, 
           titulo, 
@@ -79,15 +91,15 @@ async function checkTableStructure() {
           'media',
           100.00
         ) RETURNING id, numero_os, cliente_id, cliente_portal_id;
-      `
-    });
+      `,
+      }
+    );
 
     if (insertError) {
       console.error('❌ Erro na inserção SQL:', insertError);
     } else {
       console.log('✅ Inserção SQL bem-sucedida:', insertResult);
     }
-
   } catch (error) {
     console.error('❌ Erro geral:', error);
   }

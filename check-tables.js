@@ -8,7 +8,7 @@ async function checkTables() {
 
   try {
     console.log('🔍 Verificando tabelas existentes...');
-    
+
     // Listar todas as tabelas no schema public
     const result = await pool.query(`
       SELECT table_name 
@@ -17,7 +17,7 @@ async function checkTables() {
       AND table_type = 'BASE TABLE'
       ORDER BY table_name;
     `);
-    
+
     console.log('📋 Tabelas encontradas:');
     if (result.rows.length === 0) {
       console.log('❌ Nenhuma tabela encontrada no schema public');
@@ -26,24 +26,33 @@ async function checkTables() {
         console.log(`✅ ${row.table_name}`);
       });
     }
-    
+
     // Verificar se as tabelas específicas existem
-    const expectedTables = ['users', 'clientes', 'ordens_servico', 'pagamentos'];
+    const expectedTables = [
+      'users',
+      'clientes',
+      'ordens_servico',
+      'pagamentos',
+    ];
     console.log('\n🎯 Verificando tabelas específicas:');
-    
+
     for (const tableName of expectedTables) {
-      const tableCheck = await pool.query(`
+      const tableCheck = await pool.query(
+        `
         SELECT EXISTS (
           SELECT FROM information_schema.tables 
           WHERE table_schema = 'public' 
           AND table_name = $1
         );
-      `, [tableName]);
-      
-      const exists = tableCheck.rows[0].exists;
-      console.log(`${exists ? '✅' : '❌'} ${tableName}: ${exists ? 'existe' : 'não existe'}`);
+      `,
+        [tableName]
+      );
+
+      const {exists} = tableCheck.rows[0];
+      console.log(
+        `${exists ? '✅' : '❌'} ${tableName}: ${exists ? 'existe' : 'não existe'}`
+      );
     }
-    
   } catch (error) {
     console.error('❌ Erro:', error.message);
   } finally {

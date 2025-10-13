@@ -1,42 +1,56 @@
-'use client'
+'use client';
 
-import React, { useState } from 'react'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { CalendarIcon, Plus, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import React, { useState } from 'react';
 
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Badge } from '@/components/ui/badge'
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { CalendarIcon, CheckCircle, Plus, Trash2, XCircle } from 'lucide-react';
 
-import { 
-  EquipamentoFormData, 
-  TipoEquipamento, 
-  StatusGarantia,
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import {
   DanoEquipamento,
-  SeveridadeDano,
-  SerialValidation,
-  TIPO_EQUIPAMENTO_LABELS,
+  EquipamentoFormData,
   MODELOS_APPLE,
   PROBLEMAS_COMUNS,
+  SerialValidation,
+  SeveridadeDano,
+  StatusGarantia,
+  TIPO_EQUIPAMENTO_LABELS,
+  TipoEquipamento,
+  consultarGarantiaApple,
   validarSerialApple,
-  consultarGarantiaApple
-} from '@/types/equipamentos'
+} from '@/types/equipamentos';
 
 interface EquipamentoFormProps {
-  onSubmit: (data: EquipamentoFormData) => void
-  initialData?: Partial<EquipamentoFormData>
-  isLoading?: boolean
+  onSubmit: (data: EquipamentoFormData) => void;
+  initialData?: Partial<EquipamentoFormData>;
+  isLoading?: boolean;
 }
 
-export default function EquipamentoForm({ onSubmit, initialData, isLoading = false }: EquipamentoFormProps) {
+export default function EquipamentoForm({
+  onSubmit,
+  initialData,
+  isLoading = false,
+}: EquipamentoFormProps) {
   const [formData, setFormData] = useState<EquipamentoFormData>({
     tipo: initialData?.tipo || 'macbook_air',
     modelo: initialData?.modelo || '',
@@ -48,104 +62,132 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
     descricao_problema: initialData?.descricao_problema || '',
     problemas_identificados: initialData?.problemas_identificados || [],
     danos_equipamento: initialData?.danos_equipamento || [],
-    observacoes: initialData?.observacoes || ''
-  })
+    observacoes: initialData?.observacoes || '',
+  });
 
-  const [serialValidation, setSerialValidation] = useState<SerialValidation | null>(null)
-  const [isValidatingSerial, setIsValidatingSerial] = useState(false)
-  const [isConsultingWarranty, setIsConsultingWarranty] = useState(false)
+  const [serialValidation, setSerialValidation] =
+    useState<SerialValidation | null>(null);
+  const [isValidatingSerial, setIsValidatingSerial] = useState(false);
+  const [isConsultingWarranty, setIsConsultingWarranty] = useState(false);
+  const [showNewModelForm, setShowNewModelForm] = useState(false);
+  const [newModelName, setNewModelName] = useState('');
   const [novoDano, setNovoDano] = useState<DanoEquipamento>({
     tipo: '',
     descricao: '',
     severidade: 'baixa',
-    observacoes: ''
-  })
+    observacoes: '',
+  });
 
   // Validar serial number quando mudar
   const handleSerialChange = async (value: string) => {
-    setFormData(prev => ({ ...prev, serial_number: value }))
-    
+    setFormData(prev => ({ ...prev, serial_number: value }));
+
     if (value.length >= 8) {
-      setIsValidatingSerial(true)
-      
+      setIsValidatingSerial(true);
+
       // Validar formato do serial
-      const validation = validarSerialApple(value)
-      setSerialValidation(validation)
-      setIsValidatingSerial(false)
-      
+      const validation = validarSerialApple(value);
+      setSerialValidation(validation);
+      setIsValidatingSerial(false);
+
       // Se válido, consultar garantia automaticamente
       if (validation.isValid) {
-        setIsConsultingWarranty(true)
-        
+        setIsConsultingWarranty(true);
+
         try {
-          const garantiaInfo = await consultarGarantiaApple(value)
-          
+          const garantiaInfo = await consultarGarantiaApple(value);
+
           // Atualizar formulário com informações da garantia
           setFormData(prev => ({
             ...prev,
             status_garantia: garantiaInfo.status,
             garantia_apple_ate: garantiaInfo.garantia_apple_ate || null,
             garantia_loja_ate: garantiaInfo.garantia_loja_ate || null,
-            modelo: garantiaInfo.modelo_detectado || prev.modelo
-          }))
-          
+            modelo: garantiaInfo.modelo_detectado || prev.modelo,
+          }));
         } catch (error) {
-          console.error('Erro ao consultar garantia:', error)
+          console.error('Erro ao consultar garantia:', error);
         } finally {
-          setIsConsultingWarranty(false)
+          setIsConsultingWarranty(false);
         }
       }
     } else {
-      setSerialValidation(null)
+      setSerialValidation(null);
     }
-  }
+  };
 
   // Adicionar problema identificado
   const adicionarProblema = (problema: string) => {
     if (!formData.problemas_identificados.includes(problema)) {
       setFormData(prev => ({
         ...prev,
-        problemas_identificados: [...prev.problemas_identificados, problema]
-      }))
+        problemas_identificados: [...prev.problemas_identificados, problema],
+      }));
     }
-  }
+  };
 
   // Remover problema identificado
   const removerProblema = (problema: string) => {
     setFormData(prev => ({
       ...prev,
-      problemas_identificados: prev.problemas_identificados.filter(p => p !== problema)
-    }))
-  }
+      problemas_identificados: prev.problemas_identificados.filter(
+        p => p !== problema
+      ),
+    }));
+  };
+
+  // Adicionar novo modelo
+  const adicionarNovoModelo = () => {
+    if (newModelName.trim() && formData.tipo) {
+      // Adicionar o novo modelo à lista de modelos do tipo selecionado
+      if (!MODELOS_APPLE[formData.tipo]) {
+        MODELOS_APPLE[formData.tipo] = [];
+      }
+
+      if (!MODELOS_APPLE[formData.tipo].includes(newModelName.trim())) {
+        MODELOS_APPLE[formData.tipo].push(newModelName.trim());
+      }
+
+      // Selecionar o novo modelo
+      setFormData(prev => ({
+        ...prev,
+        modelo: newModelName.trim(),
+      }));
+
+      // Limpar o formulário
+      setNewModelName('');
+      setShowNewModelForm(false);
+    }
+  };
 
   // Adicionar dano
   const adicionarDano = () => {
     if (novoDano.tipo && novoDano.descricao) {
       setFormData(prev => ({
         ...prev,
-        danos_equipamento: [...prev.danos_equipamento, { ...novoDano }]
-      }))
+        danos_equipamento: [...prev.danos_equipamento, { ...novoDano }],
+      }));
       setNovoDano({
         tipo: '',
         descricao: '',
         severidade: 'baixa',
-        observacoes: ''
-      })
+        observacoes: '',
+      });
     }
-  }
+  };
 
   // Remover dano
   const removerDano = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      danos_equipamento: prev.danos_equipamento.filter((_, i) => i !== index)
-    }))
-  }
+      danos_equipamento: prev.danos_equipamento.filter((_, i) => i !== index),
+    }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit(formData)
-  }
+    e.preventDefault();
+    onSubmit(formData);
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -155,43 +197,94 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
           <CardTitle>Informações do Equipamento</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <Label htmlFor="tipo">Tipo de Equipamento</Label>
-              <Select 
-                value={formData.tipo} 
-                onValueChange={(value: TipoEquipamento) => setFormData(prev => ({ ...prev, tipo: value }))}
+              <Select
+                value={formData.tipo}
+                onValueChange={(value: TipoEquipamento) =>
+                  setFormData(prev => ({ ...prev, tipo: value }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(TIPO_EQUIPAMENTO_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      {label}
-                    </SelectItem>
-                  ))}
+                  {Object.entries(TIPO_EQUIPAMENTO_LABELS).map(
+                    ([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
+                    )
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label htmlFor="modelo">Modelo</Label>
-              <Select 
-                value={formData.modelo} 
-                onValueChange={(value: string) => setFormData(prev => ({ ...prev, modelo: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o modelo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MODELOS_APPLE[formData.tipo]?.map((modelo: string) => (
-                    <SelectItem key={modelo} value={modelo}>
-                      {modelo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="mb-2 flex items-center justify-between">
+                <Label htmlFor="modelo">Modelo</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowNewModelForm(!showNewModelForm)}
+                  className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                >
+                  <Plus className="mr-1 h-4 w-4" />
+                  Novo Modelo
+                </Button>
+              </div>
+
+              {showNewModelForm ? (
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      value={newModelName}
+                      onChange={e => setNewModelName(e.target.value)}
+                      placeholder="Digite o nome do novo modelo"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      onClick={adicionarNovoModelo}
+                      disabled={!newModelName.trim()}
+                      size="sm"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setShowNewModelForm(false);
+                        setNewModelName('');
+                      }}
+                      size="sm"
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Select
+                  value={formData.modelo}
+                  onValueChange={(value: string) =>
+                    setFormData(prev => ({ ...prev, modelo: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o modelo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MODELOS_APPLE[formData.tipo]?.map((modelo: string) => (
+                      <SelectItem key={modelo} value={modelo}>
+                        {modelo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
@@ -201,7 +294,7 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
               <Input
                 id="serial"
                 value={formData.serial_number}
-                onChange={(e) => handleSerialChange(e.target.value)}
+                onChange={e => handleSerialChange(e.target.value)}
                 placeholder="Digite o serial number"
                 className="flex-1"
               />
@@ -216,20 +309,27 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
               )}
             </div>
             {serialValidation && (
-              <div className={`text-sm mt-1 ${serialValidation.isValid ? 'text-green-600' : 'text-red-600'}`}>
+              <div
+                className={`mt-1 text-sm ${serialValidation.isValid ? 'text-green-600' : 'text-red-600'}`}
+              >
                 {serialValidation.message}
                 {serialValidation.info && serialValidation.info.ano && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    Ano: {serialValidation.info.ano} | Semana: {serialValidation.info.semana}
+                  <div className="mt-1 text-xs text-gray-500">
+                    Ano: {serialValidation.info.ano} | Semana:{' '}
+                    {serialValidation.info.semana}
                   </div>
                 )}
               </div>
             )}
             {isValidatingSerial && (
-              <div className="text-sm text-blue-600 mt-1">Validando serial number...</div>
+              <div className="mt-1 text-sm text-blue-600">
+                Validando serial number...
+              </div>
             )}
             {isConsultingWarranty && (
-              <div className="text-sm text-blue-600 mt-1">Consultando garantia Apple...</div>
+              <div className="mt-1 text-sm text-blue-600">
+                Consultando garantia Apple...
+              </div>
             )}
           </div>
         </CardContent>
@@ -243,23 +343,29 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
         <CardContent className="space-y-4">
           <div>
             <Label htmlFor="status_garantia">Status da Garantia</Label>
-            <Select 
-              value={formData.status_garantia} 
-              onValueChange={(value: StatusGarantia) => setFormData(prev => ({ ...prev, status_garantia: value }))}
+            <Select
+              value={formData.status_garantia}
+              onValueChange={(value: StatusGarantia) =>
+                setFormData(prev => ({ ...prev, status_garantia: value }))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="verificando">Verificando</SelectItem>
-                <SelectItem value="ativa_apple">Garantia Apple Ativa</SelectItem>
-                <SelectItem value="ativa_loja">Garantia da Loja Ativa</SelectItem>
+                <SelectItem value="ativa_apple">
+                  Garantia Apple Ativa
+                </SelectItem>
+                <SelectItem value="ativa_loja">
+                  Garantia da Loja Ativa
+                </SelectItem>
                 <SelectItem value="expirada">Garantia Expirada</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <Label>Garantia Apple até</Label>
               <Popover>
@@ -270,7 +376,9 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {formData.garantia_apple_ate ? (
-                      format(formData.garantia_apple_ate, "PPP", { locale: ptBR })
+                      format(formData.garantia_apple_ate, 'PPP', {
+                        locale: ptBR,
+                      })
                     ) : (
                       <span>Selecione a data</span>
                     )}
@@ -280,7 +388,12 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
                   <Calendar
                     mode="single"
                     selected={formData.garantia_apple_ate || undefined}
-                    onSelect={(date: Date | undefined) => setFormData(prev => ({ ...prev, garantia_apple_ate: date || null }))}
+                    onSelect={(date: Date | undefined) =>
+                      setFormData(prev => ({
+                        ...prev,
+                        garantia_apple_ate: date || null,
+                      }))
+                    }
                     initialFocus
                   />
                 </PopoverContent>
@@ -297,7 +410,9 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {formData.garantia_loja_ate ? (
-                      format(formData.garantia_loja_ate, "PPP", { locale: ptBR })
+                      format(formData.garantia_loja_ate, 'PPP', {
+                        locale: ptBR,
+                      })
                     ) : (
                       <span>Selecione a data</span>
                     )}
@@ -307,7 +422,12 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
                   <Calendar
                     mode="single"
                     selected={formData.garantia_loja_ate || undefined}
-                    onSelect={(date: Date | undefined) => setFormData(prev => ({ ...prev, garantia_loja_ate: date || null }))}
+                    onSelect={(date: Date | undefined) =>
+                      setFormData(prev => ({
+                        ...prev,
+                        garantia_loja_ate: date || null,
+                      }))
+                    }
                     initialFocus
                   />
                 </PopoverContent>
@@ -319,7 +439,9 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
             <Checkbox
               id="fora_garantia"
               checked={formData.fora_garantia}
-              onCheckedChange={(checked: boolean) => setFormData(prev => ({ ...prev, fora_garantia: checked }))}
+              onCheckedChange={(checked) =>
+                setFormData(prev => ({ ...prev, fora_garantia: Boolean(checked) }))
+              }
             />
             <Label htmlFor="fora_garantia">Equipamento fora da garantia</Label>
           </div>
@@ -337,7 +459,12 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
             <Textarea
               id="descricao_problema"
               value={formData.descricao_problema}
-              onChange={(e) => setFormData(prev => ({ ...prev, descricao_problema: e.target.value }))}
+              onChange={e =>
+                setFormData(prev => ({
+                  ...prev,
+                  descricao_problema: e.target.value,
+                }))
+              }
               placeholder="Descreva detalhadamente o problema reportado pelo cliente"
               rows={4}
             />
@@ -345,18 +472,22 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
 
           <div>
             <Label>Problemas Comuns Identificados</Label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+            <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3">
               {PROBLEMAS_COMUNS[formData.tipo]?.map((problema: string) => (
                 <Button
                   key={problema}
                   type="button"
-                  variant={formData.problemas_identificados.includes(problema) ? "default" : "outline"}
+                  variant={
+                    formData.problemas_identificados.includes(problema)
+                      ? 'default'
+                      : 'outline'
+                  }
                   size="sm"
                   onClick={() => {
                     if (formData.problemas_identificados.includes(problema)) {
-                      removerProblema(problema)
+                      removerProblema(problema);
                     } else {
-                      adicionarProblema(problema)
+                      adicionarProblema(problema);
                     }
                   }}
                   className="text-xs"
@@ -370,9 +501,13 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
           {formData.problemas_identificados.length > 0 && (
             <div>
               <Label>Problemas Selecionados</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 {formData.problemas_identificados.map((problema: string) => (
-                  <Badge key={problema} variant="secondary" className="flex items-center gap-1">
+                  <Badge
+                    key={problema}
+                    variant="secondary"
+                    className="flex items-center gap-1"
+                  >
                     {problema}
                     <button
                       type="button"
@@ -395,22 +530,26 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
           <CardTitle>Danos no Equipamento</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
+          <div className="grid grid-cols-1 gap-4 rounded-lg border p-4 md:grid-cols-2">
             <div>
               <Label htmlFor="tipo_dano">Tipo de Dano</Label>
               <Input
                 id="tipo_dano"
                 value={novoDano.tipo}
-                onChange={(e) => setNovoDano(prev => ({ ...prev, tipo: e.target.value }))}
+                onChange={e =>
+                  setNovoDano(prev => ({ ...prev, tipo: e.target.value }))
+                }
                 placeholder="Ex: Tela quebrada, Dano por líquido"
               />
             </div>
 
             <div>
               <Label htmlFor="severidade_dano">Severidade</Label>
-              <Select 
-                value={novoDano.severidade} 
-                onValueChange={(value: SeveridadeDano) => setNovoDano(prev => ({ ...prev, severidade: value }))}
+              <Select
+                value={novoDano.severidade}
+                onValueChange={(value: SeveridadeDano) =>
+                  setNovoDano(prev => ({ ...prev, severidade: value }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -428,7 +567,9 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
               <Textarea
                 id="descricao_dano"
                 value={novoDano.descricao}
-                onChange={(e) => setNovoDano(prev => ({ ...prev, descricao: e.target.value }))}
+                onChange={e =>
+                  setNovoDano(prev => ({ ...prev, descricao: e.target.value }))
+                }
                 placeholder="Descreva o dano em detalhes"
                 rows={2}
               />
@@ -439,7 +580,12 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
               <Input
                 id="observacoes_dano"
                 value={novoDano.observacoes}
-                onChange={(e) => setNovoDano(prev => ({ ...prev, observacoes: e.target.value }))}
+                onChange={e =>
+                  setNovoDano(prev => ({
+                    ...prev,
+                    observacoes: e.target.value,
+                  }))
+                }
                 placeholder="Observações adicionais"
               />
             </div>
@@ -451,7 +597,7 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
                 disabled={!novoDano.tipo || !novoDano.descricao}
                 className="w-full"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 Adicionar Dano
               </Button>
             </div>
@@ -461,17 +607,32 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
             <div className="space-y-2">
               <Label>Danos Registrados</Label>
               {formData.danos_equipamento.map((dano, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                <div
+                  key={index}
+                  className="flex items-center justify-between rounded-lg border p-3"
+                >
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <Badge variant={dano.severidade === 'alta' ? 'destructive' : dano.severidade === 'media' ? 'default' : 'secondary'}>
+                      <Badge
+                        variant={
+                          dano.severidade === 'alta'
+                            ? 'destructive'
+                            : dano.severidade === 'media'
+                              ? 'default'
+                              : 'secondary'
+                        }
+                      >
                         {dano.severidade}
                       </Badge>
                       <span className="font-medium">{dano.tipo}</span>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">{dano.descricao}</p>
+                    <p className="mt-1 text-sm text-gray-600">
+                      {dano.descricao}
+                    </p>
                     {dano.observacoes && (
-                      <p className="text-xs text-gray-500 mt-1">{dano.observacoes}</p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        {dano.observacoes}
+                      </p>
                     )}
                   </div>
                   <Button
@@ -498,7 +659,9 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
         <CardContent>
           <Textarea
             value={formData.observacoes}
-            onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
+            onChange={e =>
+              setFormData(prev => ({ ...prev, observacoes: e.target.value }))
+            }
             placeholder="Observações adicionais sobre o equipamento ou atendimento"
             rows={3}
           />
@@ -515,5 +678,5 @@ export default function EquipamentoForm({ onSubmit, initialData, isLoading = fal
         </Button>
       </div>
     </form>
-  )
+  );
 }

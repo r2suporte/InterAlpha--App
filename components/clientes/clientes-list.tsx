@@ -1,104 +1,122 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Badge } from '@/components/ui/badge'
-import { StatusBadge } from '@/components/ui/status-badge'
-import { SearchAndFilter } from '@/components/ui/search-and-filter'
-import { DataField, DataGrid } from '@/components/ui/data-display'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { 
-  ResponsiveCard, 
-  ResponsiveGrid, 
-  ResponsiveStack,
-  ResponsiveTable,
-  useBreakpoint,
-  ShowHide
-} from '@/components/ui/responsive-utils'
+import { useState } from 'react';
+
+import {
+  Building,
+  Calendar,
+  Edit,
+  Eye,
+  Mail,
+  MapPin,
+  MoreVertical,
+  Phone,
+  Trash2,
+  User,
+} from 'lucide-react';
+
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { DataField, DataGrid } from '@/components/ui/data-display';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar,
-  Edit,
-  Trash2,
-  MoreVertical,
-  Eye,
-  Building,
-  User
-} from 'lucide-react'
-import { formatarCpfCnpj, type TipoPessoa } from '@/lib/validators'
+} from '@/components/ui/dropdown-menu';
+import {
+  ResponsiveCard,
+  ResponsiveGrid,
+  ResponsiveStack,
+  ResponsiveTable,
+  ShowHide,
+  useBreakpoint,
+} from '@/components/ui/responsive-utils';
+import { SearchAndFilter } from '@/components/ui/search-and-filter';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { type TipoPessoa, formatarCpfCnpj } from '@/lib/validators';
 
 interface Cliente {
-  id: string
-  numero_cliente: string | null
-  nome: string
-  email: string
-  telefone: string | null
-  endereco: string | null
-  cidade: string | null
-  estado: string | null
-  cep: string | null
-  cpf_cnpj: string | null
-  tipo_pessoa: TipoPessoa
-  observacoes: string | null
-  is_active: boolean
-  created_at: string
-  updated_at: string
-  created_by: string | null
+  id: string;
+  numero_cliente: string | null;
+  nome: string;
+  email: string;
+  email2?: string | null;
+  email3?: string | null;
+  telefone: string | null;
+  endereco: string | null;
+  cidade: string | null;
+  estado: string | null;
+  cep: string | null;
+  cpf_cnpj: string | null;
+  tipo_pessoa: TipoPessoa;
+  observacoes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
 }
 
 interface ClientesListProps {
-  clientes: Cliente[]
-  isLoading?: boolean
-  onEdit: (cliente: Cliente) => void
-  onDelete: (cliente: Cliente) => void
-  onView: (cliente: Cliente) => void
+  clientes: Cliente[];
+  isLoading?: boolean;
+  onEdit: (cliente: Cliente) => void;
+  onDelete: (cliente: Cliente) => void;
+  onView: (cliente: Cliente) => void;
 }
 
-export function ClientesList({ 
-  clientes, 
-  isLoading = false, 
-  onEdit, 
-  onDelete, 
-  onView 
+export function ClientesList({
+  clientes,
+  isLoading = false,
+  onEdit,
+  onDelete,
+  onView,
 }: ClientesListProps) {
-  const { isMobile, isTablet } = useBreakpoint()
-  const [searchValue, setSearchValue] = useState('')
-  const [filters, setFilters] = useState<Record<string, any>>({})
-  
+  const { isMobile, isTablet } = useBreakpoint();
+  const [searchValue, setSearchValue] = useState('');
+  const [filters, setFilters] = useState<Record<string, any>>({});
+
   // Manter compatibilidade com filtros individuais
-  const statusFilter = filters.status || 'all'
-  const tipoFilter = filters.tipo || 'all'
+  const statusFilter = filters.status || 'all';
+  const tipoFilter = filters.tipo || 'all';
 
   const filteredClientes = clientes.filter(cliente => {
-    const matchesSearch = cliente.nome.toLowerCase().includes(searchValue.toLowerCase()) ||
-                         cliente.email.toLowerCase().includes(searchValue.toLowerCase()) ||
-                         (cliente.cpf_cnpj && cliente.cpf_cnpj.includes(searchValue))
-    
-    const matchesStatus = statusFilter === 'all' || 
-                         (statusFilter === 'active' && cliente.is_active) ||
-                         (statusFilter === 'inactive' && !cliente.is_active)
-    
-    const matchesTipo = tipoFilter === 'all' || cliente.tipo_pessoa === tipoFilter
+    const matchesSearch =
+      cliente.nome.toLowerCase().includes(searchValue.toLowerCase()) ||
+      cliente.email.toLowerCase().includes(searchValue.toLowerCase()) ||
+      (!!cliente.email2 &&
+        cliente.email2.toLowerCase().includes(searchValue.toLowerCase())) ||
+      (!!cliente.email3 &&
+        cliente.email3.toLowerCase().includes(searchValue.toLowerCase())) ||
+      (cliente.cpf_cnpj && cliente.cpf_cnpj.includes(searchValue));
 
-    return matchesSearch && matchesStatus && matchesTipo
-  })
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && cliente.is_active) ||
+      (statusFilter === 'inactive' && !cliente.is_active);
+
+    const matchesTipo =
+      tipoFilter === 'all' || cliente.tipo_pessoa === tipoFilter;
+
+    return matchesSearch && matchesStatus && matchesTipo;
+  });
 
   const getInitials = (nome: string) => {
-    return nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-  }
+    return nome
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   const formatEndereco = (cliente: Cliente) => {
-    const parts = [cliente.endereco, cliente.cidade, cliente.estado].filter(Boolean)
-    return parts.join(', ')
-  }
+    const parts = [cliente.endereco, cliente.cidade, cliente.estado].filter(
+      Boolean
+    );
+    return parts.join(', ');
+  };
 
   const ClienteActions = ({ cliente }: { cliente: Cliente }) => (
     <DropdownMenu>
@@ -116,7 +134,7 @@ export function ClientesList({
           <Edit className="mr-2 h-4 w-4" />
           Editar
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => onDelete(cliente)}
           className="text-red-600"
         >
@@ -125,12 +143,16 @@ export function ClientesList({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 
   // Mobile Card View
   const MobileClienteCard = ({ cliente }: { cliente: Cliente }) => (
     <ResponsiveCard className="space-y-4" hover>
-      <ResponsiveStack direction="horizontal" align="center" className="justify-between">
+      <ResponsiveStack
+        direction="horizontal"
+        align="center"
+        className="justify-between"
+      >
         <div className="flex items-center space-x-3">
           <Avatar className="h-10 w-10">
             <AvatarFallback className="bg-blue-100 text-blue-600">
@@ -138,15 +160,15 @@ export function ClientesList({
             </AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-medium text-sm">{cliente.nome}</h3>
+            <h3 className="text-sm font-medium">{cliente.nome}</h3>
             <p className="text-xs text-muted-foreground">
               #{cliente.numero_cliente || cliente.id.slice(0, 8)}
             </p>
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <StatusBadge 
-            status={cliente.is_active ? 'active' : 'inactive'} 
+          <StatusBadge
+            status={cliente.is_active ? 'active' : 'inactive'}
             size="sm"
           />
           <ClienteActions cliente={cliente} />
@@ -159,6 +181,18 @@ export function ClientesList({
             <Mail className="h-3 w-3" />
             <span>{cliente.email}</span>
           </div>
+          {cliente.email2 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Mail className="h-3 w-3" />
+              <span>{cliente.email2}</span>
+            </div>
+          )}
+          {cliente.email3 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Mail className="h-3 w-3" />
+              <span>{cliente.email3}</span>
+            </div>
+          )}
           {cliente.telefone && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Phone className="h-3 w-3" />
@@ -172,9 +206,11 @@ export function ClientesList({
             </div>
           )}
         </div>
-        
+
         <div className="flex items-center justify-between">
-          <Badge variant={cliente.tipo_pessoa === 'fisica' ? 'default' : 'secondary'}>
+          <Badge
+            variant={cliente.tipo_pessoa === 'fisica' ? 'default' : 'secondary'}
+          >
             {cliente.tipo_pessoa === 'fisica' ? (
               <>
                 <User className="mr-1 h-3 w-3" />
@@ -187,7 +223,7 @@ export function ClientesList({
               </>
             )}
           </Badge>
-          
+
           {cliente.cpf_cnpj && (
             <span className="text-xs text-muted-foreground">
               {formatarCpfCnpj(cliente.cpf_cnpj, cliente.tipo_pessoa)}
@@ -196,7 +232,7 @@ export function ClientesList({
         </div>
       </div>
     </ResponsiveCard>
-  )
+  );
 
   // Desktop Table View
   const DesktopTable = () => (
@@ -204,19 +240,19 @@ export function ClientesList({
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
               Cliente
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
               Contato
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
               Tipo
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
               Status
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
               Criado em
             </th>
             <th className="relative px-6 py-3">
@@ -224,13 +260,13 @@ export function ClientesList({
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {filteredClientes.map((cliente) => (
+        <tbody className="divide-y divide-gray-200 bg-white">
+          {filteredClientes.map(cliente => (
             <tr key={cliente.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap">
+              <td className="whitespace-nowrap px-6 py-4">
                 <div className="flex items-center">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-blue-100 text-blue-600 text-xs">
+                    <AvatarFallback className="bg-blue-100 text-xs text-blue-600">
                       {getInitials(cliente.nome)}
                     </AvatarFallback>
                   </Avatar>
@@ -244,7 +280,7 @@ export function ClientesList({
                   </div>
                 </div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
+              <td className="whitespace-nowrap px-6 py-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Mail className="h-3 w-3" />
@@ -264,8 +300,12 @@ export function ClientesList({
                   )}
                 </div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <Badge variant={cliente.tipo_pessoa === 'fisica' ? 'default' : 'secondary'}>
+              <td className="whitespace-nowrap px-6 py-4">
+                <Badge
+                  variant={
+                    cliente.tipo_pessoa === 'fisica' ? 'default' : 'secondary'
+                  }
+                >
                   {cliente.tipo_pessoa === 'fisica' ? (
                     <>
                       <User className="mr-1 h-3 w-3" />
@@ -279,21 +319,21 @@ export function ClientesList({
                   )}
                 </Badge>
                 {cliente.cpf_cnpj && (
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="mt-1 text-xs text-gray-500">
                     {formatarCpfCnpj(cliente.cpf_cnpj, cliente.tipo_pessoa)}
                   </div>
                 )}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <StatusBadge 
-                  status={cliente.is_active ? 'active' : 'inactive'} 
+              <td className="whitespace-nowrap px-6 py-4">
+                <StatusBadge
+                  status={cliente.is_active ? 'active' : 'inactive'}
                   size="sm"
                 />
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                 {new Date(cliente.created_at).toLocaleDateString('pt-BR')}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                 <ClienteActions cliente={cliente} />
               </td>
             </tr>
@@ -301,62 +341,63 @@ export function ClientesList({
         </tbody>
       </table>
     </ResponsiveTable>
-  )
+  );
 
   if (isLoading) {
     return (
       <div className="space-y-4">
         {Array.from({ length: 5 }).map((_, i) => (
           <ResponsiveCard key={i} className="animate-pulse">
-            <div className="h-20 bg-gray-200 rounded"></div>
+            <div className="h-20 rounded bg-gray-200"></div>
           </ResponsiveCard>
         ))}
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
       {/* Filtros */}
       <SearchAndFilter
-          searchValue={searchValue}
-          onSearchChange={setSearchValue}
-          searchPlaceholder="Buscar por nome, email ou documento..."
-          filters={filters}
-          onFiltersChange={setFilters}
-          filterOptions={[
-            {
-              key: 'status',
-              label: 'Status',
-              options: [
-                { value: 'all', label: 'Todos' },
-                { value: 'active', label: 'Ativos' },
-                { value: 'inactive', label: 'Inativos' }
-              ]
-            },
-            {
-              key: 'tipo',
-              label: 'Tipo',
-              options: [
-                { value: 'all', label: 'Todos' },
-                { value: 'fisica', label: 'Pessoa Física' },
-                { value: 'juridica', label: 'Pessoa Jurídica' }
-              ]
-            }
-          ]}
-        />
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+        searchPlaceholder="Buscar por nome, email ou documento..."
+        filters={filters}
+        onFiltersChange={setFilters}
+        filterOptions={[
+          {
+            key: 'status',
+            label: 'Status',
+            options: [
+              { value: 'all', label: 'Todos' },
+              { value: 'active', label: 'Ativos' },
+              { value: 'inactive', label: 'Inativos' },
+            ],
+          },
+          {
+            key: 'tipo',
+            label: 'Tipo',
+            options: [
+              { value: 'all', label: 'Todos' },
+              { value: 'fisica', label: 'Pessoa Física' },
+              { value: 'juridica', label: 'Pessoa Jurídica' },
+            ],
+          },
+        ]}
+      />
 
       {/* Lista */}
       {filteredClientes.length === 0 ? (
-        <ResponsiveCard className="text-center py-12">
+        <ResponsiveCard className="py-12 text-center">
           <div className="text-gray-500">
-            <User className="mx-auto h-12 w-12 mb-4" />
-            <h3 className="text-lg font-medium mb-2">Nenhum cliente encontrado</h3>
+            <User className="mx-auto mb-4 h-12 w-12" />
+            <h3 className="mb-2 text-lg font-medium">
+              Nenhum cliente encontrado
+            </h3>
             <p className="text-sm">
               {searchValue || statusFilter !== 'all' || tipoFilter !== 'all'
                 ? 'Tente ajustar os filtros de busca'
-                : 'Comece adicionando seu primeiro cliente'
-              }
+                : 'Comece adicionando seu primeiro cliente'}
             </p>
           </div>
         </ResponsiveCard>
@@ -365,7 +406,7 @@ export function ClientesList({
           {/* Mobile View */}
           <ShowHide hide={['md', 'lg', 'xl']}>
             <ResponsiveGrid cols={{ sm: 1 }}>
-              {filteredClientes.map((cliente) => (
+              {filteredClientes.map(cliente => (
                 <MobileClienteCard key={cliente.id} cliente={cliente} />
               ))}
             </ResponsiveGrid>
@@ -378,5 +419,5 @@ export function ClientesList({
         </>
       )}
     </div>
-  )
+  );
 }

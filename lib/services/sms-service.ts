@@ -1,7 +1,7 @@
 // 📱 SMS Service - Twilio Integration
 // Serviço para envio de SMS via Twilio com backup e fallback
-
 import { createClient } from '@/lib/supabase/client';
+
 import { metricsService } from './metrics-service';
 
 // 🔧 Interfaces e Tipos
@@ -62,10 +62,12 @@ export class SMSService {
   // 🔍 Validação de Configuração
   private validateConfig(): void {
     const { accountSid, authToken, phoneNumber } = this.config;
-    
+
     if (!accountSid || !authToken || !phoneNumber) {
       console.warn('⚠️ SMS Service: Configuração incompleta do Twilio');
-      console.warn('Variáveis necessárias: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER');
+      console.warn(
+        'Variáveis necessárias: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER'
+      );
     }
   }
 
@@ -73,26 +75,26 @@ export class SMSService {
   private formatPhoneNumber(phone: string): string {
     // Remove todos os caracteres não numéricos
     const cleaned = phone.replace(/\D/g, '');
-    
+
     // Se não tem código do país, adiciona +55 (Brasil)
     if (cleaned.length === 11 && cleaned.startsWith('11')) {
       return `+55${cleaned}`;
     }
-    
+
     if (cleaned.length === 10) {
       return `+55${cleaned}`;
     }
-    
+
     // Se já tem código do país
     if (cleaned.length === 13 && cleaned.startsWith('55')) {
       return `+${cleaned}`;
     }
-    
+
     // Se já tem + no início
     if (phone.startsWith('+')) {
       return phone;
     }
-    
+
     return `+55${cleaned}`;
   }
 
@@ -104,7 +106,7 @@ export class SMSService {
       async () => {
         try {
           const formattedPhone = this.formatPhoneNumber(to);
-          
+
           const smsData: SMSMessage = {
             to: formattedPhone,
             body: message,
@@ -112,7 +114,7 @@ export class SMSService {
           };
 
           const response = await this.sendToTwilio(smsData);
-          
+
           // Registrar comunicação no banco
           await this.logCommunication({
             cliente_telefone: formattedPhone,
@@ -135,7 +137,7 @@ export class SMSService {
       },
       {
         destinatario: to,
-        tamanho_mensagem: message.length
+        tamanho_mensagem: message.length,
       }
     );
   }
@@ -144,9 +146,9 @@ export class SMSService {
   private async sendToTwilio(smsData: SMSMessage): Promise<SMSResponse> {
     try {
       const { accountSid, authToken } = this.config;
-      
+
       const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-      
+
       const body = new URLSearchParams({
         To: smsData.to,
         From: smsData.from || this.config.phoneNumber,
@@ -156,7 +158,7 @@ export class SMSService {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Authorization': `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
+          Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: body.toString(),
@@ -170,9 +172,9 @@ export class SMSService {
           messageId: result.sid,
           provider: 'twilio',
         };
-      } else {
+      } 
         throw new Error(result.message || 'Erro na API do Twilio');
-      }
+      
     } catch (error) {
       console.error('❌ Erro na API do Twilio:', error);
       throw error;
@@ -180,20 +182,28 @@ export class SMSService {
   }
 
   // 📋 SMS para Ordem de Serviço
-  async sendOrdemServicoSMS(ordemServico: OrdemServico, cliente: Cliente, tipo: 'criacao' | 'atualizacao' | 'conclusao'): Promise<SMSResponse> {
+  async sendOrdemServicoSMS(
+    ordemServico: OrdemServico,
+    cliente: Cliente,
+    tipo: 'criacao' | 'atualizacao' | 'conclusao'
+  ): Promise<SMSResponse> {
     return await metricsService.measureOperation(
       'sms',
       'sendOrdemServicoSMS',
       async () => {
         try {
           const telefone = cliente.celular || cliente.telefone;
-          
+
           if (!telefone) {
             throw new Error('Cliente não possui telefone cadastrado');
           }
 
-          const message = this.generateOrdemServicoMessage(ordemServico, cliente, tipo);
-          
+          const message = this.generateOrdemServicoMessage(
+            ordemServico,
+            cliente,
+            tipo
+          );
+
           return await this.sendSMS(telefone, message);
         } catch (error) {
           console.error('❌ Erro ao enviar SMS de ordem de serviço:', error);
@@ -208,27 +218,33 @@ export class SMSService {
         numero_ordem: ordemServico.numero_ordem,
         tipo_sms: tipo,
         cliente_id: cliente.id,
-        valor_total: ordemServico.valor_total
+        valor_total: ordemServico.valor_total,
       }
     );
   }
 
   // 📝 Geração de Mensagem para Ordem de Serviço
-  private generateOrdemServicoMessage(ordemServico: OrdemServico, cliente: Cliente, tipo: 'criacao' | 'atualizacao' | 'conclusao'): string {
+  private generateOrdemServicoMessage(
+    ordemServico: OrdemServico,
+    cliente: Cliente,
+    tipo: 'criacao' | 'atualizacao' | 'conclusao'
+  ): string {
     const nomeCliente = cliente.nome.split(' ')[0]; // Primeiro nome
     const numeroOrdem = ordemServico.numero_ordem;
-    
+
     switch (tipo) {
       case 'criacao':
         return `🔧 InterAlpha - Olá ${nomeCliente}! Sua ordem de serviço #${numeroOrdem} foi criada. Problema: ${ordemServico.descricao_problema}. Acompanhe o status pelo portal do cliente.`;
-      
+
       case 'atualizacao':
         return `📱 InterAlpha - ${nomeCliente}, sua ordem #${numeroOrdem} foi atualizada. Status: ${ordemServico.status}. Acesse o portal para mais detalhes.`;
-      
+
       case 'conclusao':
-        const valor = ordemServico.valor_total ? ` Valor: R$ ${ordemServico.valor_total.toFixed(2)}.` : '';
+        const valor = ordemServico.valor_total
+          ? ` Valor: R$ ${ordemServico.valor_total.toFixed(2)}.`
+          : '';
         return `✅ InterAlpha - ${nomeCliente}, sua ordem #${numeroOrdem} foi concluída!${valor} Obrigado pela confiança!`;
-      
+
       default:
         return `📱 InterAlpha - ${nomeCliente}, atualização sobre sua ordem #${numeroOrdem}. Status: ${ordemServico.status}.`;
     }
@@ -272,7 +288,7 @@ export class SMSService {
       async () => {
         try {
           const { accountSid, authToken } = this.config;
-          
+
           if (!accountSid || !authToken) {
             return {
               success: false,
@@ -282,10 +298,10 @@ export class SMSService {
 
           // Teste simples de autenticação
           const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}.json`;
-          
+
           const response = await fetch(url, {
             headers: {
-              'Authorization': `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
+              Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
             },
           });
 
@@ -294,12 +310,12 @@ export class SMSService {
               success: true,
               message: 'Conexão com Twilio estabelecida com sucesso',
             };
-          } else {
+          } 
             return {
               success: false,
               message: 'Falha na autenticação com Twilio',
             };
-          }
+          
         } catch (error) {
           return {
             success: false,
@@ -312,16 +328,16 @@ export class SMSService {
 
   // 📈 Templates de SMS Predefinidos
   static templates = {
-    bemVindo: (nome: string) => 
+    bemVindo: (nome: string) =>
       `🎉 Bem-vindo à InterAlpha, ${nome}! Estamos prontos para cuidar dos seus equipamentos Apple com excelência.`,
-    
-    lembreteManutencao: (nome: string, equipamento: string) => 
+
+    lembreteManutencao: (nome: string, equipamento: string) =>
       `🔧 ${nome}, que tal agendar uma manutenção preventiva para seu ${equipamento}? Entre em contato conosco!`,
-    
-    promocao: (nome: string, desconto: string) => 
+
+    promocao: (nome: string, desconto: string) =>
       `🎁 ${nome}, oferta especial! ${desconto} de desconto em serviços. Válido até o final do mês!`,
-    
-    agendamento: (nome: string, data: string, hora: string) => 
+
+    agendamento: (nome: string, data: string, hora: string) =>
       `📅 ${nome}, seu agendamento está confirmado para ${data} às ${hora}. Aguardamos você!`,
   };
 }

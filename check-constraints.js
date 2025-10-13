@@ -7,16 +7,18 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function checkConstraints() {
-  console.log('🔍 Verificando constraints e estrutura da tabela ordens_servico...\n');
+  console.log(
+    '🔍 Verificando constraints e estrutura da tabela ordens_servico...\n'
+  );
 
   try {
     // Vamos tentar uma inserção com dados mínimos para ver o erro exato
     console.log('🧪 Testando inserção com dados mínimos...');
-    
+
     const { data: insertResult, error: insertError } = await supabase
       .from('ordens_servico')
       .insert({
-        titulo: 'Test'
+        titulo: 'Test',
       });
 
     if (insertError) {
@@ -31,12 +33,12 @@ async function checkConstraints() {
 
     // Vamos tentar uma inserção com cliente_portal_id válido
     console.log('\n🧪 Testando inserção com cliente_portal_id...');
-    
+
     const { data: insertResult2, error: insertError2 } = await supabase
       .from('ordens_servico')
       .insert({
         cliente_portal_id: '3fef921d-5e1d-408c-9937-3385df3d54d7',
-        titulo: 'Test with client'
+        titulo: 'Test with client',
       });
 
     if (insertError2) {
@@ -51,7 +53,7 @@ async function checkConstraints() {
 
     // Vamos tentar verificar a estrutura da tabela
     console.log('\n🔍 Verificando estrutura da tabela...');
-    
+
     const { data: tableInfo, error: tableError } = await supabase
       .from('ordens_servico')
       .select('*')
@@ -67,7 +69,6 @@ async function checkConstraints() {
         console.log('📋 Tabela vazia, não foi possível verificar colunas');
       }
     }
-
   } catch (error) {
     console.error('❌ Erro geral:', error);
   }

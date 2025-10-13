@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { StatusOrdemServico } from '@/types/ordens-servico'
-import { smsService } from '@/lib/services/sms-service'
+import { NextRequest, NextResponse } from 'next/server';
+
+import { smsService } from '@/lib/services/sms-service';
+import { createClient } from '@/lib/supabase/server';
+import { StatusOrdemServico } from '@/types/ordens-servico';
 
 // PATCH - Atualizar status da ordem de serviço
 export async function PATCH(
@@ -9,73 +10,77 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: ordemId } = await params
-    const { status } = await request.json()
+    const { id: ordemId } = await params;
+    const { status } = await request.json();
 
     if (!status) {
       return NextResponse.json(
         { error: 'Status é obrigatório' },
         { status: 400 }
-      )
+      );
     }
 
     // Mapeamento de valores para compatibilidade
     const statusMap: Record<string, string> = {
-      'Pendente': 'aberta',
+      Pendente: 'aberta',
       'Em andamento': 'em_andamento',
-      'Concluída': 'concluida',
-      'Cancelada': 'cancelada'
-    }
+      Concluída: 'concluida',
+      Cancelada: 'cancelada',
+    };
 
-    const statusNormalizado = statusMap[status] || status
+    const statusNormalizado = statusMap[status] || status;
 
     // Validar se o status é válido
-    const statusValidos = ['aberta', 'em_andamento', 'concluida', 'cancelada']
+    const statusValidos = ['aberta', 'em_andamento', 'concluida', 'cancelada'];
     if (!statusValidos.includes(statusNormalizado)) {
       return NextResponse.json(
-        { error: `Status inválido. Status válidos: ${statusValidos.join(', ')}` },
+        {
+          error: `Status inválido. Status válidos: ${statusValidos.join(', ')}`,
+        },
         { status: 400 }
-      )
+      );
     }
 
     // Detectar ambiente de teste
-    const isTestEnvironment = process.env.NODE_ENV === 'test' || ordemId.startsWith('00000000-0000-0000-0000-')
+    const isTestEnvironment =
+      process.env.NODE_ENV === 'test' ||
+      ordemId.startsWith('00000000-0000-0000-0000-');
 
     // Simular atualização de status em ambiente de teste
     if (isTestEnvironment) {
       return NextResponse.json({
         success: true,
         message: 'Status atualizado com sucesso',
-        status: status,
+        status,
         data: {
           id: ordemId,
           status: statusNormalizado,
-          updated_at: new Date().toISOString()
-        }
-      })
+          updated_at: new Date().toISOString(),
+        },
+      });
     }
 
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     // Verificar se a ordem existe
     const { data: ordemExistente, error: errorBusca } = await supabase
       .from('ordens_servico')
       .select('id, status')
       .eq('id', ordemId)
-      .single()
+      .single();
 
     if (errorBusca) {
       if (errorBusca.code === 'PGRST116') {
         return NextResponse.json(
           { error: 'Ordem de serviço não encontrada' },
           { status: 404 }
-        )
+        );
       }
-      console.error('Erro ao buscar ordem existente:', errorBusca)
+      console.error('Erro ao buscar ordem existente:', errorBusca);
       return NextResponse.json(
         { error: 'Erro ao verificar ordem de serviço' },
         { status: 500 }
-      )
+      );
     }
 
     // Atualizar status
@@ -83,33 +88,31 @@ export async function PATCH(
       .from('ordens_servico')
       .update({
         status: statusNormalizado as StatusOrdemServico,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('id', ordemId)
       .select()
-      .single()
+      .single();
 
     if (errorUpdate) {
-      console.error('Erro ao atualizar status da ordem:', errorUpdate)
+      console.error('Erro ao atualizar status da ordem:', errorUpdate);
       return NextResponse.json(
         { error: 'Erro ao atualizar status da ordem de serviço' },
         { status: 500 }
-      )
+      );
     }
 
     // Criar histórico de mudança de status (apenas se não for ambiente de teste)
     if (!isTestEnvironment) {
-      await supabase
-        .from('status_historico')
-        .insert({
-          ordem_servico_id: ordemId,
-          status_anterior: ordemExistente.status,
-          status_novo: statusNormalizado,
-          motivo: `Status alterado para ${status}`,
-          usuario_id: 'system', // TODO: Pegar do usuário logado
-          usuario_nome: 'Sistema', // TODO: Pegar do usuário logado
-          data_mudanca: new Date().toISOString()
-        })
+      await supabase.from('status_historico').insert({
+        ordem_servico_id: ordemId,
+        status_anterior: ordemExistente.status,
+        status_novo: statusNormalizado,
+        motivo: `Status alterado para ${status}`,
+        usuario_id: 'system', // TODO: Pegar do usuário logado
+        usuario_nome: 'Sistema', // TODO: Pegar do usuário logado
+        data_mudanca: new Date().toISOString(),
+      });
     }
 
     // Enviar SMS de notificação de mudança de status (apenas se não for ambiente de teste)
@@ -118,12 +121,14 @@ export async function PATCH(
         // Buscar dados completos da ordem e cliente para o SMS
         const { data: ordemCompleta } = await supabase
           .from('ordens_servico')
-          .select(`
+          .select(
+            `
             *,
             cliente:clientes(id, nome, email, telefone)
-          `)
+          `
+          )
           .eq('id', ordemId)
-          .single()
+          .single();
 
         if (ordemCompleta?.cliente) {
           const ordemParaSMS = {
@@ -131,26 +136,36 @@ export async function PATCH(
             numero_ordem: ordemCompleta.numero_os,
             cliente_id: ordemCompleta.cliente_id,
             status: statusNormalizado,
-            descricao_problema: ordemCompleta.descricao || ordemCompleta.problema_reportado || '',
-            valor_total: (ordemCompleta.valor_servico || 0) + (ordemCompleta.valor_pecas || 0),
+            descricao_problema:
+              ordemCompleta.descricao || ordemCompleta.problema_reportado || '',
+            valor_total:
+              (ordemCompleta.valor_servico || 0) +
+              (ordemCompleta.valor_pecas || 0),
             data_criacao: ordemCompleta.created_at,
-            tecnico_responsavel: ordemCompleta.tecnico_id
-          }
+            tecnico_responsavel: ordemCompleta.tecnico_id,
+          };
 
           const clienteParaSMS = {
             id: ordemCompleta.cliente.id,
             nome: ordemCompleta.cliente.nome,
             telefone: ordemCompleta.cliente.telefone,
             celular: ordemCompleta.cliente.telefone,
-            email: ordemCompleta.cliente.email
-          }
+            email: ordemCompleta.cliente.email,
+          };
 
-          const tipoSMS = statusNormalizado === 'concluida' ? 'conclusao' : 'atualizacao'
-          await smsService.sendOrdemServicoSMS(ordemParaSMS, clienteParaSMS, tipoSMS)
-          console.log(`SMS de ${tipoSMS} enviado para ordem ${ordemCompleta.numero_os}`)
+          const tipoSMS =
+            statusNormalizado === 'concluida' ? 'conclusao' : 'atualizacao';
+          await smsService.sendOrdemServicoSMS(
+            ordemParaSMS,
+            clienteParaSMS,
+            tipoSMS
+          );
+          console.log(
+            `SMS de ${tipoSMS} enviado para ordem ${ordemCompleta.numero_os}`
+          );
         }
       } catch (smsError) {
-        console.error('Erro ao enviar SMS de atualização de status:', smsError)
+        console.error('Erro ao enviar SMS de atualização de status:', smsError);
         // Não falhar a atualização por causa do SMS
       }
     }
@@ -158,15 +173,14 @@ export async function PATCH(
     return NextResponse.json({
       success: true,
       message: 'Status atualizado com sucesso',
-      status: status, // Retornar o status original para compatibilidade com o teste
-      data: ordemAtualizada
-    })
-
+      status, // Retornar o status original para compatibilidade com o teste
+      data: ordemAtualizada,
+    });
   } catch (error) {
-    console.error('Erro na atualização do status:', error)
+    console.error('Erro na atualização do status:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
-    )
+    );
   }
 }

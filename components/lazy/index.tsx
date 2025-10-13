@@ -1,6 +1,6 @@
 'use client';
 
-import { createLazyComponent, LazyPresets } from '@/lib/utils/lazy-loading';
+import { LazyPresets, createLazyComponent } from '@/lib/utils/lazy-loading';
 
 // Dashboard Financeiro
 export const LazyDashboardFinanceiro = createLazyComponent(
@@ -74,5 +74,5 @@ export default {
   ClientesPage: LazyClientesPage,
   PecasPage: LazyPecasPage,
   PagamentosPage: LazyPagamentosPage,
-  OrdensServicoPage: LazyOrdensServicoPage
+  OrdensServicoPage: LazyOrdensServicoPage,
 };

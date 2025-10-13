@@ -1,6 +1,7 @@
 # Guia de Migração - Sistema de Roles
 
-Este documento descreve como migrar usuários existentes para o novo sistema de roles hierárquico do InterAlpha.
+Este documento descreve como migrar usuários existentes para o novo sistema de roles hierárquico do
+InterAlpha.
 
 ## 📋 Visão Geral
 
@@ -18,18 +19,18 @@ O novo sistema de roles introduz uma hierarquia clara de permissões:
 
 O script de migração mapeia automaticamente as roles antigas para as novas:
 
-| Role Antiga | Role Nova | Descrição |
-|-------------|-----------|-----------|
-| `admin` | `admin` | Mantém privilégios administrativos |
-| `user` | `user` | Usuários básicos mantêm role |
-| `technician` / `tecnico` | `technician` | Normaliza variações de técnico |
-| `manager` | `gerente_adm` | Managers viram gerentes administrativos |
-| `supervisor` | `supervisor_tecnico` | Supervisors viram supervisores técnicos |
-| `diretor` | `diretor` | Mantém role de diretor |
-| `gerente_adm` | `gerente_adm` | Mantém role de gerente administrativo |
-| `gerente_financeiro` | `gerente_financeiro` | Mantém role de gerente financeiro |
-| `supervisor_tecnico` | `supervisor_tecnico` | Mantém role de supervisor técnico |
-| `atendente` | `atendente` | Mantém role de atendente |
+| Role Antiga              | Role Nova            | Descrição                               |
+| ------------------------ | -------------------- | --------------------------------------- |
+| `admin`                  | `admin`              | Mantém privilégios administrativos      |
+| `user`                   | `user`               | Usuários básicos mantêm role            |
+| `technician` / `tecnico` | `technician`         | Normaliza variações de técnico          |
+| `manager`                | `gerente_adm`        | Managers viram gerentes administrativos |
+| `supervisor`             | `supervisor_tecnico` | Supervisors viram supervisores técnicos |
+| `diretor`                | `diretor`            | Mantém role de diretor                  |
+| `gerente_adm`            | `gerente_adm`        | Mantém role de gerente administrativo   |
+| `gerente_financeiro`     | `gerente_financeiro` | Mantém role de gerente financeiro       |
+| `supervisor_tecnico`     | `supervisor_tecnico` | Mantém role de supervisor técnico       |
+| `atendente`              | `atendente`          | Mantém role de atendente                |
 
 ## 🚀 Como Executar a Migração
 
@@ -51,6 +52,7 @@ node scripts/migrate-existing-users.js migrate
 ```
 
 Este comando:
+
 - Busca todos os usuários existentes
 - Mostra estatísticas das roles atuais
 - Executa a migração conforme o mapeamento
@@ -64,6 +66,7 @@ node scripts/migrate-existing-users.js test-users
 ```
 
 Cria usuários de teste para cada role:
+
 - `admin@interalpha.com` (admin)
 - `diretor@interalpha.com` (diretor)
 - `gerente.adm@interalpha.com` (gerente_adm)
@@ -133,13 +136,13 @@ Após a migração, verifique:
 
 ```sql
 -- Verificar distribuição de roles após migração
-SELECT role, COUNT(*) as total 
-FROM users 
-GROUP BY role 
+SELECT role, COUNT(*) as total
+FROM users
+GROUP BY role
 ORDER BY total DESC;
 
 -- Verificar roles inválidas
-SELECT * FROM users 
+SELECT * FROM users
 WHERE role NOT IN ('admin', 'diretor', 'gerente_adm', 'gerente_financeiro', 'supervisor_tecnico', 'technician', 'atendente', 'user');
 
 -- Verificar usuários sem role
@@ -173,21 +176,27 @@ SELECT * FROM users WHERE role IS NULL;
 ### Problemas Comuns
 
 #### Erro de Conexão com Supabase
+
 ```
 ❌ Variáveis de ambiente do Supabase não encontradas!
 ```
+
 **Solução**: Verifique se `.env.local` contém as variáveis corretas.
 
 #### Usuários com Roles Inválidas
+
 ```
 ❌ Encontradas 3 roles inválidas após migração!
 ```
+
 **Solução**: Execute novamente a migração ou corrija manualmente.
 
 #### Erro de Permissão
+
 ```
 ❌ Erro ao atualizar usuário: insufficient_privilege
 ```
+
 **Solução**: Verifique se está usando `SUPABASE_SERVICE_ROLE_KEY` e não a chave anônima.
 
 ### Logs de Debug
@@ -196,8 +205,8 @@ Para debug detalhado, adicione logs extras:
 
 ```javascript
 // No script, adicione antes da migração:
-console.log('Debug - Supabase URL:', supabaseUrl);
-console.log('Debug - Service Key presente:', !!supabaseServiceKey);
+console.log("Debug - Supabase URL:", supabaseUrl)
+console.log("Debug - Service Key presente:", !!supabaseServiceKey)
 ```
 
 ## 📞 Suporte

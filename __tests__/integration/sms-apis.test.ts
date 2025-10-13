@@ -1,6 +1,6 @@
 /**
  * Testes de Integração para APIs SMS
- * 
+ *
  * Estes testes verificam se as APIs SMS estão funcionando corretamente
  * em um ambiente de teste, simulando chamadas reais para os endpoints.
  */
@@ -30,14 +30,14 @@ describe('Integração das APIs SMS', () => {
       // Este teste verifica se o endpoint existe e responde
       const payload = {
         to: numeroTeste,
-        message: 'Teste de integração SMS'
+        message: 'Teste de integração SMS',
       };
 
       // Simular uma requisição POST
       const requestData = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       };
 
       // Verificar se os dados da requisição estão corretos
@@ -48,11 +48,11 @@ describe('Integração das APIs SMS', () => {
 
     it('deve validar campos obrigatórios', async () => {
       const payloadSemTelefone = {
-        message: 'Mensagem de teste'
+        message: 'Mensagem de teste',
       };
 
       const payloadSemMensagem = {
-        to: numeroTeste
+        to: numeroTeste,
       };
 
       // Verificar estrutura dos payloads
@@ -66,13 +66,13 @@ describe('Integração das APIs SMS', () => {
         '5511993804816',
         '11993804816',
         '(11) 99380-4816',
-        '11 99380-4816'
+        '11 99380-4816',
       ];
 
       formatos.forEach(formato => {
         const payload = {
           to: formato,
-          message: 'Teste de formato'
+          message: 'Teste de formato',
         };
 
         expect(payload.to).toBeDefined();
@@ -87,7 +87,7 @@ describe('Integração das APIs SMS', () => {
         'bemVindo',
         'lembreteManutencao',
         'promocao',
-        'agendamento'
+        'agendamento',
       ];
 
       // Verificar se todos os templates esperados estão definidos
@@ -101,7 +101,7 @@ describe('Integração das APIs SMS', () => {
       const dadosTemplate = {
         to: numeroTeste,
         template: 'bemVindo',
-        data: { nome: 'Usuário Teste' }
+        data: { nome: 'Usuário Teste' },
       };
 
       expect(dadosTemplate.template).toBe('bemVindo');
@@ -113,7 +113,7 @@ describe('Integração das APIs SMS', () => {
     it('deve estar disponível para teste de conexão', async () => {
       const requestData = {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       };
 
       expect(requestData.method).toBe('GET');
@@ -137,7 +137,7 @@ describe('Integração das APIs SMS', () => {
     it('deve criar payload válido para SMS de teste', () => {
       const payloadTeste = {
         to: numeroTeste,
-        message: 'Teste de integração SMS - InterAlpha'
+        message: 'Teste de integração SMS - InterAlpha',
       };
 
       expect(payloadTeste.to).toBe(numeroTeste);
@@ -148,7 +148,7 @@ describe('Integração das APIs SMS', () => {
       const payloadTemplate = {
         to: numeroTeste,
         template: 'bemVindo',
-        data: { nome: 'Usuário Teste' }
+        data: { nome: 'Usuário Teste' },
       };
 
       expect(payloadTemplate.to).toBe(numeroTeste);
@@ -161,12 +161,12 @@ describe('Integração das APIs SMS', () => {
     it('deve validar estrutura de payload para envio simples', () => {
       const payloadValido = {
         to: numeroTeste,
-        message: 'Mensagem de teste'
+        message: 'Mensagem de teste',
       };
 
       const payloadInvalido = {
         telefone: numeroTeste, // Campo incorreto
-        texto: 'Mensagem de teste' // Campo incorreto
+        texto: 'Mensagem de teste', // Campo incorreto
       };
 
       expect(payloadValido).toHaveProperty('to');
@@ -179,7 +179,7 @@ describe('Integração das APIs SMS', () => {
       const payloadTemplateValido = {
         to: numeroTeste,
         template: 'bemVindo',
-        data: { nome: 'João' }
+        data: { nome: 'João' },
       };
 
       expect(payloadTemplateValido).toHaveProperty('to');
@@ -191,11 +191,14 @@ describe('Integração das APIs SMS', () => {
     it('deve sanitizar dados de entrada', () => {
       const dadosComScript = {
         to: numeroTeste,
-        message: '<script>alert("xss")</script>Mensagem segura'
+        message: '<script>alert("xss")</script>Mensagem segura',
       };
 
       // Simular sanitização
-      const mensagemSanitizada = dadosComScript.message.replace(/<script.*?<\/script>/gi, '');
+      const mensagemSanitizada = dadosComScript.message.replace(
+        /<script.*?<\/script>/gi,
+        ''
+      );
 
       expect(mensagemSanitizada).toBe('Mensagem segura');
       expect(mensagemSanitizada).not.toContain('<script>');
@@ -227,7 +230,7 @@ describe('Integração das APIs SMS', () => {
         numero_ordem: 'OS-2024-001',
         cliente_nome: 'João Silva',
         status: 'criada',
-        descricao: 'Reparo em iPhone 12'
+        descricao: 'Reparo em iPhone 12',
       };
 
       const mensagem = `🔧 Olá ${ordemServico.cliente_nome}! Sua ordem de serviço ${ordemServico.numero_ordem} foi ${ordemServico.status}. Descrição: ${ordemServico.descricao}. InterAlpha - Assistência Apple.`;
@@ -240,7 +243,7 @@ describe('Integração das APIs SMS', () => {
     it('deve preparar SMS de lembrete de manutenção', () => {
       const cliente = {
         nome: 'Maria Santos',
-        equipamento: 'MacBook Pro'
+        equipamento: 'MacBook Pro',
       };
 
       const mensagem = `🔧 ${cliente.nome}, que tal agendar uma manutenção preventiva para seu ${cliente.equipamento}? Entre em contato conosco!`;
@@ -254,7 +257,7 @@ describe('Integração das APIs SMS', () => {
       const promocao = {
         cliente_nome: 'Pedro Costa',
         desconto: '20%',
-        validade: 'final do mês'
+        validade: 'final do mês',
       };
 
       const mensagem = `🎁 ${promocao.cliente_nome}, oferta especial! ${promocao.desconto} de desconto em serviços. Válido até o ${promocao.validade}!`;

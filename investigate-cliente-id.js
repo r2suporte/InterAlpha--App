@@ -11,15 +11,14 @@ async function investigateClienteId() {
 
   // 1. Verificar views que podem estar usando cp.cliente_id
   console.log('📋 Verificando views...');
-  const { data: views, error: viewsError } = await supabase
-    .rpc('exec_sql', {
-      sql: `
+  const { data: views, error: viewsError } = await supabase.rpc('exec_sql', {
+    sql: `
         SELECT schemaname, viewname, definition 
         FROM pg_views 
         WHERE schemaname = 'public' 
         AND definition ILIKE '%cliente_id%'
-      `
-    });
+      `,
+  });
 
   if (viewsError) {
     console.log('❌ Erro ao buscar views:', viewsError);
@@ -29,8 +28,9 @@ async function investigateClienteId() {
 
   // 2. Verificar triggers
   console.log('\n🔧 Verificando triggers...');
-  const { data: triggers, error: triggersError } = await supabase
-    .rpc('exec_sql', {
+  const { data: triggers, error: triggersError } = await supabase.rpc(
+    'exec_sql',
+    {
       sql: `
         SELECT 
           t.trigger_name,
@@ -40,8 +40,9 @@ async function investigateClienteId() {
         JOIN pg_proc p ON p.proname = t.action_statement
         WHERE t.event_object_schema = 'public'
         AND (t.event_object_table = 'ordens_servico' OR p.prosrc ILIKE '%cliente_id%')
-      `
-    });
+      `,
+    }
+  );
 
   if (triggersError) {
     console.log('❌ Erro ao buscar triggers:', triggersError);
@@ -51,8 +52,9 @@ async function investigateClienteId() {
 
   // 3. Verificar funções que podem estar sendo chamadas
   console.log('\n⚙️ Verificando funções...');
-  const { data: functions, error: functionsError } = await supabase
-    .rpc('exec_sql', {
+  const { data: functions, error: functionsError } = await supabase.rpc(
+    'exec_sql',
+    {
       sql: `
         SELECT 
           proname as function_name,
@@ -60,8 +62,9 @@ async function investigateClienteId() {
         FROM pg_proc 
         WHERE prosrc ILIKE '%cp.cliente_id%' 
         OR prosrc ILIKE '%cliente_portal%'
-      `
-    });
+      `,
+    }
+  );
 
   if (functionsError) {
     console.log('❌ Erro ao buscar funções:', functionsError);
@@ -71,8 +74,9 @@ async function investigateClienteId() {
 
   // 4. Verificar se há alguma RLS policy
   console.log('\n🔒 Verificando políticas RLS...');
-  const { data: policies, error: policiesError } = await supabase
-    .rpc('exec_sql', {
+  const { data: policies, error: policiesError } = await supabase.rpc(
+    'exec_sql',
+    {
       sql: `
         SELECT 
           schemaname,
@@ -83,8 +87,9 @@ async function investigateClienteId() {
         FROM pg_policies 
         WHERE schemaname = 'public' 
         AND tablename = 'ordens_servico'
-      `
-    });
+      `,
+    }
+  );
 
   if (policiesError) {
     console.log('❌ Erro ao buscar políticas:', policiesError);
@@ -94,8 +99,9 @@ async function investigateClienteId() {
 
   // 5. Tentar inserção direta via SQL para ver o erro completo
   console.log('\n💉 Testando inserção direta via SQL...');
-  const { data: insertTest, error: insertError } = await supabase
-    .rpc('exec_sql', {
+  const { data: insertTest, error: insertError } = await supabase.rpc(
+    'exec_sql',
+    {
       sql: `
         INSERT INTO public.ordens_servico (
           cliente_portal_id,
@@ -112,8 +118,9 @@ async function investigateClienteId() {
           'media',
           100.00
         ) RETURNING *;
-      `
-    });
+      `,
+    }
+  );
 
   if (insertError) {
     console.log('❌ Erro na inserção SQL:', insertError);

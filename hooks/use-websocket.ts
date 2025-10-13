@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
-import webSocketService, { 
-  OrderStatusUpdate, 
-  NewOrderNotification 
+import { useCallback, useEffect, useState } from 'react';
+
+import webSocketService, {
+  NewOrderNotification,
+  OrderStatusUpdate,
 } from '@/lib/services/websocket-service';
 
 interface UseWebSocketOptions {
@@ -22,17 +23,29 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     reconnectAttempts: 0,
   });
 
-  const [orderStatusUpdates, setOrderStatusUpdates] = useState<OrderStatusUpdate[]>([]);
-  const [newOrderNotifications, setNewOrderNotifications] = useState<NewOrderNotification[]>([]);
+  const [orderStatusUpdates, setOrderStatusUpdates] = useState<
+    OrderStatusUpdate[]
+  >([]);
+  const [newOrderNotifications, setNewOrderNotifications] = useState<
+    NewOrderNotification[]
+  >([]);
 
   // Update connection state
   const updateConnectionState = useCallback(() => {
-    const status = webSocketService.getConnectionStatus();
-    setState({
-      isConnected: status.isConnected,
-      socketId: status.socketId,
-      reconnectAttempts: status.reconnectAttempts,
-    });
+    try {
+      const status = webSocketService.getConnectionStatus();
+      setState({
+        isConnected: status.isConnected,
+        socketId: status.socketId,
+        reconnectAttempts: status.reconnectAttempts,
+      });
+    } catch (error) {
+      console.warn('Erro ao atualizar estado do WebSocket:', error);
+      setState({
+        isConnected: false,
+        reconnectAttempts: 0,
+      });
+    }
   }, []);
 
   // Join appropriate rooms based on user role
@@ -58,7 +71,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     return () => {
       clearInterval(interval);
     };
-  }, [options.userId, options.technicianId, options.isAdmin, updateConnectionState]);
+  }, [
+    options.userId,
+    options.technicianId,
+    options.isAdmin,
+    updateConnectionState,
+  ]);
 
   // Handle order status updates
   useEffect(() => {
@@ -94,12 +112,20 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
   // Emit order status update
   const emitOrderStatusUpdate = useCallback((data: OrderStatusUpdate) => {
-    webSocketService.emitOrderStatusUpdate(data);
+    try {
+      webSocketService.emitOrderStatusUpdate(data);
+    } catch (error) {
+      console.warn('Erro ao emitir atualização de status:', error);
+    }
   }, []);
 
   // Emit new order creation
   const emitNewOrderCreated = useCallback((data: NewOrderNotification) => {
-    webSocketService.emitNewOrderCreated(data);
+    try {
+      webSocketService.emitNewOrderCreated(data);
+    } catch (error) {
+      console.warn('Erro ao emitir nova ordem:', error);
+    }
   }, []);
 
   // Clear notifications

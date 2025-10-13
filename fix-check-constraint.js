@@ -25,10 +25,10 @@ async function fixCheckConstraint() {
 
   // 2. Tentar remover a constraint problemática via SQL raw
   console.log('\n🔧 Removendo constraint check_cliente_reference...');
-  
+
   try {
     const { data, error } = await supabase.rpc('exec_sql', {
-      sql: 'ALTER TABLE public.ordens_servico DROP CONSTRAINT IF EXISTS check_cliente_reference;'
+      sql: 'ALTER TABLE public.ordens_servico DROP CONSTRAINT IF EXISTS check_cliente_reference;',
     });
 
     if (error) {
@@ -42,7 +42,7 @@ async function fixCheckConstraint() {
 
   // 3. Testar inserção após remoção
   console.log('\n💉 Testando inserção após remoção da constraint...');
-  
+
   // Primeiro, buscar um cliente portal
   const { data: clientePortal } = await supabase
     .from('clientes_portal')
@@ -64,7 +64,7 @@ async function fixCheckConstraint() {
       descricao: 'Teste de inserção após remoção da constraint',
       status: 'aberta',
       prioridade: 'media',
-      valor_servico: 100.00
+      valor_servico: 100.0,
     })
     .select();
 

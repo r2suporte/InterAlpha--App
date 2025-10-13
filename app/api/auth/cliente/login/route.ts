@@ -1,20 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { verifyPassword } from '@/lib/auth/client-auth'
-import { sign } from 'jsonwebtoken'
+import { NextRequest, NextResponse } from 'next/server';
+
+import { sign } from 'jsonwebtoken';
+
+import { verifyPassword } from '@/lib/auth/client-auth';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { login, senha } = await request.json()
+    const { login, senha } = await request.json();
 
     if (!login || !senha) {
       return NextResponse.json(
         { error: 'Login e senha são obrigatórios' },
         { status: 400 }
-      )
+      );
     }
 
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     // Buscar cliente pelo login
     const { data: cliente, error: errorBusca } = await supabase
@@ -22,41 +24,41 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('login', login)
       .eq('ativo', true)
-      .single()
+      .single();
 
     if (errorBusca || !cliente) {
       return NextResponse.json(
         { error: 'Login ou senha incorretos' },
         { status: 401 }
-      )
+      );
     }
 
     // Verificar senha
-    const senhaValida = await verifyPassword(senha, cliente.senha_hash)
+    const senhaValida = await verifyPassword(senha, cliente.senha_hash);
     if (!senhaValida) {
       return NextResponse.json(
         { error: 'Login ou senha incorretos' },
         { status: 401 }
-      )
+      );
     }
 
     // Gerar token JWT
     const token = sign(
-      { 
+      {
         clienteId: cliente.id,
         login: cliente.login,
         email: cliente.email,
-        tipo: 'cliente'
+        tipo: 'cliente',
       },
-      process.env.JWT_SECRET || 'fallback-secret',
+      process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',
       { expiresIn: '24h' }
-    )
+    );
 
     // Atualizar último acesso
     await supabase
       .from('clientes_portal')
       .update({ ultimo_acesso: new Date().toISOString() })
-      .eq('id', cliente.id)
+      .eq('id', cliente.id);
 
     // Criar sessão no banco
     const { error: sessaoError } = await supabase
@@ -64,20 +66,27 @@ export async function POST(request: NextRequest) {
       .insert({
         cliente_portal_id: cliente.id,
         token_sessao: token,
-        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '::1',
+        ip_address:
+          request.headers.get('x-forwarded-for') ||
+          request.headers.get('x-real-ip') ||
+          '::1',
         user_agent: request.headers.get('user-agent') || '',
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 horas
-      })
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 horas
+      });
 
     if (sessaoError) {
-      console.error('Erro ao criar sessão:', sessaoError)
-      return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
+      console.error('Erro ao criar sessão:', sessaoError);
+      return NextResponse.json(
+        { error: 'Erro interno do servidor' },
+        { status: 500 }
+      );
     }
 
     // Buscar ordens de serviço do cliente
     const { data: ordensServico, error: errorOS } = await supabase
       .from('ordens_servico')
-      .select(`
+      .select(
+        `
         id,
         numero_os,
         status,
@@ -86,9 +95,10 @@ export async function POST(request: NextRequest) {
         data_inicio,
         data_fim,
         created_at
-      `)
+      `
+      )
       .eq('cliente_portal_id', cliente.id)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: false });
 
     const response = NextResponse.json({
       success: true,
@@ -97,55 +107,53 @@ export async function POST(request: NextRequest) {
         nome: cliente.nome,
         email: cliente.email,
         login: cliente.login,
-        primeiro_acesso: cliente.primeiro_acesso
+        primeiro_acesso: cliente.primeiro_acesso,
       },
       token,
-      ordens_servico: ordensServico || []
-    })
+      ordens_servico: ordensServico || [],
+    });
 
     // Definir cookie com o token
     response.cookies.set('cliente-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 // 24h
-    })
+      maxAge: 24 * 60 * 60, // 24h
+    });
 
-    return response
-
+    return response;
   } catch (error) {
-    console.error('Erro no login do cliente:', error)
+    console.error('Erro no login do cliente:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    const token = request.cookies.get('cliente-token')?.value
+    const token = request.cookies.get('cliente-token')?.value;
 
     if (token) {
-      const supabase = await createClient()
-      
+      const supabase = await createClient();
+
       // Remover sessão
       await supabase
         .from('cliente_portal_sessoes')
         .delete()
-        .eq('token_sessao', token)
+        .eq('token_sessao', token);
     }
 
-    const response = NextResponse.json({ success: true })
-    response.cookies.delete('cliente-token')
-    
-    return response
+    const response = NextResponse.json({ success: true });
+    response.cookies.delete('cliente-token');
 
+    return response;
   } catch (error) {
-    console.error('Erro no logout do cliente:', error)
+    console.error('Erro no logout do cliente:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
-    )
+    );
   }
 }

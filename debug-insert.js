@@ -1,7 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = 'http://127.0.0.1:54321';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+const supabaseKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -19,7 +20,7 @@ async function debugInsert() {
     if (clienteError && clienteError.code === 'PGRST116') {
       // Não há clientes portal, vamos criar um
       console.log('📝 Criando cliente portal para teste...');
-      
+
       const { data: novoCliente, error: erroNovoCliente } = await supabase
         .from('clientes_portal')
         .insert({
@@ -27,7 +28,7 @@ async function debugInsert() {
           email: 'teste.debug@example.com',
           telefone: '11999999999',
           login: 'teste.debug',
-          senha_hash: 'hash_teste_123'
+          senha_hash: 'hash_teste_123',
         })
         .select()
         .single();
@@ -48,12 +49,12 @@ async function debugInsert() {
 
     // Agora vamos tentar inserir com dados mínimos
     console.log('\n🧪 Tentando inserção com dados mínimos...');
-    
+
     const dadosMinimos = {
       cliente_portal_id: clientePortal.id,
       titulo: 'Teste Debug',
       descricao: 'Teste de debug',
-      status: 'aberta'
+      status: 'aberta',
     };
 
     console.log('📋 Dados para inserção:', dadosMinimos);
@@ -65,13 +66,13 @@ async function debugInsert() {
 
     if (erroInsercao) {
       console.error('❌ Erro na inserção:', erroInsercao);
-      
+
       // Vamos tentar com cliente_id nulo explícito
       console.log('\n🔄 Tentando com cliente_id explicitamente nulo...');
-      
+
       const dadosComClienteIdNulo = {
         ...dadosMinimos,
-        cliente_id: null
+        cliente_id: null,
       };
 
       const { data: resultado2, error: erroInsercao2 } = await supabase
@@ -87,7 +88,6 @@ async function debugInsert() {
     } else {
       console.log('✅ Inserção bem-sucedida:', resultado);
     }
-
   } catch (error) {
     console.error('❌ Erro geral:', error);
   }

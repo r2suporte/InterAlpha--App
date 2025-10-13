@@ -1,14 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Bell, X, Check, CheckCircle, AlertCircle, Info, Wrench } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { useWebSocket } from '@/hooks/use-websocket';
+import { useEffect, useState } from 'react';
+
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import {
+  AlertCircle,
+  Bell,
+  Check,
+  CheckCircle,
+  Info,
+  Wrench,
+  X,
+} from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { useWebSocket } from '@/hooks/use-websocket';
 import { cn } from '@/lib/utils';
 
 interface Notification {
@@ -26,15 +42,18 @@ interface NotificationCenterProps {
   userRole?: 'user' | 'tecnico' | 'admin';
 }
 
-export function NotificationCenter({ userId, userRole = 'user' }: NotificationCenterProps) {
+export function NotificationCenter({
+  userId,
+  userRole = 'user',
+}: NotificationCenterProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
   // Configurar WebSocket baseado no papel do usuário
   const webSocketOptions = {
-    userId: userId,
+    userId,
     technicianId: userRole === 'tecnico' ? userId : undefined,
-    isAdmin: userRole === 'admin'
+    isAdmin: userRole === 'admin',
   };
 
   const {
@@ -46,7 +65,9 @@ export function NotificationCenter({ userId, userRole = 'user' }: NotificationCe
   } = useWebSocket(webSocketOptions);
 
   // Função auxiliar para determinar o tipo de notificação baseado no status
-  const getNotificationTypeFromStatus = (status: string): 'info' | 'success' | 'warning' | 'error' => {
+  const getNotificationTypeFromStatus = (
+    status: string
+  ): 'info' | 'success' | 'warning' | 'error' => {
     switch (status.toLowerCase()) {
       case 'concluido':
       case 'finalizado':
@@ -74,12 +95,12 @@ export function NotificationCenter({ userId, userRole = 'user' }: NotificationCe
         message: `Ordem para ${order.clientName} - ${order.equipmentType}`,
         timestamp: order.timestamp,
         read: false,
-        data: { 
+        data: {
           orderId: order.orderId,
           clientName: order.clientName,
           equipmentType: order.equipmentType,
-          priority: order.priority
-        }
+          priority: order.priority,
+        },
       });
     });
 
@@ -89,20 +110,25 @@ export function NotificationCenter({ userId, userRole = 'user' }: NotificationCe
         id: `status-update-${update.orderId}-${update.timestamp}`,
         type: getNotificationTypeFromStatus(update.status),
         title: 'Status Atualizado',
-        message: update.message || `Ordem ${update.orderId} - Status: ${update.status}`,
+        message:
+          update.message ||
+          `Ordem ${update.orderId} - Status: ${update.status}`,
         timestamp: update.timestamp,
         read: false,
         data: {
           orderId: update.orderId,
           status: update.status,
           clientId: update.clientId,
-          technicianId: update.technicianId
-        }
+          technicianId: update.technicianId,
+        },
       });
     });
 
     // Ordenar por timestamp (mais recentes primeiro)
-    wsNotifications.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    wsNotifications.sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
 
     setNotifications(wsNotifications);
   }, [newOrderNotifications, orderStatusUpdates]);
@@ -158,8 +184,8 @@ export function NotificationCenter({ userId, userRole = 'user' }: NotificationCe
   };
 
   const markAsRead = (notificationId: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+    setNotifications(prev =>
+      prev.map(n => (n.id === notificationId ? { ...n, read: true } : n))
     );
   };
 
@@ -181,22 +207,24 @@ export function NotificationCenter({ userId, userRole = 'user' }: NotificationCe
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
+            <Badge
+              variant="destructive"
+              className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
         </Button>
       </SheetTrigger>
-      
+
       <SheetContent className="w-[400px] sm:w-[540px]">
         <SheetHeader>
           <SheetTitle className="flex items-center justify-between">
             <span>Notificações</span>
             <div className="flex items-center gap-2">
-              <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <div
+                className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}
+              />
               <span className="text-xs text-muted-foreground">
                 {isConnected ? 'Conectado' : 'Desconectado'}
               </span>
@@ -206,13 +234,13 @@ export function NotificationCenter({ userId, userRole = 'user' }: NotificationCe
 
         <div className="mt-6 space-y-4">
           {notifications.length > 0 && (
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
                 {notifications.length} notificações
               </span>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={clearAllNotifications}
                 className="text-xs"
               >
@@ -221,8 +249,8 @@ export function NotificationCenter({ userId, userRole = 'user' }: NotificationCe
             </div>
           )}
 
-          <div className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto">
-            {notifications.map((notification) => {
+          <div className="max-h-[calc(100vh-200px)] space-y-3 overflow-y-auto">
+            {notifications.map(notification => {
               const getNotificationIcon = (type: string) => {
                 switch (type) {
                   case 'success':
@@ -250,21 +278,21 @@ export function NotificationCenter({ userId, userRole = 'user' }: NotificationCe
               };
 
               return (
-                <Card 
-                  key={notification.id} 
+                <Card
+                  key={notification.id}
                   className={cn(
-                    'border-l-4 cursor-pointer transition-colors',
+                    'cursor-pointer border-l-4 transition-colors',
                     getBorderColor(notification.type),
                     !notification.read && 'bg-muted/50'
                   )}
                   onClick={() => markAsRead(notification.id)}
                 >
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-sm">
                       {getNotificationIcon(notification.type)}
                       {notification.title}
                       {!notification.read && (
-                        <div className="h-2 w-2 bg-blue-500 rounded-full" />
+                        <div className="h-2 w-2 rounded-full bg-blue-500" />
                       )}
                     </CardTitle>
                   </CardHeader>
@@ -274,7 +302,12 @@ export function NotificationCenter({ userId, userRole = 'user' }: NotificationCe
                       {notification.data && (
                         <div className="flex items-center justify-between">
                           {notification.data.status && (
-                            <Badge variant="outline" className={getStatusColor(notification.data.status)}>
+                            <Badge
+                              variant="outline"
+                              className={getStatusColor(
+                                notification.data.status
+                              )}
+                            >
                               {notification.data.status.replace('_', ' ')}
                             </Badge>
                           )}
@@ -297,12 +330,12 @@ export function NotificationCenter({ userId, userRole = 'user' }: NotificationCe
             })}
 
             {notifications.length === 0 && (
-              <div className="text-center py-8">
-                <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <div className="py-8 text-center">
+                <Bell className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
                   Nenhuma notificação no momento
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Você será notificado sobre atualizações em tempo real
                 </p>
               </div>

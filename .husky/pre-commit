@@ -1,0 +1,59 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Executando verificações pré-commit..."
+
+# Verificar se há arquivos staged
+if git diff --cached --quiet; then
+  echo "❌ Nenhum arquivo staged para commit"
+  exit 1
+fi
+
+# Executar verificações de código apenas nos arquivos staged
+echo "📝 Verificando formatação..."
+npx prettier --check $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|jsx|ts|tsx|json|css|md)$' | tr '\n' ' ')
+
+if [ $? -ne 0 ]; then
+  echo "❌ Problemas de formatação encontrados. Execute 'npm run format:write' para corrigir."
+  exit 1
+fi
+
+echo "🔍 Verificando lint..."
+npx eslint $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|jsx|ts|tsx)$' | tr '\n' ' ')
+
+if [ $? -ne 0 ]; then
+  echo "❌ Problemas de lint encontrados. Execute 'npm run lint:fix' para corrigir."
+  exit 1
+fi
+
+echo "🔧 Verificando tipos TypeScript..."
+npm run type:check
+
+if [ $? -ne 0 ]; then
+  echo "❌ Erros de tipo encontrados. Corrija os erros de TypeScript."
+  exit 1
+fi
+
+# Executar testes unitários relacionados aos arquivos modificados
+echo "🧪 Executando testes..."
+npm run test -- --passWithNoTests --findRelatedTests $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|jsx|ts|tsx)$' | tr '\n' ' ')
+
+if [ $? -ne 0 ]; then
+  echo "❌ Testes falharam. Corrija os testes antes de fazer commit."
+  exit 1
+fi
+
+# Verificação de segurança básica
+echo "🔒 Verificando segurança..."
+if git diff --cached --name-only | grep -E '\.(env|key|pem|p12|pfx)$'; then
+  echo "❌ Arquivos sensíveis detectados no commit. Remova-os antes de continuar."
+  exit 1
+fi
+
+# Verificar se há secrets no código
+if git diff --cached | grep -iE '(password|secret|key|token|api_key).*=.*["\'][^"\']{8,}["\']'; then
+  echo "❌ Possíveis secrets detectados no código. Verifique e remova antes de continuar."
+  exit 1
+fi
+
+echo "✅ Todas as verificações passaram! Prosseguindo com o commit..."

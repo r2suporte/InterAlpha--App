@@ -35,7 +35,7 @@ class CacheService {
         this.isConnected = true;
       });
 
-      this.redis.on('error', (error) => {
+      this.redis.on('error', error => {
         console.error('❌ Erro na conexão Redis:', error);
         this.isConnected = false;
       });
@@ -44,7 +44,6 @@ class CacheService {
         console.log('🔌 Conexão Redis fechada');
         this.isConnected = false;
       });
-
     } catch (error) {
       console.error('❌ Erro ao inicializar Redis:', error);
     }
@@ -60,7 +59,11 @@ class CacheService {
   /**
    * Armazena dados no cache com TTL
    */
-  async set(key: string, value: any, ttlSeconds: number = 300): Promise<boolean> {
+  async set(
+    key: string,
+    value: unknown,
+    ttlSeconds: number = 300
+  ): Promise<boolean> {
     if (!this.isRedisConnected()) {
       console.warn('⚠️ Redis não conectado, operação de cache ignorada');
       return false;
@@ -186,7 +189,7 @@ class CacheService {
   /**
    * Armazena dados em uma lista
    */
-  async listPush(key: string, value: any): Promise<boolean> {
+  async listPush(key: string, value: unknown): Promise<boolean> {
     if (!this.isRedisConnected()) {
       return false;
     }
@@ -204,7 +207,11 @@ class CacheService {
   /**
    * Recupera dados de uma lista
    */
-  async listRange<T>(key: string, start: number = 0, end: number = -1): Promise<T[]> {
+  async listRange<T>(
+    key: string,
+    start: number = 0,
+    end: number = -1
+  ): Promise<T[]> {
     if (!this.isRedisConnected()) {
       return [];
     }
@@ -249,19 +256,22 @@ class CacheService {
   /**
    * Obtém estatísticas do Redis
    */
-  async getStats(): Promise<any> {
+  async getStats(): Promise<Record<string, unknown> | null> {
     if (!this.isRedisConnected()) {
       return null;
     }
 
     try {
-      const info = await this.redis!.info();
+      const memory = await this.redis!.info('memory');
+      const stats = await this.redis!.info('stats');
+      const keyspace = await this.redis!.info('keyspace');
+
       return {
         connected: this.isConnected,
-        memory: await this.redis!.info('memory'),
-        stats: await this.redis!.info('stats'),
-        keyspace: await this.redis!.info('keyspace'),
-      };
+        memory,
+        stats,
+        keyspace,
+      } as Record<string, unknown>;
     } catch (error) {
       console.error('❌ Erro ao obter estatísticas:', error);
       return null;
@@ -289,11 +299,11 @@ export const CACHE_KEYS = {
 
 // Cache TTL constants (em segundos)
 export const CACHE_TTL = {
-  SHORT: 60,        // 1 minuto
-  MEDIUM: 300,      // 5 minutos
-  LONG: 900,        // 15 minutos
-  VERY_LONG: 3600,  // 1 hora
-  DAILY: 86400,     // 24 horas
+  SHORT: 60, // 1 minuto
+  MEDIUM: 300, // 5 minutos
+  LONG: 900, // 15 minutos
+  VERY_LONG: 3600, // 1 hora
+  DAILY: 86400, // 24 horas
 } as const;
 
 export default cacheService;

@@ -1,40 +1,42 @@
-import nodemailer from 'nodemailer'
-import { createClient } from '@/lib/supabase/server'
-import { metricsService } from './metrics-service'
+import nodemailer from 'nodemailer';
+
+import { createClient } from '@/lib/supabase/server';
+
+import { metricsService } from './metrics-service';
 
 interface EmailConfig {
-  host: string
-  port: number
-  secure: boolean
+  host: string;
+  port: number;
+  secure: boolean;
   auth: {
-    user: string
-    pass: string
-  }
+    user: string;
+    pass: string;
+  };
 }
 
 interface OrdemServicoEmail {
-  id: string
-  numero_os: string
-  descricao: string
-  valor: number
-  data_inicio: string
+  id: string;
+  numero_os: string;
+  descricao: string;
+  valor: number;
+  data_inicio: string;
   cliente: {
-    nome: string
-    email: string
-    telefone?: string
-  }
+    nome: string;
+    email: string;
+    telefone?: string;
+  };
   equipamento?: {
-    marca: string
-    modelo: string
-    numero_serie?: string
-  }
+    marca: string;
+    modelo: string;
+    numero_serie?: string;
+  };
 }
 
 class EmailService {
-  private transporter: nodemailer.Transporter | null = null
+  private transporter: nodemailer.Transporter | null = null;
 
   constructor() {
-    this.initializeTransporter()
+    this.initializeTransporter();
   }
 
   private initializeTransporter() {
@@ -44,39 +46,47 @@ class EmailService {
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: process.env.SMTP_USER || '',
-        pass: process.env.SMTP_PASS || ''
-      }
-    }
+        pass: process.env.SMTP_PASS || '',
+      },
+    };
 
     if (!config.auth.user || !config.auth.pass) {
-      console.warn('Configurações SMTP não encontradas. Email não será enviado.')
-      return
+      console.warn(
+        'Configurações SMTP não encontradas. Email não será enviado.'
+      );
+      return;
     }
 
-    this.transporter = nodemailer.createTransport(config)
+    this.transporter = nodemailer.createTransport(config);
   }
 
-  async sendOrdemServicoEmail(ordemServico: OrdemServicoEmail, loginCredentials?: { login: string; senha: string }) {
+  async sendOrdemServicoEmail(
+    ordemServico: OrdemServicoEmail,
+    loginCredentials?: { login: string; senha: string }
+  ) {
     return await metricsService.measureOperation(
       'email',
       'sendOrdemServicoEmail',
       async () => {
         if (!this.transporter) {
-          throw new Error('Transporter de email não configurado')
+          throw new Error('Transporter de email não configurado');
         }
 
-        const emailHtml = this.generateOrdemServicoEmailTemplate(ordemServico, loginCredentials)
+        const emailHtml = this.generateOrdemServicoEmailTemplate(
+          ordemServico,
+          loginCredentials
+        );
 
         const mailOptions = {
           from: `"InterAlpha" <${process.env.SMTP_USER}>`,
           to: ordemServico.cliente.email,
           subject: `Nova Ordem de Serviço #${ordemServico.numero_os} - InterAlpha`,
-          html: emailHtml
-        }
+          html: emailHtml,
+        };
 
         try {
-          const result = await this.transporter.sendMail(mailOptions)
-          
+          const result = await this.transporter.sendMail(mailOptions);
+
           // Registrar comunicação no banco
           await this.registrarComunicacao({
             cliente_portal_id: ordemServico.id,
@@ -85,13 +95,13 @@ class EmailService {
             conteudo: emailHtml,
             destinatario: ordemServico.cliente.email,
             status: 'enviado',
-            message_id: result.messageId
-          })
+            message_id: result.messageId,
+          });
 
-          return result
+          return result;
         } catch (error) {
-          console.error('Erro ao enviar email:', error)
-          
+          console.error('Erro ao enviar email:', error);
+
           // Registrar erro no banco
           await this.registrarComunicacao({
             cliente_portal_id: ordemServico.id,
@@ -100,31 +110,34 @@ class EmailService {
             conteudo: emailHtml,
             destinatario: ordemServico.cliente.email,
             status: 'erro',
-            erro: error instanceof Error ? error.message : 'Erro desconhecido'
-          })
+            erro: error instanceof Error ? error.message : 'Erro desconhecido',
+          });
 
-          throw error
+          throw error;
         }
       },
       {
         destinatario: ordemServico.cliente.email,
         numero_os: ordemServico.numero_os,
-        valor: ordemServico.valor
+        valor: ordemServico.valor,
       }
-    )
+    );
   }
 
-  private generateOrdemServicoEmailTemplate(ordemServico: OrdemServicoEmail, loginCredentials?: { login: string; senha: string }): string {
+  private generateOrdemServicoEmailTemplate(
+    ordemServico: OrdemServicoEmail,
+    loginCredentials?: { login: string; senha: string }
+  ): string {
     const formatCurrency = (value: number) => {
       return new Intl.NumberFormat('pt-BR', {
         style: 'currency',
-        currency: 'BRL'
-      }).format(value)
-    }
+        currency: 'BRL',
+      }).format(value);
+    };
 
     const formatDate = (dateString: string) => {
-      return new Date(dateString).toLocaleDateString('pt-BR')
-    }
+      return new Date(dateString).toLocaleDateString('pt-BR');
+    };
 
     return `
 <!DOCTYPE html>
@@ -229,16 +242,22 @@ class EmailService {
                     <th>Data de Início:</th>
                     <td>${formatDate(ordemServico.data_inicio)}</td>
                 </tr>
-                ${ordemServico.equipamento ? `
+                ${
+                  ordemServico.equipamento
+                    ? `
                 <tr>
                     <th>Equipamento:</th>
                     <td>${ordemServico.equipamento.marca} ${ordemServico.equipamento.modelo}${ordemServico.equipamento.numero_serie ? ` (S/N: ${ordemServico.equipamento.numero_serie})` : ''}</td>
                 </tr>
-                ` : ''}
+                `
+                    : ''
+                }
             </table>
         </div>
 
-        ${loginCredentials ? `
+        ${
+          loginCredentials
+            ? `
         <div class="credentials-box">
             <h3>🔐 Acesso ao Portal do Cliente</h3>
             <p>Suas credenciais de acesso ao portal foram criadas:</p>
@@ -258,7 +277,9 @@ class EmailService {
                 Acessar Portal do Cliente
             </a>
         </div>
-        ` : ''}
+        `
+            : ''
+        }
 
         <div class="info-box">
             <h3>📱 Próximos Passos</h3>
@@ -280,41 +301,39 @@ class EmailService {
     </div>
 </body>
 </html>
-    `
+    `;
   }
 
   private async registrarComunicacao(dados: {
-    cliente_portal_id: string
-    ordem_servico_id: string
-    tipo: string
-    conteudo: string
-    destinatario: string
-    status: string
-    message_id?: string
-    erro?: string
+    cliente_portal_id: string;
+    ordem_servico_id: string;
+    tipo: string;
+    conteudo: string;
+    destinatario: string;
+    status: string;
+    message_id?: string;
+    erro?: string;
   }) {
     try {
-      const supabase = await createClient()
-      
-      const { error } = await supabase
-        .from('comunicacoes_cliente')
-        .insert({
-          cliente_portal_id: dados.cliente_portal_id,
-          ordem_servico_id: dados.ordem_servico_id,
-          tipo: dados.tipo,
-          conteudo: dados.conteudo,
-          destinatario: dados.destinatario,
-          status: dados.status,
-          message_id: dados.message_id,
-          erro: dados.erro,
-          enviado_em: new Date().toISOString()
-        })
+      const supabase = await createClient();
+
+      const { error } = await supabase.from('comunicacoes_cliente').insert({
+        cliente_portal_id: dados.cliente_portal_id,
+        ordem_servico_id: dados.ordem_servico_id,
+        tipo: dados.tipo,
+        conteudo: dados.conteudo,
+        destinatario: dados.destinatario,
+        status: dados.status,
+        message_id: dados.message_id,
+        erro: dados.erro,
+        enviado_em: new Date().toISOString(),
+      });
 
       if (error) {
-        console.error('Erro ao registrar comunicação:', error)
+        console.error('Erro ao registrar comunicação:', error);
       }
     } catch (error) {
-      console.error('Erro ao registrar comunicação:', error)
+      console.error('Erro ao registrar comunicação:', error);
     }
   }
 
@@ -324,20 +343,20 @@ class EmailService {
       'testConnection',
       async () => {
         if (!this.transporter) {
-          return false
+          return false;
         }
 
         try {
-          await this.transporter.verify()
-          return true
+          await this.transporter.verify();
+          return true;
         } catch (error) {
-          console.error('Erro na conexão SMTP:', error)
-          return false
+          console.error('Erro na conexão SMTP:', error);
+          return false;
         }
       }
-    )
+    );
   }
 }
 
-export const emailService = new EmailService()
-export default EmailService
+export const emailService = new EmailService();
+export default EmailService;

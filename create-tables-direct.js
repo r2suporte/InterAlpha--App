@@ -8,7 +8,7 @@ async function createTables() {
 
   try {
     console.log('🔍 Criando tabelas...');
-    
+
     // Criar tabela users
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -75,12 +75,11 @@ async function createTables() {
       AND table_type = 'BASE TABLE'
       ORDER BY table_name;
     `);
-    
+
     console.log('\n📋 Tabelas criadas com sucesso:');
     result.rows.forEach(row => {
       console.log(`✅ ${row.table_name}`);
     });
-    
   } catch (error) {
     console.error('❌ Erro:', error.message);
   } finally {

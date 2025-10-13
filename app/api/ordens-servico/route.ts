@@ -1,44 +1,59 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { OrdemServico, OrdemServicoFormData, StatusOrdemServico, PrioridadeOrdemServico, TipoServico } from '@/types/ordens-servico'
-import { smsService } from '@/lib/services/sms-service'
-import { Server as SocketIOServer } from 'socket.io'
-import { Server as NetServer } from 'http'
-import { optimizedQuery } from '@/lib/database/query-optimizer'
-import { withAuthenticatedApiLogging, ApiLogger } from '@/lib/middleware/logging-middleware'
-import { withAuthenticatedApiMetrics, withBusinessMetrics, ApiMetricsCollector } from '@/lib/middleware/metrics-middleware'
+import { NextRequest, NextResponse } from 'next/server';
+
+import { Server as NetServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
+
+import { optimizedQuery } from '@/lib/database/query-optimizer';
+import {
+  ApiLogger,
+  withAuthenticatedApiLogging,
+} from '@/lib/middleware/logging-middleware';
+import {
+  ApiMetricsCollector,
+  withAuthenticatedApiMetrics,
+  withBusinessMetrics,
+} from '@/lib/middleware/metrics-middleware';
+import { smsService } from '@/lib/services/sms-service';
+import { createClient } from '@/lib/supabase/server';
+import {
+  OrdemServico,
+  OrdemServicoFormData,
+  PrioridadeOrdemServico,
+  StatusOrdemServico,
+  TipoServico,
+} from '@/types/ordens-servico';
 
 // Função para obter instância do Socket.IO
 function getSocketIOInstance(): SocketIOServer | null {
   try {
     // @ts-ignore - Acessar instância global do Socket.IO
-    return global.io || null
+    return global.io || null;
   } catch (error) {
-    console.warn('Socket.IO não disponível:', error)
-    return null
+    console.warn('Socket.IO não disponível:', error);
+    return null;
   }
 }
 
 // GET - Listar ordens de serviço
 async function getOrdensServico(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const status = searchParams.get('status') as StatusOrdemServico
-    const cliente_id = searchParams.get('cliente_id')
-    const tecnico_id = searchParams.get('tecnico_id')
-    const search = searchParams.get('search') || ''
-    const sortField = searchParams.get('sortField') || 'created_at'
-    const sortOrder = searchParams.get('sortOrder') || 'desc'
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const status = searchParams.get('status') as StatusOrdemServico;
+    const cliente_id = searchParams.get('cliente_id');
+    const tecnico_id = searchParams.get('tecnico_id');
+    const search = searchParams.get('search') || '';
+    const sortField = searchParams.get('sortField') || 'created_at';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
 
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     // Construir filtros
-    const filters: any = {}
-    if (status) filters.status = { value: status, operator: 'eq' }
-    if (cliente_id) filters.cliente_id = { value: cliente_id, operator: 'eq' }
-    if (tecnico_id) filters.tecnico_id = { value: tecnico_id, operator: 'eq' }
+    const filters: any = {};
+    if (status) filters.status = { value: status, operator: 'eq' };
+    if (cliente_id) filters.cliente_id = { value: cliente_id, operator: 'eq' };
+    if (tecnico_id) filters.tecnico_id = { value: tecnico_id, operator: 'eq' };
 
     // Usar query otimizada
     const result = await optimizedQuery(supabase, 'ordens_servico', {
@@ -53,76 +68,79 @@ async function getOrdensServico(request: NextRequest) {
       pagination: {
         page,
         limit,
-        maxLimit: 50 // Limitar para evitar queries muito grandes
+        maxLimit: 50, // Limitar para evitar queries muito grandes
       },
-      search: search ? {
-        query: search,
-        fields: ['numero_os', 'titulo', 'descricao'],
-        operator: 'ilike'
-      } : undefined,
+      search: search
+        ? {
+            query: search,
+            fields: ['numero_os', 'titulo', 'descricao'],
+            operator: 'ilike',
+          }
+        : undefined,
       filters,
       sort: {
         field: sortField,
-        ascending: sortOrder === 'asc'
-      }
-    })
+        ascending: sortOrder === 'asc',
+      },
+    });
 
     if (result.error) {
-      console.error('Erro ao buscar ordens de serviço:', result.error)
+      console.error('Erro ao buscar ordens de serviço:', result.error);
       return NextResponse.json(
         { error: 'Erro ao buscar ordens de serviço' },
         { status: 500 }
-      )
+      );
     }
 
     return NextResponse.json({
       success: true,
       data: result.data,
-      pagination: result.pagination
-    })
-
+      pagination: result.pagination,
+    });
   } catch (error) {
-    console.error('Erro na listagem de ordens:', error)
+    console.error('Erro na listagem de ordens:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
-    )
+    );
   }
 }
 
 // Exportações com logging aplicado
-export const GET = withAuthenticatedApiMetrics(withAuthenticatedApiLogging(getOrdensServico))
+export const GET = withAuthenticatedApiMetrics(
+  withAuthenticatedApiLogging(getOrdensServico)
+);
 export const POST = withBusinessMetrics(
   withAuthenticatedApiMetrics(withAuthenticatedApiLogging(createOrdemServico)),
   'orders_created'
-)
+);
 
 // POST - Criar nova ordem de serviço
 async function createOrdemServico(request: NextRequest) {
   try {
-    const rawData = await request.json()
+    const rawData = await request.json();
 
     // Mapeamento de valores para compatibilidade
     const statusMap: Record<string, string> = {
-      'Pendente': 'aberta',
+      Pendente: 'aberta',
       'Em andamento': 'em_andamento',
-      'Concluída': 'concluida',
-      'Cancelada': 'cancelada'
-    }
+      Concluída: 'concluida',
+      Cancelada: 'cancelada',
+    };
 
     const prioridadeMap: Record<string, string> = {
-      'Baixa': 'baixa',
-      'Média': 'media',
-      'Alta': 'alta',
-      'Urgente': 'urgente'
-    }
+      Baixa: 'baixa',
+      Média: 'media',
+      Alta: 'alta',
+      Urgente: 'urgente',
+    };
 
     const tipoServicoMap: Record<string, string> = {
-      'Reparo': 'reparo',
-      'Manutenção': 'manutencao',
-      'Upgrade': 'upgrade',
-      'Diagnóstico': 'diagnostico'
-    }
+      Reparo: 'reparo',
+      Manutenção: 'manutencao',
+      Upgrade: 'upgrade',
+      Diagnóstico: 'diagnostico',
+    };
 
     // Normalizar nomes de campos para compatibilidade com testes
     const formData = {
@@ -130,9 +148,14 @@ async function createOrdemServico(request: NextRequest) {
       equipamento_id: rawData.equipamento_id || rawData.equipamentoId,
       titulo: rawData.titulo || rawData.descricao || 'Ordem de Serviço',
       descricao: rawData.descricao,
-      tipo_servico: tipoServicoMap[rawData.tipoServico] || rawData.tipo_servico || rawData.tipoServico || 'reparo',
+      tipo_servico:
+        tipoServicoMap[rawData.tipoServico] ||
+        rawData.tipo_servico ||
+        rawData.tipoServico ||
+        'reparo',
       status: statusMap[rawData.status] || rawData.status || 'aberta',
-      prioridade: prioridadeMap[rawData.prioridade] || rawData.prioridade || 'media',
+      prioridade:
+        prioridadeMap[rawData.prioridade] || rawData.prioridade || 'media',
       serial_number: rawData.serial_number || rawData.serialNumber || '',
       imei: rawData.imei,
       problema_reportado: rawData.problema_reportado || rawData.descricao || '',
@@ -148,34 +171,39 @@ async function createOrdemServico(request: NextRequest) {
       observacoes_cliente: rawData.observacoes_cliente,
       observacoes_tecnico: rawData.observacoes_tecnico,
       garantia_servico_dias: rawData.garantia_servico_dias || '90',
-      garantia_pecas_dias: rawData.garantia_pecas_dias || '90'
-    }
+      garantia_pecas_dias: rawData.garantia_pecas_dias || '90',
+    };
 
     // Validação dos campos obrigatórios
-    if (!formData.cliente_id || !formData.equipamento_id || !formData.descricao) {
+    if (
+      !formData.cliente_id ||
+      !formData.equipamento_id ||
+      !formData.descricao
+    ) {
       return NextResponse.json(
         { error: 'Cliente ID, Equipamento ID e descrição são obrigatórios' },
         { status: 400 }
-      )
+      );
     }
 
     // Verificar se é ambiente de teste (para permitir IDs fictícios)
-    const isTestEnvironment = process.env.NODE_ENV === 'test' || 
-                             formData.cliente_id.includes('test') || 
-                             formData.equipamento_id.includes('test')
-    
-    console.log('Ambiente de teste detectado:', isTestEnvironment)
-    console.log('NODE_ENV:', process.env.NODE_ENV)
-    console.log('Cliente ID:', formData.cliente_id)
-    console.log('Equipamento ID:', formData.equipamento_id)
+    const isTestEnvironment =
+      process.env.NODE_ENV === 'test' ||
+      formData.cliente_id.includes('test') ||
+      formData.equipamento_id.includes('test');
+
+    console.log('Ambiente de teste detectado:', isTestEnvironment);
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+    console.log('Cliente ID:', formData.cliente_id);
+    console.log('Equipamento ID:', formData.equipamento_id);
 
     // Em ambiente de teste, usar UUIDs válidos fixos
     if (isTestEnvironment) {
-      formData.cliente_id = '00000000-0000-0000-0000-000000000001'
-      formData.equipamento_id = '00000000-0000-0000-0000-000000000002'
+      formData.cliente_id = '00000000-0000-0000-0000-000000000001';
+      formData.equipamento_id = '00000000-0000-0000-0000-000000000002';
     }
 
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     // Gerar número da OS
     const { data: ultimaOS } = await supabase
@@ -183,20 +211,20 @@ async function createOrdemServico(request: NextRequest) {
       .select('numero_os')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single()
+      .single();
 
-    let proximoNumero = 1
+    let proximoNumero = 1;
     if (ultimaOS?.numero_os) {
-      const numeroAtual = parseInt(ultimaOS.numero_os.replace(/\D/g, ''))
-      proximoNumero = numeroAtual + 1
+      const numeroAtual = parseInt(ultimaOS.numero_os.replace(/\D/g, ''));
+      proximoNumero = numeroAtual + 1;
     }
 
-    const numeroOS = `OS${proximoNumero.toString().padStart(6, '0')}`
+    const numeroOS = `OS${proximoNumero.toString().padStart(6, '0')}`;
 
     // Calcular valor total
-    const valorServico = parseFloat(formData.valor_servico) || 0
-    const valorPecas = parseFloat(formData.valor_pecas) || 0
-    const valorTotal = valorServico + valorPecas
+    const valorServico = parseFloat(formData.valor_servico) || 0;
+    const valorPecas = parseFloat(formData.valor_pecas) || 0;
+    const valorTotal = valorServico + valorPecas;
 
     // Preparar dados para inserção
     const ordemData = {
@@ -219,17 +247,19 @@ async function createOrdemServico(request: NextRequest) {
       valor_servico: valorServico,
       valor_pecas: valorPecas,
       data_abertura: new Date().toISOString(),
-      data_inicio: formData.data_inicio ? new Date(formData.data_inicio).toISOString() : null,
+      data_inicio: formData.data_inicio
+        ? new Date(formData.data_inicio).toISOString()
+        : null,
       observacoes_cliente: formData.observacoes_cliente || null,
       observacoes_tecnico: formData.observacoes_tecnico || null,
       aprovacao_cliente: false,
       garantia_servico_dias: parseInt(formData.garantia_servico_dias) || 90,
-      garantia_pecas_dias: parseInt(formData.garantia_pecas_dias) || 90
-    }
+      garantia_pecas_dias: parseInt(formData.garantia_pecas_dias) || 90,
+    };
 
     // Inserir ordem de serviço
-    let novaOrdem: any
-    let errorCriacao: any = null
+    let novaOrdem: any;
+    let errorCriacao: any = null;
 
     if (isTestEnvironment) {
       // Em ambiente de teste, simular criação sem inserir no banco
@@ -237,52 +267,55 @@ async function createOrdemServico(request: NextRequest) {
         id: '00000000-0000-0000-0000-000000000999',
         ...ordemData,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
+        updated_at: new Date().toISOString(),
+      };
     } else {
       const { data, error } = await supabase
         .from('ordens_servico')
         .insert(ordemData)
-        .select(`
+        .select(
+          `
           *,
           cliente:clientes(id, nome, email, telefone, endereco, numero_cliente, created_at),
           cliente_portal:clientes_portal(id, nome, email, telefone, created_at),
           equipamento:equipamentos(*)
-        `)
-        .single()
-      
-      novaOrdem = data
-      errorCriacao = error
+        `
+        )
+        .single();
+
+      novaOrdem = data;
+      errorCriacao = error;
     }
 
     if (errorCriacao) {
-      console.error('Erro ao criar ordem de serviço:', errorCriacao)
-      console.error('Dados enviados:', JSON.stringify(ordemData, null, 2))
+      console.error('Erro ao criar ordem de serviço:', errorCriacao);
+      console.error('Dados enviados:', JSON.stringify(ordemData, null, 2));
       return NextResponse.json(
-        { error: 'Erro ao criar ordem de serviço', details: errorCriacao.message },
+        {
+          error: 'Erro ao criar ordem de serviço',
+          details: errorCriacao.message,
+        },
         { status: 500 }
-      )
+      );
     }
 
     // Criar histórico de status inicial (apenas se não for ambiente de teste)
     if (!isTestEnvironment && novaOrdem?.id) {
-      await supabase
-        .from('status_historico')
-        .insert({
-          ordem_servico_id: novaOrdem.id,
-          status_anterior: null,
-          status_novo: formData.status,
-          motivo: 'Criação da ordem de serviço',
-          usuario_id: 'system',
-          usuario_nome: 'Sistema',
-          data_mudanca: new Date().toISOString()
-        })
+      await supabase.from('status_historico').insert({
+        ordem_servico_id: novaOrdem.id,
+        status_anterior: null,
+        status_novo: formData.status,
+        motivo: 'Criação da ordem de serviço',
+        usuario_id: 'system',
+        usuario_nome: 'Sistema',
+        data_mudanca: new Date().toISOString(),
+      });
     }
 
     // Enviar notificação WebSocket para nova ordem criada
     if (novaOrdem?.id) {
       try {
-        const io = getSocketIOInstance()
+        const io = getSocketIOInstance();
         if (io) {
           const notificationData = {
             id: `new-order-${novaOrdem.id}`,
@@ -292,27 +325,33 @@ async function createOrdemServico(request: NextRequest) {
             data: {
               orderId: novaOrdem.id,
               numeroOS: novaOrdem.numero_os,
-              clienteNome: novaOrdem.cliente?.nome || 'Cliente não identificado',
+              clienteNome:
+                novaOrdem.cliente?.nome || 'Cliente não identificado',
               status: novaOrdem.status,
               prioridade: novaOrdem.prioridade,
-              descricao: novaOrdem.descricao
+              descricao: novaOrdem.descricao,
             },
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          };
 
           // Notificar administradores e técnicos
-          io.to('admin').emit('new-order-created', notificationData)
-          io.to('tecnico').emit('new-order-created', notificationData)
-          
+          io.to('admin').emit('new-order-created', notificationData);
+          io.to('tecnico').emit('new-order-created', notificationData);
+
           // Se há técnico atribuído, notificar especificamente
           if (novaOrdem.tecnico_id) {
-            io.to(`user-${novaOrdem.tecnico_id}`).emit('new-order-created', notificationData)
+            io.to(`user-${novaOrdem.tecnico_id}`).emit(
+              'new-order-created',
+              notificationData
+            );
           }
 
-          console.log(`Notificação WebSocket enviada para nova ordem ${novaOrdem.numero_os}`)
+          console.log(
+            `Notificação WebSocket enviada para nova ordem ${novaOrdem.numero_os}`
+          );
         }
       } catch (wsError) {
-        console.error('Erro ao enviar notificação WebSocket:', wsError)
+        console.error('Erro ao enviar notificação WebSocket:', wsError);
         // Não falhar a criação da ordem por causa da notificação
       }
     }
@@ -325,39 +364,46 @@ async function createOrdemServico(request: NextRequest) {
           numero_ordem: novaOrdem.numero_os,
           cliente_id: novaOrdem.cliente_id,
           status: novaOrdem.status,
-          descricao_problema: novaOrdem.descricao || novaOrdem.problema_reportado || '',
+          descricao_problema:
+            novaOrdem.descricao || novaOrdem.problema_reportado || '',
           valor_total: novaOrdem.valor_servico + novaOrdem.valor_pecas,
           data_criacao: novaOrdem.created_at || new Date().toISOString(),
-          tecnico_responsavel: novaOrdem.tecnico_id
-        }
+          tecnico_responsavel: novaOrdem.tecnico_id,
+        };
 
         const clienteParaSMS = {
           id: novaOrdem.cliente.id,
           nome: novaOrdem.cliente.nome,
           telefone: novaOrdem.cliente.telefone,
           celular: novaOrdem.cliente.telefone, // Usando telefone como celular
-          email: novaOrdem.cliente.email
-        }
+          email: novaOrdem.cliente.email,
+        };
 
-        await smsService.sendOrdemServicoSMS(ordemParaSMS, clienteParaSMS, 'criacao')
-        console.log(`SMS de criação enviado para ordem ${novaOrdem.numero_os}`)
+        await smsService.sendOrdemServicoSMS(
+          ordemParaSMS,
+          clienteParaSMS,
+          'criacao'
+        );
+        console.log(`SMS de criação enviado para ordem ${novaOrdem.numero_os}`);
       } catch (smsError) {
-        console.error('Erro ao enviar SMS de criação:', smsError)
+        console.error('Erro ao enviar SMS de criação:', smsError);
         // Não falhar a criação da ordem por causa do SMS
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Ordem de serviço criada com sucesso',
-      data: novaOrdem
-    }, { status: 201 })
-
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Ordem de serviço criada com sucesso',
+        data: novaOrdem,
+      },
+      { status: 201 }
+    );
   } catch (error) {
-    console.error('Erro na criação da ordem:', error)
+    console.error('Erro na criação da ordem:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
-    )
+    );
   }
 }

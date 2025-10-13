@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { ServiceOrderForm } from '@/components/service-order-form'
+import { ServiceOrderForm } from '@/components/service-order-form';
 
 export default function TestServiceOrderPage() {
   return (
@@ -10,13 +10,13 @@ export default function TestServiceOrderPage() {
           <h1 className="text-3xl font-bold text-gray-900">
             Teste - Ordem de Serviço Apple
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="mt-2 text-gray-600">
             Página de teste para o formulário de ordem de serviço
           </p>
         </div>
-        
+
         <ServiceOrderForm />
       </div>
     </div>
-  )
+  );
 }

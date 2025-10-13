@@ -1,144 +1,148 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useEffect, useState } from 'react';
+
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface OrdemServico {
-  id: string
-  numero_os: string
-  status: string
-  descricao: string
-  valor: number
-  data_inicio: string
-  data_fim: string | null
-  created_at: string
+  id: string;
+  numero_os: string;
+  status: string;
+  descricao: string;
+  valor: number;
+  data_inicio: string;
+  data_fim: string | null;
+  created_at: string;
 }
 
 interface Cliente {
-  id: string
-  nome: string
-  email: string
-  login: string
-  primeiro_acesso: boolean
+  id: string;
+  nome: string;
+  email: string;
+  login: string;
+  primeiro_acesso: boolean;
 }
 
 export default function ClienteDashboard() {
-  const [cliente, setCliente] = useState<Cliente | null>(null)
-  const [ordensServico, setOrdensServico] = useState<OrdemServico[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const router = useRouter()
+  const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [ordensServico, setOrdensServico] = useState<OrdemServico[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
-    checkAuth()
-  }, [])
+    checkAuth();
+  }, []);
 
   const checkAuth = async () => {
     try {
-      const response = await fetch('/api/auth/cliente/me')
-      
+      const response = await fetch('/api/auth/cliente/me');
+
       if (response.ok) {
-        const data = await response.json()
-        setCliente(data.cliente)
-        setOrdensServico(data.ordens_servico || [])
+        const data = await response.json();
+        setCliente(data.cliente);
+        setOrdensServico(data.ordens_servico || []);
       } else {
-        router.push('/portal/cliente/login')
+        router.push('/portal/cliente/login');
       }
     } catch (error) {
-      setError('Erro ao carregar dados')
+      setError('Erro ao carregar dados');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/cliente/login', {
-        method: 'DELETE'
-      })
-      router.push('/portal/cliente/login')
+        method: 'DELETE',
+      });
+      router.push('/portal/cliente/login');
     } catch (error) {
-      console.error('Erro no logout:', error)
+      console.error('Erro no logout:', error);
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pendente':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
       case 'em_andamento':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
       case 'concluida':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
       case 'cancelada':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
     }
-  }
+  };
 
   const formatStatus = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pendente':
-        return 'Pendente'
+        return 'Pendente';
       case 'em_andamento':
-        return 'Em Andamento'
+        return 'Em Andamento';
       case 'concluida':
-        return 'Concluída'
+        return 'Concluída';
       case 'cancelada':
-        return 'Cancelada'
+        return 'Cancelada';
       default:
-        return status
+        return status;
     }
-  }
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL'
-    }).format(value)
-  }
+      currency: 'BRL',
+    }).format(value);
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR')
-  }
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
           <p className="mt-4 text-gray-600 dark:text-gray-400">Carregando...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <p className="text-red-600 dark:text-red-400">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
           >
             Tentar novamente
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+      <header className="bg-white shadow dark:bg-gray-800">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-6">
             <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              <Link
+                href="/"
+                className="text-2xl font-bold text-blue-600 dark:text-blue-400"
+              >
                 InterAlpha
               </Link>
               <span className="ml-4 text-gray-500 dark:text-gray-400">|</span>
@@ -162,35 +166,46 @@ export default function ClienteDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* Welcome Message */}
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg mb-6">
+          <div className="mb-6 overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
             <div className="px-4 py-5 sm:p-6">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">
                 Bem-vindo ao seu portal!
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                Aqui você pode acompanhar suas ordens de serviço, aprovar orçamentos e gerenciar seus dados.
+                Aqui você pode acompanhar suas ordens de serviço, aprovar
+                orçamentos e gerenciar seus dados.
               </p>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+          <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                      <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
+                      <svg
+                        className="h-5 w-5 text-blue-600 dark:text-blue-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
                       </svg>
                     </div>
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                      <dt className="truncate text-sm font-medium text-gray-500 dark:text-gray-400">
                         Total de OS
                       </dt>
                       <dd className="text-lg font-medium text-gray-900 dark:text-white">
@@ -202,23 +217,37 @@ export default function ClienteDashboard() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+            <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
-                      <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900">
+                      <svg
+                        className="h-5 w-5 text-yellow-600 dark:text-yellow-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                     </div>
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                      <dt className="truncate text-sm font-medium text-gray-500 dark:text-gray-400">
                         Em Andamento
                       </dt>
                       <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                        {ordensServico.filter(os => os.status === 'em_andamento').length}
+                        {
+                          ordensServico.filter(
+                            os => os.status === 'em_andamento'
+                          ).length
+                        }
                       </dd>
                     </dl>
                   </div>
@@ -226,23 +255,36 @@ export default function ClienteDashboard() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+            <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                      <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+                      <svg
+                        className="h-5 w-5 text-green-600 dark:text-green-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
                       </svg>
                     </div>
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                      <dt className="truncate text-sm font-medium text-gray-500 dark:text-gray-400">
                         Concluídas
                       </dt>
                       <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                        {ordensServico.filter(os => os.status === 'concluida').length}
+                        {
+                          ordensServico.filter(os => os.status === 'concluida')
+                            .length
+                        }
                       </dd>
                     </dl>
                   </div>
@@ -252,9 +294,9 @@ export default function ClienteDashboard() {
           </div>
 
           {/* Orders List */}
-          <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
+          <div className="overflow-hidden bg-white shadow dark:bg-gray-800 sm:rounded-md">
             <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+              <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
                 Suas Ordens de Serviço
               </h3>
               <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
@@ -267,15 +309,20 @@ export default function ClienteDashboard() {
                   Nenhuma ordem de serviço encontrada
                 </li>
               ) : (
-                ordensServico.map((os) => (
-                  <li key={os.id} className="px-4 py-4 hover:bg-gray-50 dark:hover:bg-gray-700">
+                ordensServico.map(os => (
+                  <li
+                    key={os.id}
+                    className="px-4 py-4 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
                     <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
                             OS #{os.numero_os}
                           </p>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(os.status)}`}>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(os.status)}`}
+                          >
                             {formatStatus(os.status)}
                           </span>
                         </div>
@@ -289,7 +336,9 @@ export default function ClienteDashboard() {
                           {os.data_fim && (
                             <>
                               <span className="mx-2">•</span>
-                              <span>Finalizada em: {formatDate(os.data_fim)}</span>
+                              <span>
+                                Finalizada em: {formatDate(os.data_fim)}
+                              </span>
                             </>
                           )}
                         </div>
@@ -297,7 +346,7 @@ export default function ClienteDashboard() {
                       <div className="ml-4 flex-shrink-0">
                         <Link
                           href={`/portal/cliente/ordem/${os.id}`}
-                          className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
+                          className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                         >
                           Ver detalhes →
                         </Link>
@@ -311,5 +360,5 @@ export default function ClienteDashboard() {
         </div>
       </main>
     </div>
-  )
+  );
 }

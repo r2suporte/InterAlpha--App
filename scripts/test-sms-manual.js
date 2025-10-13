@@ -2,20 +2,20 @@
 
 /**
  * 📱 Script de Teste Manual - SMS
- * 
+ *
  * Este script permite testar manualmente o envio de SMS para o número fornecido:
  * (11) 99380-4816
- * 
+ *
  * Uso:
  * node scripts/test-sms-manual.js [tipo] [mensagem]
- * 
+ *
  * Tipos disponíveis:
  * - simples: Envia SMS simples
  * - ordem-criacao: Simula SMS de criação de ordem de serviço
  * - ordem-atualizacao: Simula SMS de atualização de ordem de serviço
  * - ordem-conclusao: Simula SMS de conclusão de ordem de serviço
  * - teste-conexao: Testa conexão com Twilio
- * 
+ *
  * Exemplos:
  * node scripts/test-sms-manual.js simples "Teste de SMS manual"
  * node scripts/test-sms-manual.js ordem-criacao
@@ -36,11 +36,11 @@ function verificarConfiguracao() {
   const variaveis = [
     'TWILIO_ACCOUNT_SID',
     'TWILIO_AUTH_TOKEN',
-    'TWILIO_PHONE_NUMBER'
+    'TWILIO_PHONE_NUMBER',
   ];
 
   const faltando = variaveis.filter(v => !process.env[v]);
-  
+
   if (faltando.length > 0) {
     console.error('❌ Variáveis de ambiente não configuradas:');
     faltando.forEach(v => console.error(`   - ${v}`));
@@ -54,17 +54,21 @@ function verificarConfiguracao() {
 // Simular dados de ordem de serviço para testes
 function gerarDadosOrdemTeste() {
   return {
-    id: 'OS-TEST-' + Date.now(),
-    numero: 'OS' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'),
+    id: `OS-TEST-${  Date.now()}`,
+    numero:
+      `OS${ 
+      Math.floor(Math.random() * 10000)
+        .toString()
+        .padStart(4, '0')}`,
     cliente: {
       nome: 'Cliente Teste',
-      telefone: NUMERO_TESTE
+      telefone: NUMERO_TESTE,
     },
     servico: 'Teste de SMS Manual',
     status: 'criada',
     data_criacao: new Date().toISOString(),
-    valor: 150.00,
-    tecnico: 'Técnico Teste'
+    valor: 150.0,
+    tecnico: 'Técnico Teste',
   };
 }
 
@@ -82,12 +86,12 @@ async function enviarSMSSimples(mensagem) {
       },
       body: JSON.stringify({
         to: NUMERO_TESTE,
-        message: mensagem
-      })
+        message: mensagem,
+      }),
     });
 
     const result = await response.json();
-    
+
     if (response.ok) {
       console.log('✅ SMS enviado com sucesso!');
       console.log(`Message SID: ${result.messageSid}`);
@@ -106,7 +110,7 @@ async function enviarSMSSimples(mensagem) {
 async function enviarSMSOrdem(tipo) {
   try {
     const ordem = gerarDadosOrdemTeste();
-    
+
     // Ajustar status baseado no tipo
     switch (tipo) {
       case 'ordem-criacao':
@@ -125,21 +129,24 @@ async function enviarSMSOrdem(tipo) {
     console.log(`Cliente: ${ordem.cliente.nome}`);
     console.log(`Para: ${NUMERO_TESTE}`);
 
-    const response = await fetch('http://localhost:3000/api/ordens-servico/sms', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ordemId: ordem.id,
-        tipo: tipo.replace('ordem-', ''),
-        numeroTelefone: NUMERO_TESTE,
-        dadosOrdem: ordem
-      })
-    });
+    const response = await fetch(
+      'http://localhost:3000/api/ordens-servico/sms',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ordemId: ordem.id,
+          tipo: tipo.replace('ordem-', ''),
+          numeroTelefone: NUMERO_TESTE,
+          dadosOrdem: ordem,
+        }),
+      }
+    );
 
     const result = await response.json();
-    
+
     if (response.ok) {
       console.log('✅ SMS de ordem enviado com sucesso!');
       console.log(`Message SID: ${result.messageSid}`);
@@ -160,12 +167,15 @@ async function testarConexao() {
   try {
     console.log('🔍 Testando conexão com Twilio...');
 
-    const response = await fetch('http://localhost:3000/api/ordens-servico/sms/test', {
-      method: 'GET'
-    });
+    const response = await fetch(
+      'http://localhost:3000/api/ordens-servico/sms/test',
+      {
+        method: 'GET',
+      }
+    );
 
     const result = await response.json();
-    
+
     if (response.ok) {
       console.log('✅ Conexão com Twilio OK!');
       console.log(`Account SID: ${result.accountSid}`);
@@ -186,15 +196,18 @@ async function processarSMSPendentes() {
   try {
     console.log('📤 Processando SMS pendentes...');
 
-    const response = await fetch('http://localhost:3000/api/ordens-servico/processar-sms', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      'http://localhost:3000/api/ordens-servico/processar-sms',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       }
-    });
+    );
 
     const result = await response.json();
-    
+
     if (response.ok) {
       console.log('✅ SMS pendentes processados!');
       console.log(`Total processados: ${result.processados}`);
@@ -264,7 +277,9 @@ async function main() {
     case 'simples':
       if (!mensagem) {
         console.error('❌ Mensagem é obrigatória para SMS simples');
-        console.log('Uso: node scripts/test-sms-manual.js simples "Sua mensagem"');
+        console.log(
+          'Uso: node scripts/test-sms-manual.js simples "Sua mensagem"'
+        );
         return;
       }
       resultado = await enviarSMSSimples(mensagem);
@@ -311,5 +326,5 @@ module.exports = {
   enviarSMSOrdem,
   testarConexao,
   processarSMSPendentes,
-  NUMERO_TESTE
+  NUMERO_TESTE,
 };

@@ -1,4 +1,4 @@
-import { defineConfig } from 'cypress'
+import { defineConfig } from 'cypress';
 
 export default defineConfig({
   e2e: {
@@ -30,4 +30,4 @@ export default defineConfig({
     TEST_USER_PASSWORD: 'senha123',
     API_URL: 'http://localhost:3000/api',
   },
-})
+});

@@ -9,7 +9,7 @@ global.fetch = mockFetch;
 const mockEnv = {
   TWILIO_ACCOUNT_SID: 'test_account_sid',
   TWILIO_AUTH_TOKEN: 'test_auth_token',
-  TWILIO_PHONE_NUMBER: '+5511999999999'
+  TWILIO_PHONE_NUMBER: '+5511999999999',
 };
 
 // Mock do Supabase
@@ -17,10 +17,10 @@ jest.mock('@/lib/supabase/client', () => ({
   createClient: jest.fn(() => ({
     from: jest.fn(() => ({
       insert: jest.fn(() => ({
-        select: jest.fn(() => Promise.resolve({ data: null, error: null }))
-      }))
-    }))
-  }))
+        select: jest.fn(() => Promise.resolve({ data: null, error: null })),
+      })),
+    })),
+  })),
 }));
 
 describe('SMSService', () => {
@@ -54,10 +54,12 @@ describe('SMSService', () => {
     it('deve validar configuração incompleta', () => {
       consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
       process.env.TWILIO_ACCOUNT_SID = '';
-      
+
       new SMSService();
-      
-      expect(consoleSpy).toHaveBeenCalledWith('⚠️ SMS Service: Configuração incompleta do Twilio');
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '⚠️ SMS Service: Configuração incompleta do Twilio'
+      );
       consoleSpy.mockRestore();
     });
   });
@@ -66,20 +68,20 @@ describe('SMSService', () => {
     it('deve formatar número brasileiro com 11 dígitos', async () => {
       const mockResponse = {
         sid: 'SM123456789',
-        status: 'sent'
+        status: 'sent',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       } as Response);
 
       await smsService.sendSMS('11993804816', 'Teste');
-      
+
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('https://api.twilio.com'),
         expect.objectContaining({
-          body: expect.stringContaining('To=%2B5511993804816')
+          body: expect.stringContaining('To=%2B5511993804816'),
         })
       );
     });
@@ -87,20 +89,20 @@ describe('SMSService', () => {
     it('deve formatar número com máscara', async () => {
       const mockResponse = {
         sid: 'SM123456789',
-        status: 'sent'
+        status: 'sent',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       } as Response);
 
       await smsService.sendSMS('(11) 99380-4816', 'Teste');
-      
+
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('https://api.twilio.com'),
         expect.objectContaining({
-          body: expect.stringContaining('To=%2B5511993804816')
+          body: expect.stringContaining('To=%2B5511993804816'),
         })
       );
     });
@@ -108,20 +110,20 @@ describe('SMSService', () => {
     it('deve manter número já formatado', async () => {
       const mockResponse = {
         sid: 'SM123456789',
-        status: 'sent'
+        status: 'sent',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       } as Response);
 
       await smsService.sendSMS('+5511993804816', 'Teste');
-      
+
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('https://api.twilio.com'),
         expect.objectContaining({
-          body: expect.stringContaining('To=%2B5511993804816')
+          body: expect.stringContaining('To=%2B5511993804816'),
         })
       );
     });
@@ -131,24 +133,24 @@ describe('SMSService', () => {
     it('deve formatar número de telefone corretamente', async () => {
       const mockResponse = {
         sid: 'SM123456789',
-        status: 'sent'
+        status: 'sent',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       } as Response);
 
       const result = await smsService.sendSMS('11999999999', 'Mensagem teste');
-      
+
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('https://api.twilio.com'),
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'application/x-www-form-urlencoded',
           }),
-          body: expect.stringContaining('To=%2B5511999999999')
+          body: expect.stringContaining('To=%2B5511999999999'),
         })
       );
     });
@@ -156,20 +158,23 @@ describe('SMSService', () => {
     it('deve enviar SMS com sucesso', async () => {
       const mockResponse = {
         sid: 'SM123456789',
-        status: 'sent'
+        status: 'sent',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       } as Response);
 
-      const result = await smsService.sendSMS('+5511993804816', 'Mensagem de teste');
+      const result = await smsService.sendSMS(
+        '+5511993804816',
+        'Mensagem de teste'
+      );
 
       expect(result).toEqual({
         success: true,
         messageId: 'SM123456789',
-        provider: 'twilio'
+        provider: 'twilio',
       });
     });
 
@@ -177,7 +182,9 @@ describe('SMSService', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 401,
-        json: async () => ({ message: 'Authentication Error - invalid username' })
+        json: async () => ({
+          message: 'Authentication Error - invalid username',
+        }),
       } as Response);
 
       const result = await smsService.sendSMS('+5511993804816', 'Teste');
@@ -185,21 +192,19 @@ describe('SMSService', () => {
       expect(result).toEqual({
         success: false,
         error: 'Authentication Error - invalid username',
-        provider: 'twilio'
+        provider: 'twilio',
       });
     });
 
     it('deve tratar erro de rede', async () => {
-      mockFetch.mockRejectedValueOnce(
-        new Error('Network error')
-      );
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
       const result = await smsService.sendSMS('+5511993804816', 'Teste');
 
       expect(result).toEqual({
         success: false,
         error: 'Network error',
-        provider: 'twilio'
+        provider: 'twilio',
       });
     });
 
@@ -221,9 +226,9 @@ describe('SMSService', () => {
       cliente_id: 'cliente-123',
       status: 'em_andamento',
       descricao_problema: 'Tela quebrada',
-      valor_total: 350.00,
+      valor_total: 350.0,
       data_criacao: '2024-01-15T10:00:00Z',
-      tecnico_responsavel: 'João Silva'
+      tecnico_responsavel: 'João Silva',
     };
 
     const mockCliente = {
@@ -231,18 +236,18 @@ describe('SMSService', () => {
       nome: 'Maria Santos',
       telefone: '1133334444',
       celular: '11993804816',
-      email: 'maria@email.com'
+      email: 'maria@email.com',
     };
 
     it('deve enviar SMS de criação de ordem', async () => {
       const mockResponse = {
         sid: 'SM987654321',
-        status: 'sent'
+        status: 'sent',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       } as Response);
 
       const result = await smsService.sendOrdemServicoSMS(
@@ -254,13 +259,13 @@ describe('SMSService', () => {
       expect(result).toEqual({
         success: true,
         messageId: 'SM987654321',
-        provider: 'twilio'
+        provider: 'twilio',
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('https://api.twilio.com'),
         expect.objectContaining({
-          body: expect.stringContaining('Body=')
+          body: expect.stringContaining('Body='),
         })
       );
     });
@@ -268,12 +273,12 @@ describe('SMSService', () => {
     it('deve enviar SMS de atualização de ordem', async () => {
       const mockResponse = {
         sid: 'SM987654322',
-        status: 'sent'
+        status: 'sent',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       } as Response);
 
       const result = await smsService.sendOrdemServicoSMS(
@@ -290,17 +295,17 @@ describe('SMSService', () => {
       const mockOrdemConcluida = {
         ...mockOrdemServico,
         status: 'concluida',
-        data_conclusao: '2024-01-16T15:30:00Z'
+        data_conclusao: '2024-01-16T15:30:00Z',
       };
 
       const mockResponse = {
         sid: 'SM987654323',
-        status: 'sent'
+        status: 'sent',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       } as Response);
 
       const result = await smsService.sendOrdemServicoSMS(
@@ -316,17 +321,17 @@ describe('SMSService', () => {
     it('deve usar celular se telefone não disponível', async () => {
       const clienteSemTelefone = {
         ...mockCliente,
-        telefone: undefined
+        telefone: undefined,
       };
 
       const mockResponse = {
         sid: 'SM987654324',
-        status: 'sent'
+        status: 'sent',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       } as Response);
 
       const result = await smsService.sendOrdemServicoSMS(
@@ -339,7 +344,7 @@ describe('SMSService', () => {
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('https://api.twilio.com'),
         expect.objectContaining({
-          body: expect.stringContaining('To=%2B5511993804816')
+          body: expect.stringContaining('To=%2B5511993804816'),
         })
       );
     });
@@ -348,7 +353,7 @@ describe('SMSService', () => {
       const clienteSemContato = {
         ...mockCliente,
         telefone: undefined,
-        celular: undefined
+        celular: undefined,
       };
 
       const result = await smsService.sendOrdemServicoSMS(
@@ -360,7 +365,7 @@ describe('SMSService', () => {
       expect(result).toEqual({
         success: false,
         error: 'Cliente não possui telefone cadastrado',
-        provider: 'twilio'
+        provider: 'twilio',
       });
     });
   });
@@ -369,32 +374,30 @@ describe('SMSService', () => {
     it('deve testar conexão com sucesso', async () => {
       const mockResponse = {
         account_sid: 'test_account_sid',
-        status: 'active'
+        status: 'active',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       } as Response);
 
       const result = await smsService.testConnection();
 
       expect(result).toEqual({
         success: true,
-        message: 'Conexão com Twilio estabelecida com sucesso'
+        message: 'Conexão com Twilio estabelecida com sucesso',
       });
     });
 
     it('deve tratar falha na conexão', async () => {
-      mockFetch.mockRejectedValueOnce(
-        new Error('Network error')
-      );
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
       const result = await smsService.testConnection();
 
       expect(result).toEqual({
         success: false,
-        message: 'Erro de conexão: Network error'
+        message: 'Erro de conexão: Network error',
       });
     });
   });
@@ -407,7 +410,10 @@ describe('SMSService', () => {
     });
 
     it('deve ter template de lembrete de manutenção', () => {
-      const message = SMSService.templates.lembreteManutencao('Maria', 'iPhone');
+      const message = SMSService.templates.lembreteManutencao(
+        'Maria',
+        'iPhone'
+      );
       expect(message).toContain('Maria');
       expect(message).toContain('iPhone');
     });
@@ -419,7 +425,11 @@ describe('SMSService', () => {
     });
 
     it('deve ter template de agendamento', () => {
-      const message = SMSService.templates.agendamento('Ana', '15/01/2024', '14:30');
+      const message = SMSService.templates.agendamento(
+        'Ana',
+        '15/01/2024',
+        '14:30'
+      );
       expect(message).toContain('Ana');
       expect(message).toContain('15/01/2024');
       expect(message).toContain('14:30');
@@ -432,12 +442,12 @@ describe('SMSService', () => {
     it('deve formatar corretamente o número de teste', async () => {
       const mockResponse = {
         sid: 'SM_TEST_123',
-        status: 'sent'
+        status: 'sent',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       } as Response);
 
       await smsService.sendSMS(numeroTeste, 'Teste de integração');
@@ -445,7 +455,7 @@ describe('SMSService', () => {
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('https://api.twilio.com'),
         expect.objectContaining({
-          body: expect.stringContaining('To=%2B5511993804816')
+          body: expect.stringContaining('To=%2B5511993804816'),
         })
       );
     });
@@ -453,12 +463,12 @@ describe('SMSService', () => {
     it('deve enviar SMS de teste com template', async () => {
       const mockResponse = {
         sid: 'SM_TEST_124',
-        status: 'sent'
+        status: 'sent',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       } as Response);
 
       const mensagem = SMSService.templates.bemVindo('Usuário Teste');

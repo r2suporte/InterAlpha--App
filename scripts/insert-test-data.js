@@ -1,13 +1,14 @@
 // 🧪 Script para Inserir Dados de Teste
 // Adiciona dados fictícios para demonstrar funcionalidade do dashboard
 
-const { createClient } = require('@supabase/supabase-js')
+const { createClient } = require('@supabase/supabase-js');
 
 // Configuração do Supabase local
-const supabaseUrl = 'http://127.0.0.1:54321'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+const supabaseUrl = 'http://127.0.0.1:54321';
+const supabaseKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 
-const supabase = createClient(supabaseUrl, supabaseKey)
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // 📊 Dados de Teste
 const clientesTest = [
@@ -21,7 +22,7 @@ const clientesTest = [
     estado: 'SP',
     cep: '01234-567',
     tipo_pessoa: 'juridica',
-    tipo_documento: 'CNPJ'
+    tipo_documento: 'CNPJ',
   },
   {
     nome: 'Maria Santos',
@@ -33,7 +34,7 @@ const clientesTest = [
     estado: 'SP',
     cep: '01310-100',
     tipo_pessoa: 'fisica',
-    tipo_documento: 'CPF'
+    tipo_documento: 'CPF',
   },
   {
     nome: 'Empresa ABC Ltda',
@@ -45,9 +46,9 @@ const clientesTest = [
     estado: 'SP',
     cep: '04567-890',
     tipo_pessoa: 'juridica',
-    tipo_documento: 'CNPJ'
-  }
-]
+    tipo_documento: 'CNPJ',
+  },
+];
 
 const equipamentosTest = [
   {
@@ -60,7 +61,7 @@ const equipamentosTest = [
     status_garantia: 'garantia_apple',
     data_compra: '2023-06-15',
     condicao_geral: 'bom',
-    versao_sistema: 'macOS Ventura 13.4'
+    versao_sistema: 'macOS Ventura 13.4',
   },
   {
     tipo: 'ipad_air',
@@ -72,7 +73,7 @@ const equipamentosTest = [
     status_garantia: 'garantia_loja',
     data_compra: '2023-08-20',
     condicao_geral: 'excelente',
-    versao_sistema: 'iPadOS 16.5'
+    versao_sistema: 'iPadOS 16.5',
   },
   {
     tipo: 'imac',
@@ -84,70 +85,71 @@ const equipamentosTest = [
     status_garantia: 'fora_garantia',
     data_compra: '2022-03-10',
     condicao_geral: 'regular',
-    versao_sistema: 'macOS Monterey 12.6'
-  }
-]
+    versao_sistema: 'macOS Monterey 12.6',
+  },
+];
 
 async function insertTestData() {
   try {
-    console.log('🚀 Iniciando inserção de dados de teste...')
+    console.log('🚀 Iniciando inserção de dados de teste...');
 
     // ✅ Verificar quantos dados já existem
-  const { data: existingClientes } = await supabase
-    .from('clientes')
-    .select('id')
+    const { data: existingClientes } = await supabase
+      .from('clientes')
+      .select('id');
 
-  console.log(`📊 Clientes existentes: ${existingClientes?.length || 0}`)
-  
-  if (existingClientes && existingClientes.length >= 5) {
-    console.log('ℹ️  Já existem dados suficientes. Pulando inserção.')
-    return
-  }
+    console.log(`📊 Clientes existentes: ${existingClientes?.length || 0}`);
+
+    if (existingClientes && existingClientes.length >= 5) {
+      console.log('ℹ️  Já existem dados suficientes. Pulando inserção.');
+      return;
+    }
 
     // 1. Inserir clientes
-    console.log('👥 Inserindo clientes...')
+    console.log('👥 Inserindo clientes...');
     const { data: clientes, error: clientesError } = await supabase
       .from('clientes')
       .insert(clientesTest)
-      .select()
+      .select();
 
     if (clientesError) {
-      console.error('❌ Erro ao inserir clientes:', clientesError)
-      return
+      console.error('❌ Erro ao inserir clientes:', clientesError);
+      return;
     }
 
-    console.log(`✅ ${clientes.length} clientes inseridos`)
+    console.log(`✅ ${clientes.length} clientes inseridos`);
 
     // 2. Inserir equipamentos
-    console.log('💻 Inserindo equipamentos...')
-    
+    console.log('💻 Inserindo equipamentos...');
+
     const { data: equipamentos, error: equipamentosError } = await supabase
       .from('equipamentos')
       .insert(equipamentosTest)
-      .select()
+      .select();
 
     if (equipamentosError) {
-      console.error('❌ Erro ao inserir equipamentos:', equipamentosError)
-      return
+      console.error('❌ Erro ao inserir equipamentos:', equipamentosError);
+      return;
     }
 
-    console.log(`✅ ${equipamentos.length} equipamentos inseridos`)
+    console.log(`✅ ${equipamentos.length} equipamentos inseridos`);
 
     // 3. Inserir ordens de serviço
-    console.log('📋 Inserindo ordens de serviço...')
-    
+    console.log('📋 Inserindo ordens de serviço...');
+
     const ordensData = [
       {
         numero_os: 'OS-2024-001',
         cliente_id: clientes[0].id,
         equipamento_id: equipamentos[0].id,
         titulo: 'Reparo MacBook Pro - Teclado com defeito',
-        descricao: 'Cliente reporta que algumas teclas não funcionam corretamente',
+        descricao:
+          'Cliente reporta que algumas teclas não funcionam corretamente',
         status: 'aberta',
         prioridade: 'media',
         tipo_servico: 'reparo',
         problema_reportado: 'Teclas H, J e K não respondem ao toque',
-        valor_servico: 250.00
+        valor_servico: 250.0,
       },
       {
         numero_os: 'OS-2024-002',
@@ -159,7 +161,7 @@ async function insertTestData() {
         prioridade: 'alta',
         tipo_servico: 'reparo',
         problema_reportado: 'Tela com rachaduras no canto superior direito',
-        valor_servico: 450.00
+        valor_servico: 450.0,
       },
       {
         numero_os: 'OS-2024-003',
@@ -171,37 +173,36 @@ async function insertTestData() {
         prioridade: 'baixa',
         tipo_servico: 'manutencao',
         problema_reportado: 'Equipamento lento e com ruído excessivo do cooler',
-        valor_servico: 180.00
-      }
-    ]
+        valor_servico: 180.0,
+      },
+    ];
 
     const { data: ordens, error: ordensError } = await supabase
       .from('ordens_servico')
       .insert(ordensData)
-      .select()
+      .select();
 
     if (ordensError) {
-      console.error('❌ Erro ao inserir ordens:', ordensError)
-      return
+      console.error('❌ Erro ao inserir ordens:', ordensError);
+      return;
     }
 
-    console.log(`✅ ${ordens.length} ordens de serviço inseridas`)
+    console.log(`✅ ${ordens.length} ordens de serviço inseridas`);
 
     // 4. Resumo final
-    console.log('\n📊 RESUMO DOS DADOS INSERIDOS:')
-    console.log(`👥 Clientes: ${clientes.length}`)
-    console.log(`💻 Equipamentos: ${equipamentos.length}`)
-    console.log(`📋 Ordens de Serviço: ${ordens.length}`)
-    console.log('\n🎉 Dados de teste inseridos com sucesso!')
-
+    console.log('\n📊 RESUMO DOS DADOS INSERIDOS:');
+    console.log(`👥 Clientes: ${clientes.length}`);
+    console.log(`💻 Equipamentos: ${equipamentos.length}`);
+    console.log(`📋 Ordens de Serviço: ${ordens.length}`);
+    console.log('\n🎉 Dados de teste inseridos com sucesso!');
   } catch (error) {
-    console.error('💥 Erro geral:', error)
+    console.error('💥 Erro geral:', error);
   }
 }
 
 // Executar se chamado diretamente
 if (require.main === module) {
-  insertTestData()
+  insertTestData();
 }
 
-module.exports = { insertTestData }
+module.exports = { insertTestData };

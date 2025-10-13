@@ -1,12 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Menu, X, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+
+import { ChevronDown, ChevronUp, Menu, X } from 'lucide-react';
+
 import { cn } from '@/lib/utils';
 
 // Hook para detectar tamanho da tela
 export function useBreakpoint() {
-  const [breakpoint, setBreakpoint] = useState<'sm' | 'md' | 'lg' | 'xl' | '2xl'>('lg');
+  const [breakpoint, setBreakpoint] = useState<
+    'sm' | 'md' | 'lg' | 'xl' | '2xl'
+  >('lg');
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
@@ -14,7 +18,7 @@ export function useBreakpoint() {
   useEffect(() => {
     const checkBreakpoint = () => {
       const width = window.innerWidth;
-      
+
       if (width < 640) {
         setBreakpoint('sm');
         setIsMobile(true);
@@ -59,11 +63,11 @@ interface ResponsiveContainerProps {
   padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
-export function ResponsiveContainer({ 
-  children, 
+export function ResponsiveContainer({
+  children,
   className,
   maxWidth = 'xl',
-  padding = 'md'
+  padding = 'md',
 }: ResponsiveContainerProps) {
   const maxWidthClasses = {
     sm: 'max-w-sm',
@@ -71,23 +75,25 @@ export function ResponsiveContainer({
     lg: 'max-w-lg',
     xl: 'max-w-7xl',
     '2xl': 'max-w-none',
-    full: 'max-w-full'
+    full: 'max-w-full',
   };
 
   const paddingClasses = {
     none: '',
     sm: 'px-2 sm:px-4',
     md: 'px-4 sm:px-6 lg:px-8',
-    lg: 'px-6 sm:px-8 lg:px-12'
+    lg: 'px-6 sm:px-8 lg:px-12',
   };
 
   return (
-    <div className={cn(
-      'mx-auto w-full',
-      maxWidthClasses[maxWidth],
-      paddingClasses[padding],
-      className
-    )}>
+    <div
+      className={cn(
+        'mx-auto w-full',
+        maxWidthClasses[maxWidth],
+        paddingClasses[padding],
+        className
+      )}
+    >
       {children}
     </div>
   );
@@ -106,27 +112,22 @@ interface ResponsiveGridProps {
   gap?: 'sm' | 'md' | 'lg';
 }
 
-export function ResponsiveGrid({ 
-  children, 
+export function ResponsiveGrid({
+  children,
   className,
   cols = { sm: 1, md: 2, lg: 3, xl: 4 },
-  gap = 'md'
+  gap = 'md',
 }: ResponsiveGridProps) {
   const gapClasses = {
     sm: 'gap-2',
     md: 'gap-4',
-    lg: 'gap-6'
+    lg: 'gap-6',
   };
 
   const gridCols = `grid-cols-${cols.sm || 1} md:grid-cols-${cols.md || 2} lg:grid-cols-${cols.lg || 3} xl:grid-cols-${cols.xl || 4}`;
 
   return (
-    <div className={cn(
-      'grid',
-      gridCols,
-      gapClasses[gap],
-      className
-    )}>
+    <div className={cn('grid', gridCols, gapClasses[gap], className)}>
       {children}
     </div>
   );
@@ -140,13 +141,18 @@ interface MobileNavProps {
   className?: string;
 }
 
-export function MobileNav({ isOpen, onToggle, children, className }: MobileNavProps) {
+export function MobileNav({
+  isOpen,
+  onToggle,
+  children,
+  className,
+}: MobileNavProps) {
   return (
     <>
       {/* Mobile menu button */}
       <button
         onClick={onToggle}
-        className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="rounded-md p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 md:hidden"
         aria-label="Toggle menu"
       >
         {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -155,27 +161,24 @@ export function MobileNav({ isOpen, onToggle, children, className }: MobileNavPr
       {/* Mobile menu overlay */}
       {isOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <div 
-            className="absolute inset-0 bg-black/50"
-            onClick={onToggle}
-          />
-          <div className={cn(
-            'absolute top-0 right-0 h-full w-64 bg-white shadow-xl transform transition-transform',
-            'animate-in slide-in-from-right-full',
-            className
-          )}>
-            <div className="flex items-center justify-between p-4 border-b">
+          <div className="absolute inset-0 bg-black/50" onClick={onToggle} />
+          <div
+            className={cn(
+              'absolute right-0 top-0 h-full w-64 transform bg-white shadow-xl transition-transform',
+              'animate-in slide-in-from-right-full',
+              className
+            )}
+          >
+            <div className="flex items-center justify-between border-b p-4">
               <h2 className="text-lg font-semibold">Menu</h2>
               <button
                 onClick={onToggle}
-                className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                className="rounded-md p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="p-4">
-              {children}
-            </div>
+            <div className="p-4">{children}</div>
           </div>
         </div>
       )}
@@ -192,8 +195,8 @@ interface ResponsiveTableProps {
 export function ResponsiveTable({ children, className }: ResponsiveTableProps) {
   return (
     <div className={cn('overflow-x-auto', className)}>
-      <div className="min-w-full inline-block align-middle">
-        <div className="overflow-hidden border border-gray-200 rounded-lg">
+      <div className="inline-block min-w-full align-middle">
+        <div className="overflow-hidden rounded-lg border border-gray-200">
           {children}
         </div>
       </div>
@@ -209,25 +212,27 @@ interface ResponsiveCardProps {
   hover?: boolean;
 }
 
-export function ResponsiveCard({ 
-  children, 
+export function ResponsiveCard({
+  children,
   className,
   padding = 'md',
-  hover = false
+  hover = false,
 }: ResponsiveCardProps) {
   const paddingClasses = {
     sm: 'p-3 sm:p-4',
     md: 'p-4 sm:p-6',
-    lg: 'p-6 sm:p-8'
+    lg: 'p-6 sm:p-8',
   };
 
   return (
-    <div className={cn(
-      'bg-white border border-gray-200 rounded-lg shadow-sm',
-      paddingClasses[padding],
-      hover && 'hover:shadow-md transition-shadow',
-      className
-    )}>
+    <div
+      className={cn(
+        'rounded-lg border border-gray-200 bg-white shadow-sm',
+        paddingClasses[padding],
+        hover && 'transition-shadow hover:shadow-md',
+        className
+      )}
+    >
       {children}
     </div>
   );
@@ -241,11 +246,11 @@ interface CollapsibleSectionProps {
   className?: string;
 }
 
-export function CollapsibleSection({ 
-  title, 
-  children, 
+export function CollapsibleSection({
+  title,
+  children,
   defaultOpen = false,
-  className 
+  className,
 }: CollapsibleSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const { isMobile } = useBreakpoint();
@@ -255,25 +260,26 @@ export function CollapsibleSection({
   const isCollapsed = shouldCollapse && !isOpen;
 
   return (
-    <div className={cn('border border-gray-200 rounded-lg', className)}>
+    <div className={cn('rounded-lg border border-gray-200', className)}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'w-full flex items-center justify-between p-4 text-left',
+          'flex w-full items-center justify-between p-4 text-left',
           shouldCollapse ? 'hover:bg-gray-50' : 'cursor-default'
         )}
         disabled={!shouldCollapse}
       >
         <h3 className="text-lg font-medium text-gray-900">{title}</h3>
-        {shouldCollapse && (
-          isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />
-        )}
+        {shouldCollapse &&
+          (isOpen ? (
+            <ChevronUp className="h-5 w-5" />
+          ) : (
+            <ChevronDown className="h-5 w-5" />
+          ))}
       </button>
-      
+
       {!isCollapsed && (
-        <div className="px-4 pb-4 border-t border-gray-200">
-          {children}
-        </div>
+        <div className="border-t border-gray-200 px-4 pb-4">{children}</div>
       )}
     </div>
   );
@@ -288,40 +294,42 @@ interface ResponsiveStackProps {
   align?: 'start' | 'center' | 'end' | 'stretch';
 }
 
-export function ResponsiveStack({ 
-  children, 
+export function ResponsiveStack({
+  children,
   className,
   direction = 'responsive',
   spacing = 'md',
-  align = 'stretch'
+  align = 'stretch',
 }: ResponsiveStackProps) {
   const spacingClasses = {
     sm: 'gap-2',
     md: 'gap-4',
-    lg: 'gap-6'
+    lg: 'gap-6',
   };
 
   const alignClasses = {
     start: 'items-start',
     center: 'items-center',
     end: 'items-end',
-    stretch: 'items-stretch'
+    stretch: 'items-stretch',
   };
 
   const directionClasses = {
     vertical: 'flex-col',
     horizontal: 'flex-row',
-    responsive: 'flex-col sm:flex-row'
+    responsive: 'flex-col sm:flex-row',
   };
 
   return (
-    <div className={cn(
-      'flex',
-      directionClasses[direction],
-      spacingClasses[spacing],
-      alignClasses[align],
-      className
-    )}>
+    <div
+      className={cn(
+        'flex',
+        directionClasses[direction],
+        spacingClasses[spacing],
+        alignClasses[align],
+        className
+      )}
+    >
       {children}
     </div>
   );
@@ -334,7 +342,11 @@ interface ResponsiveTextProps {
   className?: string;
 }
 
-export function ResponsiveText({ children, size = 'base', className }: ResponsiveTextProps) {
+export function ResponsiveText({
+  children,
+  size = 'base',
+  className,
+}: ResponsiveTextProps) {
   const sizeClasses = {
     xs: 'text-xs sm:text-sm',
     sm: 'text-sm sm:text-base',
@@ -342,14 +354,10 @@ export function ResponsiveText({ children, size = 'base', className }: Responsiv
     lg: 'text-lg sm:text-xl',
     xl: 'text-xl sm:text-2xl',
     '2xl': 'text-2xl sm:text-3xl',
-    '3xl': 'text-3xl sm:text-4xl'
+    '3xl': 'text-3xl sm:text-4xl',
   };
 
-  return (
-    <div className={cn(sizeClasses[size], className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn(sizeClasses[size], className)}>{children}</div>;
 }
 
 // Utilitário para mostrar/esconder em diferentes breakpoints

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AlertService } from '@/lib/services/alert-service';
+
 import { withAuthenticatedApiLogging } from '@/lib/middleware/logging-middleware';
 import { withAuthenticatedApiMetrics } from '@/lib/middleware/metrics-middleware';
+import { AlertService } from '@/lib/services/alert-service';
 
 const alertService = new AlertService();
 
@@ -12,7 +13,7 @@ async function getAlerts(request: NextRequest) {
     const severity = searchParams.get('severity');
 
     let alerts;
-    
+
     if (status === 'active') {
       alerts = await alertService.getActiveAlerts();
     } else {
@@ -31,15 +32,15 @@ async function getAlerts(request: NextRequest) {
       success: true,
       data: {
         alerts,
-        stats
-      }
+        stats,
+      },
     });
   } catch (error) {
     console.error('Erro ao buscar alertas:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Erro interno do servidor' 
+      {
+        success: false,
+        error: 'Erro interno do servidor',
       },
       { status: 500 }
     );
@@ -49,15 +50,22 @@ async function getAlerts(request: NextRequest) {
 async function createAlert(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     // Validar campos obrigatórios
-    const requiredFields = ['name', 'description', 'metric', 'condition', 'threshold', 'severity'];
+    const requiredFields = [
+      'name',
+      'description',
+      'metric',
+      'condition',
+      'threshold',
+      'severity',
+    ];
     for (const field of requiredFields) {
       if (!body[field]) {
         return NextResponse.json(
-          { 
-            success: false, 
-            error: `Campo obrigatório: ${field}` 
+          {
+            success: false,
+            error: `Campo obrigatório: ${field}`,
           },
           { status: 400 }
         );
@@ -65,11 +73,15 @@ async function createAlert(request: NextRequest) {
     }
 
     // Validar valores
-    if (!['greater_than', 'less_than', 'equals', 'not_equals'].includes(body.condition)) {
+    if (
+      !['greater_than', 'less_than', 'equals', 'not_equals'].includes(
+        body.condition
+      )
+    ) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Condição inválida' 
+        {
+          success: false,
+          error: 'Condição inválida',
         },
         { status: 400 }
       );
@@ -77,9 +89,9 @@ async function createAlert(request: NextRequest) {
 
     if (!['low', 'medium', 'high', 'critical'].includes(body.severity)) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Severidade inválida' 
+        {
+          success: false,
+          error: 'Severidade inválida',
         },
         { status: 400 }
       );
@@ -87,9 +99,9 @@ async function createAlert(request: NextRequest) {
 
     if (typeof body.threshold !== 'number') {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Threshold deve ser um número' 
+        {
+          success: false,
+          error: 'Threshold deve ser um número',
         },
         { status: 400 }
       );
@@ -103,29 +115,32 @@ async function createAlert(request: NextRequest) {
       threshold: body.threshold,
       severity: body.severity,
       enabled: body.enabled ?? true,
-      cooldown_minutes: body.cooldown_minutes ?? 15
+      cooldown_minutes: body.cooldown_minutes ?? 15,
     });
 
     if (!rule) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Erro ao criar regra de alerta' 
+        {
+          success: false,
+          error: 'Erro ao criar regra de alerta',
         },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: rule
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        data: rule,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Erro ao criar regra de alerta:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Erro interno do servidor' 
+      {
+        success: false,
+        error: 'Erro interno do servidor',
       },
       { status: 500 }
     );
@@ -140,15 +155,15 @@ async function checkAlerts(request: NextRequest) {
       success: true,
       data: {
         triggered_alerts: triggeredAlerts,
-        count: triggeredAlerts.length
-      }
+        count: triggeredAlerts.length,
+      },
     });
   } catch (error) {
     console.error('Erro ao verificar alertas:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Erro interno do servidor' 
+      {
+        success: false,
+        error: 'Erro interno do servidor',
       },
       { status: 500 }
     );

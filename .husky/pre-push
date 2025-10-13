@@ -1,0 +1,57 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🚀 Executando verificações pré-push..."
+
+# Verificar se estamos na branch main/master
+current_branch=$(git branch --show-current)
+if [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
+  echo "⚠️  Fazendo push para branch principal ($current_branch)"
+  echo "🔍 Executando verificações completas..."
+  
+  # Executar verificações completas para branch principal
+  echo "📋 Executando verificação completa..."
+  npm run full:check
+  
+  if [ $? -ne 0 ]; then
+    echo "❌ Verificações completas falharam. Corrija os problemas antes de fazer push para $current_branch."
+    exit 1
+  fi
+else
+  echo "📝 Branch: $current_branch"
+  
+  # Verificações básicas para outras branches
+  echo "🔍 Executando verificações básicas..."
+  npm run code:check
+  
+  if [ $? -ne 0 ]; then
+    echo "❌ Verificações de código falharam."
+    exit 1
+  fi
+  
+  echo "🧪 Executando testes..."
+  npm run test:ci
+  
+  if [ $? -ne 0 ]; then
+    echo "❌ Testes falharam."
+    exit 1
+  fi
+fi
+
+# Verificar se há commits com mensagens inadequadas
+echo "📝 Verificando histórico de commits..."
+if git log --oneline -10 | grep -iqE '(wip|fixup|squash|temp)'; then
+  echo "⚠️  Commits temporários detectados no histórico recente"
+  echo "💡 Considere fazer squash ou rebase antes do push"
+fi
+
+# Verificar tamanho dos arquivos
+echo "📦 Verificando tamanho dos arquivos..."
+large_files=$(git diff --cached --name-only | xargs -I {} find {} -size +1M 2>/dev/null)
+if [ ! -z "$large_files" ]; then
+  echo "⚠️  Arquivos grandes detectados:"
+  echo "$large_files"
+  echo "💡 Considere usar Git LFS para arquivos grandes"
+fi
+
+echo "✅ Todas as verificações pré-push passaram! Prosseguindo com o push..."

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cacheService, CACHE_TTL } from '@/lib/services/cache-service';
+
+import { CACHE_TTL, cacheService } from '@/lib/services/cache-service';
 
 interface CacheOptions {
   ttl?: number;
@@ -54,7 +55,7 @@ export function withCache(options: CacheOptions = {}) {
         // Verifica se deve cachear a resposta
         if (shouldCache(req, response) && response.status === 200) {
           const responseData = await response.clone().json();
-          
+
           const cacheData = {
             data: responseData,
             status: response.status,
@@ -73,7 +74,6 @@ export function withCache(options: CacheOptions = {}) {
         }
 
         return response;
-
       } catch (error) {
         console.error('❌ Erro no middleware de cache:', error);
         // Em caso de erro, executa o handler sem cache
@@ -121,7 +121,7 @@ function generateVaryKey(req: NextRequest, varyBy: string[]): string {
   if (varyBy.length === 0) return '';
 
   const varyValues: string[] = [];
-  
+
   for (const vary of varyBy) {
     if (vary.startsWith('header:')) {
       const headerName = vary.substring(7);
@@ -157,7 +157,7 @@ export function withUserCache(ttl: number = CACHE_TTL.MEDIUM) {
   return withCache({
     ttl,
     varyBy: ['user'],
-    keyGenerator: (req) => {
+    keyGenerator: req => {
       const url = new URL(req.url);
       return `user-api:${url.pathname}`;
     },
@@ -170,7 +170,7 @@ export function withUserCache(ttl: number = CACHE_TTL.MEDIUM) {
 export function withPublicCache(ttl: number = CACHE_TTL.LONG) {
   return withCache({
     ttl,
-    keyGenerator: (req) => {
+    keyGenerator: req => {
       const url = new URL(req.url);
       return `public-api:${url.pathname}`;
     },
@@ -183,7 +183,7 @@ export function withPublicCache(ttl: number = CACHE_TTL.LONG) {
 export function withMetricsCache(ttl: number = CACHE_TTL.SHORT) {
   return withCache({
     ttl,
-    keyGenerator: (req) => {
+    keyGenerator: req => {
       const url = new URL(req.url);
       const timeRange = url.searchParams.get('timeRange') || 'default';
       return `metrics:${url.pathname}:${timeRange}`;

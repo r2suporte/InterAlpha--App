@@ -1,6 +1,5 @@
 // 📊 Application Metrics Service - Monitoramento Abrangente da Aplicação
 // Coleta métricas de performance, uso, erros e recursos do sistema
-
 import { createClient } from '@/lib/supabase/client';
 
 // 📈 Tipos de Métricas
@@ -12,17 +11,27 @@ export interface ApplicationMetric {
   unit: 'ms' | 'count' | 'percentage' | 'bytes' | 'rate';
   tags: Record<string, string>;
   timestamp: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface PerformanceMetric extends ApplicationMetric {
   category: 'performance';
-  name: 'page_load_time' | 'api_response_time' | 'database_query_time' | 'render_time' | 'bundle_size';
+  name:
+    | 'page_load_time'
+    | 'api_response_time'
+    | 'database_query_time'
+    | 'render_time'
+    | 'bundle_size';
 }
 
 export interface UsageMetric extends ApplicationMetric {
   category: 'usage';
-  name: 'page_views' | 'user_sessions' | 'feature_usage' | 'api_calls' | 'concurrent_users';
+  name:
+    | 'page_views'
+    | 'user_sessions'
+    | 'feature_usage'
+    | 'api_calls'
+    | 'concurrent_users';
 }
 
 export interface ErrorMetric extends ApplicationMetric {
@@ -76,10 +85,12 @@ export class ApplicationMetricsService {
   }
 
   // 📊 Registrar Métrica
-  async recordMetric(metric: Omit<ApplicationMetric, 'timestamp'>): Promise<void> {
+  async recordMetric(
+    metric: Omit<ApplicationMetric, 'timestamp'>
+  ): Promise<void> {
     const fullMetric: ApplicationMetric = {
       ...metric,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     this.metricsBuffer.push(fullMetric);
@@ -95,15 +106,19 @@ export class ApplicationMetricsService {
     name: PerformanceMetric['name'],
     value: number,
     tags: Record<string, string> = {},
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     await this.recordMetric({
       category: 'performance',
       name,
       value,
-      unit: name.includes('time') ? 'ms' : name === 'bundle_size' ? 'bytes' : 'count',
+      unit: name.includes('time')
+        ? 'ms'
+        : name === 'bundle_size'
+          ? 'bytes'
+          : 'count',
       tags,
-      metadata
+      metadata,
     });
   }
 
@@ -112,7 +127,7 @@ export class ApplicationMetricsService {
     name: UsageMetric['name'],
     value: number = 1,
     tags: Record<string, string> = {},
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     await this.recordMetric({
       category: 'usage',
@@ -120,7 +135,7 @@ export class ApplicationMetricsService {
       value,
       unit: 'count',
       tags,
-      metadata
+      metadata,
     });
   }
 
@@ -129,7 +144,7 @@ export class ApplicationMetricsService {
     name: ErrorMetric['name'],
     value: number = 1,
     tags: Record<string, string> = {},
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     await this.recordMetric({
       category: 'error',
@@ -137,7 +152,7 @@ export class ApplicationMetricsService {
       value,
       unit: name === 'error_rate' ? 'percentage' : 'count',
       tags,
-      metadata
+      metadata,
     });
   }
 
@@ -146,15 +161,20 @@ export class ApplicationMetricsService {
     name: BusinessMetric['name'],
     value: number,
     tags: Record<string, string> = {},
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     await this.recordMetric({
       category: 'business',
       name,
       value,
-      unit: name === 'conversion_rate' ? 'percentage' : name === 'revenue' ? 'count' : 'count',
+      unit:
+        name === 'conversion_rate'
+          ? 'percentage'
+          : name === 'revenue'
+            ? 'count'
+            : 'count',
       tags,
-      metadata
+      metadata,
     });
   }
 
@@ -163,15 +183,19 @@ export class ApplicationMetricsService {
     name: SystemMetric['name'],
     value: number,
     tags: Record<string, string> = {},
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     await this.recordMetric({
       category: 'system',
       name,
       value,
-      unit: name.includes('usage') ? 'percentage' : name === 'network_latency' ? 'ms' : 'bytes',
+      unit: name.includes('usage')
+        ? 'percentage'
+        : name === 'network_latency'
+          ? 'ms'
+          : 'bytes',
       tags,
-      metadata
+      metadata,
     });
   }
 
@@ -182,33 +206,33 @@ export class ApplicationMetricsService {
     tags: Record<string, string> = {}
   ): Promise<T> {
     const startTime = performance.now();
-    
+
     try {
       const result = await fn();
       const duration = performance.now() - startTime;
-      
-      await this.recordPerformanceMetric(
-        'api_response_time',
-        duration,
-        { ...tags, operation, status: 'success' }
-      );
-      
+
+      await this.recordPerformanceMetric('api_response_time', duration, {
+        ...tags,
+        operation,
+        status: 'success',
+      });
+
       return result;
     } catch (error) {
       const duration = performance.now() - startTime;
-      
-      await this.recordPerformanceMetric(
-        'api_response_time',
-        duration,
-        { ...tags, operation, status: 'error' }
-      );
-      
-      await this.recordErrorMetric(
-        'exception_count',
-        1,
-        { ...tags, operation, error: error instanceof Error ? error.message : 'Unknown error' }
-      );
-      
+
+      await this.recordPerformanceMetric('api_response_time', duration, {
+        ...tags,
+        operation,
+        status: 'error',
+      });
+
+      await this.recordErrorMetric('exception_count', 1, {
+        ...tags,
+        operation,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+
       throw error;
     }
   }
@@ -220,9 +244,7 @@ export class ApplicationMetricsService {
     names?: string[]
   ): Promise<MetricAggregation[]> {
     try {
-      let query = this.supabase
-        .from('application_metrics')
-        .select('*');
+      let query = this.supabase.from('application_metrics').select('*');
 
       if (category) {
         query = query.eq('category', category);
@@ -239,7 +261,7 @@ export class ApplicationMetricsService {
         '1h': 60 * 60 * 1000,
         '24h': 24 * 60 * 60 * 1000,
         '7d': 7 * 24 * 60 * 60 * 1000,
-        '30d': 30 * 24 * 60 * 60 * 1000
+        '30d': 30 * 24 * 60 * 60 * 1000,
       };
 
       const startTime = new Date(now.getTime() - timeRangeMs[timeRange]);
@@ -249,26 +271,33 @@ export class ApplicationMetricsService {
 
       if (error) throw error;
 
-      // Agregar dados por nome e categoria
+      // Agregar dados por nome e categoria (parse rows safely)
       const aggregations: Record<string, MetricAggregation> = {};
 
-      data?.forEach(metric => {
-        const key = `${metric.category}_${metric.name}`;
-        
+      type Row = Partial<Record<string, unknown>> & { name?: string; category?: string; value?: number; unit?: string };
+
+      const rows: Row[] = (data || []) as Row[];
+
+      rows.forEach((metric) => {
+        const name = String(metric.name || 'unknown');
+        const category = String(metric.category || 'usage');
+        const key = `${category}_${name}`;
+
         if (!aggregations[key]) {
           aggregations[key] = {
-            name: metric.name,
-            category: metric.category,
+            name,
+            category,
             timeRange,
             aggregation: 'avg',
             value: 0,
-            unit: metric.unit,
-            timestamp: new Date()
+            unit: String(metric.unit || 'count'),
+            timestamp: new Date(),
           };
         }
 
+        const val = typeof metric.value === 'number' ? metric.value : Number(metric.value || 0);
         // Calcular média simples (pode ser expandido para outras agregações)
-        aggregations[key].value = (aggregations[key].value + metric.value) / 2;
+        aggregations[key].value = (aggregations[key].value + val) / 2;
       });
 
       return Object.values(aggregations);
@@ -282,7 +311,7 @@ export class ApplicationMetricsService {
   async checkAlerts(): Promise<MetricAlert[]> {
     // Implementação básica - pode ser expandida
     const triggeredAlerts: MetricAlert[] = [];
-    
+
     try {
       // Buscar alertas ativos
       const { data: alerts } = await this.supabase
@@ -301,11 +330,11 @@ export class ApplicationMetricsService {
         );
 
         const metric = recentMetrics.find(m => m.name === alert.metric);
-        
+
         if (metric && this.shouldTriggerAlert(metric.value, alert)) {
           triggeredAlerts.push({
             ...alert,
-            lastTriggered: new Date()
+            lastTriggered: new Date(),
           });
         }
       }
@@ -324,19 +353,17 @@ export class ApplicationMetricsService {
       const metricsToFlush = [...this.metricsBuffer];
       this.metricsBuffer = [];
 
-      const { error } = await this.supabase
-        .from('application_metrics')
-        .insert(
-          metricsToFlush.map(metric => ({
-            category: metric.category,
-            name: metric.name,
-            value: metric.value,
-            unit: metric.unit,
-            tags: metric.tags,
-            metadata: metric.metadata,
-            timestamp: metric.timestamp.toISOString()
-          }))
-        );
+      const { error } = await this.supabase.from('application_metrics').insert(
+        metricsToFlush.map(metric => ({
+          category: metric.category,
+          name: metric.name,
+          value: metric.value,
+          unit: metric.unit,
+          tags: metric.tags,
+          metadata: metric.metadata,
+          timestamp: metric.timestamp.toISOString(),
+        }))
+      );
 
       if (error) {
         console.error('Erro ao salvar métricas:', error);
@@ -384,30 +411,44 @@ export class ApplicationMetricsService {
 export const applicationMetrics = new ApplicationMetricsService();
 
 // 🎨 Decorators para Métricas Automáticas
-export function MeasurePerformance(metricName: string, tags: Record<string, string> = {}) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
-    const method = descriptor.value;
+export function MeasurePerformance(
+  metricName: string,
+  tags: Record<string, string> = {}
+) {
+  return function (
+    target: unknown,
+    propertyName: string,
+    descriptor: PropertyDescriptor
+  ) {
+    const method = descriptor.value as (...args: unknown[]) => Promise<unknown>;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (this: any, ...args: unknown[]) {
       return await applicationMetrics.measureExecutionTime(
         metricName,
-        () => method.apply(this, args),
+        () => method.apply(this, args) as Promise<unknown>,
         tags
       );
-    };
+    } as any;
 
     return descriptor;
   };
 }
 
-export function TrackUsage(metricName: string, tags: Record<string, string> = {}) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
-    const method = descriptor.value;
+export function TrackUsage(
+  metricName: string,
+  tags: Record<string, string> = {}
+) {
+  return function (
+    target: unknown,
+    propertyName: string,
+    descriptor: PropertyDescriptor
+  ) {
+    const method = descriptor.value as (...args: unknown[]) => unknown;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (this: any, ...args: unknown[]) {
       await applicationMetrics.recordUsageMetric(metricName as any, 1, tags);
-      return method.apply(this, args);
-    };
+      return method.apply(this, args as any);
+    } as any;
 
     return descriptor;
   };

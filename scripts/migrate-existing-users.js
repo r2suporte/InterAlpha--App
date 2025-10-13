@@ -7,36 +7,47 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Variáveis de ambiente do Supabase não encontradas!');
-  console.log('Certifique-se de que NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY estão definidas no .env.local');
+  console.log(
+    'Certifique-se de que NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY estão definidas no .env.local'
+  );
   process.exit(1);
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 });
 
 // Mapeamento de roles antigas para novas
 const ROLE_MIGRATION_MAP = {
   // Roles antigas -> Novas roles
-  'admin': 'admin',
-  'user': 'user',
-  'technician': 'technician',
-  'tecnico': 'technician',       // Normalizar variações
-  'atendente': 'atendente',
-  'manager': 'gerente_adm',
-  'gerente': 'gerente_adm',
-  'supervisor': 'supervisor_tecnico',
-  'diretor': 'diretor',
-  'gerente_adm': 'gerente_adm',
-  'gerente_financeiro': 'gerente_financeiro',
-  'supervisor_tecnico': 'supervisor_tecnico'
+  admin: 'admin',
+  user: 'user',
+  technician: 'technician',
+  tecnico: 'technician', // Normalizar variações
+  atendente: 'atendente',
+  manager: 'gerente_adm',
+  gerente: 'gerente_adm',
+  supervisor: 'supervisor_tecnico',
+  diretor: 'diretor',
+  gerente_adm: 'gerente_adm',
+  gerente_financeiro: 'gerente_financeiro',
+  supervisor_tecnico: 'supervisor_tecnico',
 };
 
 // Roles válidas no novo sistema
-const VALID_ROLES = ['admin', 'diretor', 'gerente_adm', 'gerente_financeiro', 'supervisor_tecnico', 'technician', 'atendente', 'user'];
+const VALID_ROLES = [
+  'admin',
+  'diretor',
+  'gerente_adm',
+  'gerente_financeiro',
+  'supervisor_tecnico',
+  'technician',
+  'atendente',
+  'user',
+];
 
 async function migrateExistingUsers() {
   try {
@@ -74,15 +85,19 @@ async function migrateExistingUsers() {
     console.log('');
 
     // 3. Confirmar migração
-    console.log('⚠️ Esta operação irá atualizar as roles de todos os usuários.');
-    console.log('   Certifique-se de ter um backup do banco de dados antes de continuar.\n');
+    console.log(
+      '⚠️ Esta operação irá atualizar as roles de todos os usuários.'
+    );
+    console.log(
+      '   Certifique-se de ter um backup do banco de dados antes de continuar.\n'
+    );
 
     // Para ambiente de produção, adicionar confirmação interativa
     if (process.env.NODE_ENV === 'production') {
       const readline = require('readline');
       const rl = readline.createInterface({
         input: process.stdin,
-        output: process.stdout
+        output: process.stdout,
       });
 
       const answer = await new Promise(resolve => {
@@ -98,7 +113,7 @@ async function migrateExistingUsers() {
 
     // 4. Executar migração
     console.log('🔄 Executando migração...\n');
-    
+
     let successCount = 0;
     let errorCount = 0;
     const migrationResults = [];
@@ -114,8 +129,8 @@ async function migrateExistingUsers() {
           migrationResults.push({
             email: user.email,
             oldRole: currentRole,
-            newRole: newRole,
-            status: 'unchanged'
+            newRole,
+            status: 'unchanged',
           });
           continue;
         }
@@ -123,9 +138,9 @@ async function migrateExistingUsers() {
         // Atualizar role do usuário
         const { error: updateError } = await supabase
           .from('users')
-          .update({ 
+          .update({
             role: newRole,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq('id', user.id);
 
@@ -137,11 +152,10 @@ async function migrateExistingUsers() {
         migrationResults.push({
           email: user.email,
           oldRole: currentRole,
-          newRole: newRole,
-          status: 'updated'
+          newRole,
+          status: 'updated',
         });
         successCount++;
-
       } catch (error) {
         console.error(`❌ ${user.email}: Erro na migração - ${error.message}`);
         migrationResults.push({
@@ -149,7 +163,7 @@ async function migrateExistingUsers() {
           oldRole: user.role,
           newRole: 'error',
           status: 'error',
-          error: error.message
+          error: error.message,
         });
         errorCount++;
       }
@@ -159,7 +173,9 @@ async function migrateExistingUsers() {
     console.log('\n📊 Relatório de Migração:');
     console.log(`   ✅ Sucessos: ${successCount}`);
     console.log(`   ❌ Erros: ${errorCount}`);
-    console.log(`   ⏭️ Inalterados: ${users.length - successCount - errorCount}`);
+    console.log(
+      `   ⏭️ Inalterados: ${users.length - successCount - errorCount}`
+    );
 
     // 6. Verificar integridade após migração
     console.log('\n🔍 Verificando integridade após migração...');
@@ -171,7 +187,9 @@ async function migrateExistingUsers() {
     if (verifyError) {
       console.error('❌ Erro na verificação:', verifyError.message);
     } else if (updatedUsers && updatedUsers.length > 0) {
-      console.error(`❌ Encontradas ${updatedUsers.length} roles inválidas após migração!`);
+      console.error(
+        `❌ Encontradas ${updatedUsers.length} roles inválidas após migração!`
+      );
       updatedUsers.forEach(user => {
         console.error(`   Role inválida: ${user.role}`);
       });
@@ -185,7 +203,7 @@ async function migrateExistingUsers() {
       totalUsers: users.length,
       successCount,
       errorCount,
-      results: migrationResults
+      results: migrationResults,
     };
 
     // Salvar log em arquivo (opcional)
@@ -196,7 +214,6 @@ async function migrateExistingUsers() {
     console.log(`\n📝 Log de migração salvo em: ${logPath}`);
 
     console.log('\n🎉 Migração concluída!');
-
   } catch (error) {
     console.error('❌ Erro durante a migração:', error.message);
     process.exit(1);
@@ -220,7 +237,9 @@ async function rollbackMigration(logFilePath) {
     }
 
     const migrationLog = JSON.parse(fs.readFileSync(logFilePath, 'utf8'));
-    const updatedUsers = migrationLog.results.filter(r => r.status === 'updated');
+    const updatedUsers = migrationLog.results.filter(
+      r => r.status === 'updated'
+    );
 
     console.log(`📋 Revertendo ${updatedUsers.length} usuários...`);
 
@@ -235,14 +254,17 @@ async function rollbackMigration(logFilePath) {
           throw new Error(error.message);
         }
 
-        console.log(`✅ ${userLog.email}: ${userLog.newRole} → ${userLog.oldRole}`);
+        console.log(
+          `✅ ${userLog.email}: ${userLog.newRole} → ${userLog.oldRole}`
+        );
       } catch (error) {
-        console.error(`❌ ${userLog.email}: Erro no rollback - ${error.message}`);
+        console.error(
+          `❌ ${userLog.email}: Erro no rollback - ${error.message}`
+        );
       }
     }
 
     console.log('\n🎉 Rollback concluído!');
-
   } catch (error) {
     console.error('❌ Erro durante rollback:', error.message);
   }
@@ -259,94 +281,96 @@ async function createTestUsersWithNewRoles() {
         password: 'admin123',
         name: 'Administrador Sistema',
         role: 'admin',
-        phone: '(11) 99999-0001'
+        phone: '(11) 99999-0001',
       },
       {
         email: 'gerente.adm@interalpha.com',
         password: 'gerente123',
         name: 'Gerente Administrativo',
         role: 'gerente_adm',
-        phone: '(11) 99999-0002'
+        phone: '(11) 99999-0002',
       },
       {
         email: 'gerente.financeiro@interalpha.com',
         password: 'financeiro123',
         name: 'Gerente Financeiro',
         role: 'gerente_financeiro',
-        phone: '(11) 99999-0003'
+        phone: '(11) 99999-0003',
       },
       {
         email: 'tecnico@interalpha.com',
         password: 'tecnico123',
         name: 'Técnico Especialista',
         role: 'technician',
-        phone: '(11) 99999-0004'
+        phone: '(11) 99999-0004',
       },
       {
         email: 'supervisor.tecnico@interalpha.com',
         password: 'supervisor123',
         name: 'Supervisor Técnico',
         role: 'supervisor_tecnico',
-        phone: '(11) 99999-0007'
+        phone: '(11) 99999-0007',
       },
       {
         email: 'diretor@interalpha.com',
         password: 'diretor123',
         name: 'Diretor Geral',
         role: 'diretor',
-        phone: '(11) 99999-0006'
+        phone: '(11) 99999-0006',
       },
       {
         email: 'atendente@interalpha.com',
         password: 'atendente123',
         name: 'Atendente Recepção',
         role: 'atendente',
-        phone: '(11) 99999-0005'
-      }
+        phone: '(11) 99999-0005',
+      },
     ];
 
     for (const userData of testUsers) {
       try {
         // Criar usuário no Supabase Auth
-        const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-          email: userData.email,
-          password: userData.password,
-          email_confirm: true,
-          user_metadata: {
-            name: userData.name,
-            phone: userData.phone
-          }
-        });
+        const { data: authUser, error: authError } =
+          await supabase.auth.admin.createUser({
+            email: userData.email,
+            password: userData.password,
+            email_confirm: true,
+            user_metadata: {
+              name: userData.name,
+              phone: userData.phone,
+            },
+          });
 
         if (authError && !authError.message.includes('already registered')) {
           throw new Error(authError.message);
         }
 
         // Criar/atualizar usuário na tabela users
-        const { error: upsertError } = await supabase
-          .from('users')
-          .upsert({
+        const { error: upsertError } = await supabase.from('users').upsert(
+          {
             email: userData.email,
             name: userData.name,
             role: userData.role,
-            phone: userData.phone
-          }, {
-            onConflict: 'email'
-          });
+            phone: userData.phone,
+          },
+          {
+            onConflict: 'email',
+          }
+        );
 
         if (upsertError) {
           throw new Error(upsertError.message);
         }
 
-        console.log(`✅ ${userData.email} (${userData.role}): Criado com sucesso`);
-
+        console.log(
+          `✅ ${userData.email} (${userData.role}): Criado com sucesso`
+        );
       } catch (error) {
         console.error(`❌ ${userData.email}: ${error.message}`);
       }
     }
 
     console.log('\n🎉 Usuários de teste criados!');
-
   } catch (error) {
     console.error('❌ Erro ao criar usuários de teste:', error.message);
   }
@@ -369,9 +393,15 @@ if (require.main === module) {
       break;
     default:
       console.log('📖 Uso do script:');
-      console.log('   node scripts/migrate-existing-users.js migrate     # Migrar usuários existentes');
-      console.log('   node scripts/migrate-existing-users.js rollback <log-file>  # Reverter migração');
-      console.log('   node scripts/migrate-existing-users.js test-users  # Criar usuários de teste');
+      console.log(
+        '   node scripts/migrate-existing-users.js migrate     # Migrar usuários existentes'
+      );
+      console.log(
+        '   node scripts/migrate-existing-users.js rollback <log-file>  # Reverter migração'
+      );
+      console.log(
+        '   node scripts/migrate-existing-users.js test-users  # Criar usuários de teste'
+      );
       break;
   }
 }
@@ -381,5 +411,5 @@ module.exports = {
   rollbackMigration,
   createTestUsersWithNewRoles,
   ROLE_MIGRATION_MAP,
-  VALID_ROLES
+  VALID_ROLES,
 };

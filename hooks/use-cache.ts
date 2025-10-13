@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { cacheService, CACHE_TTL } from '@/lib/services/cache-service';
+import { useCallback, useEffect, useState } from 'react';
+
+import { CACHE_TTL, cacheService } from '@/lib/services/cache-service';
 
 interface UseCacheOptions {
   ttl?: number;
@@ -36,43 +37,46 @@ export function useCache<T>(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchData = useCallback(async (useCache: boolean = true) => {
-    if (!enabled) return;
+  const fetchData = useCallback(
+    async (useCache: boolean = true) => {
+      if (!enabled) return;
 
-    setIsLoading(true);
-    setError(null);
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      // Tenta buscar do cache primeiro
-      if (useCache) {
-        const cachedData = await cacheService.get<T>(key);
-        if (cachedData) {
-          setDataState(cachedData);
-          
-          // Se staleWhileRevalidate está ativo, busca dados frescos em background
-          if (staleWhileRevalidate) {
-            fetchData(false).catch(console.error);
+      try {
+        // Tenta buscar do cache primeiro
+        if (useCache) {
+          const cachedData = await cacheService.get<T>(key);
+          if (cachedData) {
+            setDataState(cachedData);
+
+            // Se staleWhileRevalidate está ativo, busca dados frescos em background
+            if (staleWhileRevalidate) {
+              fetchData(false).catch(console.error);
+            }
+            setIsLoading(false);
+            return;
           }
-          setIsLoading(false);
-          return;
         }
+
+        // Busca dados frescos
+        const freshData = await fetcher();
+        setDataState(freshData);
+
+        // Armazena no cache
+        await cacheService.set(key, freshData, ttl);
+      } catch (err) {
+        const error =
+          err instanceof Error ? err : new Error('Erro desconhecido');
+        setError(error);
+        console.error('Erro ao buscar dados:', error);
+      } finally {
+        setIsLoading(false);
       }
-
-      // Busca dados frescos
-      const freshData = await fetcher();
-      setDataState(freshData);
-
-      // Armazena no cache
-      await cacheService.set(key, freshData, ttl);
-
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Erro desconhecido');
-      setError(error);
-      console.error('Erro ao buscar dados:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [key, fetcher, ttl, enabled, staleWhileRevalidate]);
+    },
+    [key, fetcher, ttl, enabled, staleWhileRevalidate]
+  );
 
   const refetch = useCallback(async () => {
     await fetchData(false);
@@ -83,10 +87,13 @@ export function useCache<T>(
     await refetch();
   }, [key, refetch]);
 
-  const setData = useCallback(async (newData: T) => {
-    setDataState(newData);
-    await cacheService.set(key, newData, ttl);
-  }, [key, ttl]);
+  const setData = useCallback(
+    async (newData: T) => {
+      setDataState(newData);
+      await cacheService.set(key, newData, ttl);
+    },
+    [key, ttl]
+  );
 
   useEffect(() => {
     if (refetchOnMount) {
@@ -114,27 +121,36 @@ export function useCacheList<T>(
 ) {
   const cacheResult = useCache(key, fetcher, options);
 
-  const addItem = useCallback(async (item: T) => {
-    if (cacheResult.data) {
-      const newData = [...cacheResult.data, item];
-      await cacheResult.setData(newData);
-    }
-  }, [cacheResult]);
+  const addItem = useCallback(
+    async (item: T) => {
+      if (cacheResult.data) {
+        const newData = [...cacheResult.data, item];
+        await cacheResult.setData(newData);
+      }
+    },
+    [cacheResult]
+  );
 
-  const updateItem = useCallback(async (index: number, item: T) => {
-    if (cacheResult.data) {
-      const newData = [...cacheResult.data];
-      newData[index] = item;
-      await cacheResult.setData(newData);
-    }
-  }, [cacheResult]);
+  const updateItem = useCallback(
+    async (index: number, item: T) => {
+      if (cacheResult.data) {
+        const newData = [...cacheResult.data];
+        newData[index] = item;
+        await cacheResult.setData(newData);
+      }
+    },
+    [cacheResult]
+  );
 
-  const removeItem = useCallback(async (index: number) => {
-    if (cacheResult.data) {
-      const newData = cacheResult.data.filter((_, i) => i !== index);
-      await cacheResult.setData(newData);
-    }
-  }, [cacheResult]);
+  const removeItem = useCallback(
+    async (index: number) => {
+      if (cacheResult.data) {
+        const newData = cacheResult.data.filter((_, i) => i !== index);
+        await cacheResult.setData(newData);
+      }
+    },
+    [cacheResult]
+  );
 
   return {
     ...cacheResult,

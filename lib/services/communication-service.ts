@@ -1,11 +1,11 @@
 // 🚀 Communication Service - Sistema Inteligente de Comunicação
 // Gerencia automaticamente a escolha entre WhatsApp, SMS e Email
-
-import WhatsAppService from './whatsapp-service';
-import { SMSService } from './sms-service';
-import EmailService from './email-service';
 import { createClient } from '@/lib/supabase/client';
+
+import EmailService from './email-service';
 import { metricsService } from './metrics-service';
+import { SMSService } from './sms-service';
+import WhatsAppService from './whatsapp-service';
 
 // 🔧 Interfaces e Tipos
 interface Cliente {
@@ -64,7 +64,7 @@ export class CommunicationService {
 
   // 🧠 Algoritmo Inteligente de Escolha de Canal
   private selectOptimalChannel(
-    cliente: Cliente, 
+    cliente: Cliente,
     options: CommunicationOptions = {}
   ): 'whatsapp' | 'sms' | 'email' {
     // Se canal forçado, usar ele
@@ -73,7 +73,10 @@ export class CommunicationService {
     }
 
     // Verificar preferência do cliente
-    if (cliente.preferencia_comunicacao && cliente.preferencia_comunicacao !== 'auto') {
+    if (
+      cliente.preferencia_comunicacao &&
+      cliente.preferencia_comunicacao !== 'auto'
+    ) {
       return cliente.preferencia_comunicacao;
     }
 
@@ -124,15 +127,20 @@ export class CommunicationService {
   ): Promise<CommunicationResult> {
     const { enableFallback = true } = options;
     const primaryChannel = this.selectOptimalChannel(cliente, options);
-    
+
     return await metricsService.measureOperation(
       'communication',
       'sendCommunication',
       async () => {
         const attempts: CommunicationResult['attempts'] = [];
-        
+
         // Tentar envio no canal principal
-        let result = await this.sendToChannel(primaryChannel, cliente, message, subject);
+        let result = await this.sendToChannel(
+          primaryChannel,
+          cliente,
+          message,
+          subject
+        );
         attempts.push({
           channel: primaryChannel,
           success: result.success,
@@ -149,10 +157,18 @@ export class CommunicationService {
 
         // Se falhou e fallback está habilitado, tentar outros canais
         if (!result.success && enableFallback) {
-          const fallbackChannels = this.getFallbackChannels(primaryChannel, cliente);
-          
+          const fallbackChannels = this.getFallbackChannels(
+            primaryChannel,
+            cliente
+          );
+
           for (const channel of fallbackChannels) {
-            result = await this.sendToChannel(channel, cliente, message, subject);
+            result = await this.sendToChannel(
+              channel,
+              cliente,
+              message,
+              subject
+            );
             attempts.push({
               channel,
               success: result.success,
@@ -183,7 +199,7 @@ export class CommunicationService {
         primaryChannel,
         enableFallback,
         priority: options.priority,
-        urgency: options.urgency
+        urgency: options.urgency,
       }
     );
   }
@@ -193,32 +209,32 @@ export class CommunicationService {
     primaryChannel: 'whatsapp' | 'sms' | 'email',
     cliente: Cliente
   ): ('whatsapp' | 'sms' | 'email')[] {
-    const channels: ('whatsapp' | 'sms' | 'email')[] = [];
-    
+  const channels: ('whatsapp' | 'sms' | 'email')[] = [];
+
     // Verificar disponibilidade de contatos
     const hasWhatsApp = !!(cliente.celular || cliente.telefone);
     const hasSMS = !!(cliente.celular || cliente.telefone);
     const hasEmail = !!cliente.email;
 
     // Definir ordem de fallback baseada no canal principal
-    switch (primaryChannel) {
+  switch (primaryChannel) {
       case 'whatsapp':
         if (hasSMS) channels.push('sms');
         if (hasEmail) channels.push('email');
         break;
-      
+
       case 'sms':
         if (hasWhatsApp) channels.push('whatsapp');
         if (hasEmail) channels.push('email');
         break;
-      
+
       case 'email':
         if (hasWhatsApp) channels.push('whatsapp');
         if (hasSMS) channels.push('sms');
         break;
     }
 
-    return channels;
+  return channels;
   }
 
   // 📤 Envio para Canal Específico
@@ -235,7 +251,10 @@ export class CommunicationService {
           if (!telefone) {
             throw new Error('Cliente não possui telefone para WhatsApp');
           }
-          const whatsappResult = await this.whatsappService.sendTextMessage(telefone, message);
+          const whatsappResult = await this.whatsappService.sendTextMessage(
+            telefone,
+            message
+          );
           return {
             success: true,
             messageId: whatsappResult.messages[0]?.id,
@@ -258,7 +277,7 @@ export class CommunicationService {
           if (!cliente.email) {
             throw new Error('Cliente não possui email');
           }
-          
+
           // Criar objeto compatível com EmailService
           const ordemServicoEmail = {
             id: cliente.id,
@@ -270,10 +289,11 @@ export class CommunicationService {
               nome: cliente.nome,
               email: cliente.email,
               telefone: cliente.telefone,
-            }
+            },
           };
-          
-          const emailResult = await this.emailService.sendOrdemServicoEmail(ordemServicoEmail);
+
+          const emailResult =
+            await this.emailService.sendOrdemServicoEmail(ordemServicoEmail);
           return {
             success: true,
             messageId: emailResult?.messageId,
@@ -317,7 +337,10 @@ export class CommunicationService {
         };
 
         // Gerar mensagem baseada no canal
-        const selectedChannel = this.selectOptimalChannel(cliente, communicationOptions);
+        const selectedChannel = this.selectOptimalChannel(
+          cliente,
+          communicationOptions
+        );
         const { message, subject } = this.generateOrdemServicoContent(
           ordemServico,
           cliente,
@@ -325,14 +348,19 @@ export class CommunicationService {
           selectedChannel
         );
 
-        return await this.sendCommunication(cliente, message, subject, communicationOptions);
+        return await this.sendCommunication(
+          cliente,
+          message,
+          subject,
+          communicationOptions
+        );
       },
       {
         ordemServicoId: ordemServico.id,
         numeroOrdem: ordemServico.numero_ordem,
         clienteId: cliente.id,
         tipo,
-        valorTotal: ordemServico.valor_total
+        valorTotal: ordemServico.valor_total,
       }
     );
   }
@@ -351,13 +379,13 @@ export class CommunicationService {
     switch (channel) {
       case 'whatsapp':
         return this.generateWhatsAppContent(ordemServico, nomeCliente, tipo);
-      
+
       case 'sms':
         return this.generateSMSContent(ordemServico, nomeCliente, tipo);
-      
+
       case 'email':
         return this.generateEmailContent(ordemServico, cliente, tipo);
-      
+
       default:
         return { message: `Atualização sobre ordem #${numeroOrdem}` };
     }
@@ -370,20 +398,22 @@ export class CommunicationService {
     tipo: 'criacao' | 'atualizacao' | 'conclusao'
   ): { message: string } {
     const numeroOrdem = ordemServico.numero_ordem;
-    
+
     switch (tipo) {
       case 'criacao':
         return {
           message: `🔧 *InterAlpha - Nova Ordem de Serviço*\n\nOlá ${nomeCliente}!\n\nSua ordem de serviço *#${numeroOrdem}* foi criada com sucesso.\n\n📋 *Problema:* ${ordemServico.descricao_problema}\n📅 *Data:* ${new Date(ordemServico.data_criacao).toLocaleDateString('pt-BR')}\n\nAcompanhe o status pelo nosso portal do cliente.\n\n_InterAlpha - Especialistas em Apple_ 🍎`,
         };
-      
+
       case 'atualizacao':
         return {
           message: `📱 *InterAlpha - Atualização*\n\n${nomeCliente}, sua ordem *#${numeroOrdem}* foi atualizada.\n\n🔄 *Status:* ${ordemServico.status}\n\nAcesse o portal para mais detalhes.\n\n_InterAlpha - Especialistas em Apple_ 🍎`,
         };
-      
+
       case 'conclusao':
-        const valor = ordemServico.valor_total ? `\n💰 *Valor:* R$ ${ordemServico.valor_total.toFixed(2)}` : '';
+        const valor = ordemServico.valor_total
+          ? `\n💰 *Valor:* R$ ${ordemServico.valor_total.toFixed(2)}`
+          : '';
         return {
           message: `✅ *InterAlpha - Serviço Concluído*\n\n${nomeCliente}, sua ordem *#${numeroOrdem}* foi concluída!${valor}\n\n🎉 Obrigado pela confiança!\n\n_InterAlpha - Especialistas em Apple_ 🍎`,
         };
@@ -397,20 +427,22 @@ export class CommunicationService {
     tipo: 'criacao' | 'atualizacao' | 'conclusao'
   ): { message: string } {
     const numeroOrdem = ordemServico.numero_ordem;
-    
+
     switch (tipo) {
       case 'criacao':
         return {
           message: `🔧 InterAlpha - ${nomeCliente}, ordem #${numeroOrdem} criada. Problema: ${ordemServico.descricao_problema}. Acompanhe pelo portal.`,
         };
-      
+
       case 'atualizacao':
         return {
           message: `📱 InterAlpha - ${nomeCliente}, ordem #${numeroOrdem} atualizada. Status: ${ordemServico.status}. Acesse o portal.`,
         };
-      
+
       case 'conclusao':
-        const valor = ordemServico.valor_total ? ` Valor: R$ ${ordemServico.valor_total.toFixed(2)}.` : '';
+        const valor = ordemServico.valor_total
+          ? ` Valor: R$ ${ordemServico.valor_total.toFixed(2)}.`
+          : '';
         return {
           message: `✅ InterAlpha - ${nomeCliente}, ordem #${numeroOrdem} concluída!${valor} Obrigado!`,
         };
@@ -424,7 +456,7 @@ export class CommunicationService {
     tipo: 'criacao' | 'atualizacao' | 'conclusao'
   ): { message: string; subject: string } {
     const numeroOrdem = ordemServico.numero_ordem;
-    
+
     switch (tipo) {
       case 'criacao':
         return {
@@ -449,7 +481,7 @@ export class CommunicationService {
             <em>Especialistas em Apple</em> 🍎</p>
           `,
         };
-      
+
       case 'atualizacao':
         return {
           subject: `InterAlpha - Atualização da Ordem #${numeroOrdem}`,
@@ -471,9 +503,11 @@ export class CommunicationService {
             <em>Especialistas em Apple</em> 🍎</p>
           `,
         };
-      
+
       case 'conclusao':
-        const valor = ordemServico.valor_total ? `<p><strong>Valor Total:</strong> R$ ${ordemServico.valor_total.toFixed(2)}</p>` : '';
+        const valor = ordemServico.valor_total
+          ? `<p><strong>Valor Total:</strong> R$ ${ordemServico.valor_total.toFixed(2)}</p>`
+          : '';
         return {
           subject: `InterAlpha - Ordem #${numeroOrdem} Concluída ✅`,
           message: `
@@ -519,7 +553,11 @@ export class CommunicationService {
           .single();
 
         if (cliente) {
-          const contacts = [cliente.telefone, cliente.celular, cliente.email].filter(Boolean);
+          const contacts = [
+            cliente.telefone,
+            cliente.celular,
+            cliente.email,
+          ].filter(Boolean);
           query = query.in('cliente_telefone', contacts);
         }
       }
@@ -528,21 +566,27 @@ export class CommunicationService {
 
       if (error) throw error;
 
-      const total = data?.length || 0;
-      const byChannel = data?.reduce((acc, item) => {
+      type CommRow = { tipo: string; status: string; data_envio?: string | null };
+
+      const rows: CommRow[] = (data || []) as CommRow[];
+
+      const total = rows.length;
+
+      const byChannel = rows.reduce((acc: Record<string, number>, item) => {
         acc[item.tipo] = (acc[item.tipo] || 0) + 1;
         return acc;
-      }, {} as Record<string, number>) || {};
+      }, {} as Record<string, number>);
 
-      const successful = data?.filter(item => item.status === 'enviado').length || 0;
+      const successful = rows.filter((item) => item.status === 'enviado').length;
       const successRate = total > 0 ? (successful / total) * 100 : 0;
 
-      const lastWeek = data?.filter(item => {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const lastWeek = rows.filter((item) => {
+        if (!item.data_envio) return false;
         const date = new Date(item.data_envio);
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
         return date >= weekAgo;
-      }).length || 0;
+      }).length;
 
       return {
         total,
@@ -575,7 +619,9 @@ export class CommunicationService {
 
     const emailTest = {
       success: emailTestResult,
-      message: emailTestResult ? 'Email configurado corretamente' : 'Erro na configuração do email'
+      message: emailTestResult
+        ? 'Email configurado corretamente'
+        : 'Erro na configuração do email',
     };
 
     return {

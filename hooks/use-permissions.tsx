@@ -5,10 +5,32 @@
 
 'use client';
 
-import { useEffect, useState, useCallback, createContext, useContext } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
+
 import { createBrowserClient } from '@supabase/ssr';
-import { PermissionManager, UserRole, ROLE_HIERARCHY } from '@/lib/auth/permissions';
 import type { User } from '@supabase/supabase-js';
+
+import {
+  PermissionManager,
+  ROLE_HIERARCHY,
+  UserRole,
+} from '@/lib/auth/permissions';
+
+/**
+ * Hook para Verificação de Permissões no Frontend
+ * Fornece funcionalidades para verificar permissões baseadas em roles
+ */
+
+/**
+ * Hook para Verificação de Permissões no Frontend
+ * Fornece funcionalidades para verificar permissões baseadas em roles
+ */
 
 // Tipos para o contexto de permissões
 export interface AuthenticatedUser {
@@ -33,10 +55,16 @@ export interface PermissionsContextType {
 }
 
 // Contexto de permissões
-const PermissionsContext = createContext<PermissionsContextType | undefined>(undefined);
+const PermissionsContext = createContext<PermissionsContextType | undefined>(
+  undefined
+);
 
 // Provider de permissões
-export function PermissionsProvider({ children }: { children: React.ReactNode }) {
+export function PermissionsProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,48 +76,56 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
   );
 
   // Função para buscar dados do usuário
-  const fetchUserData = useCallback(async (authUser: User) => {
-    try {
-      setLoading(true);
-      setError(null);
+  const fetchUserData = useCallback(
+    async (authUser: User) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      // Buscar dados do usuário no banco
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, email, role')
-        .eq('id', authUser.id)
-        .single();
+        // Buscar dados do usuário no banco
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('id, email, role')
+          .eq('id', authUser.id)
+          .single();
 
-      if (userError) {
-        throw new Error(`Erro ao buscar dados do usuário: ${userError.message}`);
+        if (userError) {
+          throw new Error(
+            `Erro ao buscar dados do usuário: ${userError.message}`
+          );
+        }
+
+        if (!userData) {
+          throw new Error('Dados do usuário não encontrados');
+        }
+
+        // Validar role
+        if (!PermissionManager.isValidRole(userData.role)) {
+          throw new Error(`Role inválida: ${userData.role}`);
+        }
+
+        const authenticatedUser: AuthenticatedUser = {
+          id: userData.id,
+          email: userData.email,
+          role: userData.role as UserRole,
+          roleLevel: PermissionManager.getRoleLevel(userData.role as UserRole),
+          roleDescription: PermissionManager.getRoleDescription(
+            userData.role as UserRole
+          ),
+        };
+
+        setUser(authenticatedUser);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Erro desconhecido';
+        setError(errorMessage);
+        console.error('Erro ao buscar dados do usuário:', err);
+      } finally {
+        setLoading(false);
       }
-
-      if (!userData) {
-        throw new Error('Dados do usuário não encontrados');
-      }
-
-      // Validar role
-      if (!PermissionManager.isValidRole(userData.role)) {
-        throw new Error(`Role inválida: ${userData.role}`);
-      }
-
-      const authenticatedUser: AuthenticatedUser = {
-        id: userData.id,
-        email: userData.email,
-        role: userData.role as UserRole,
-        roleLevel: PermissionManager.getRoleLevel(userData.role as UserRole),
-        roleDescription: PermissionManager.getRoleDescription(userData.role as UserRole)
-      };
-
-      setUser(authenticatedUser);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
-      setError(errorMessage);
-      console.error('Erro ao buscar dados do usuário:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase]);
+    },
+    [supabase]
+  );
 
   // Função para limpar dados do usuário
   const clearUser = useCallback(() => {
@@ -101,7 +137,9 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
   // Função para atualizar dados do usuário
   const refreshUser = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session?.user) {
         await fetchUserData(session.user);
       } else {
@@ -118,7 +156,9 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
     // Verificar sessão inicial
     const getInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (session?.user) {
           await fetchUserData(session.user);
         } else {
@@ -133,17 +173,17 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
     getInitialSession();
 
     // Escutar mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          await fetchUserData(session.user);
-        } else if (event === 'SIGNED_OUT') {
-          clearUser();
-        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          await fetchUserData(session.user);
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        await fetchUserData(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        clearUser();
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        await fetchUserData(session.user);
       }
-    );
+    });
 
     return () => {
       subscription.unsubscribe();
@@ -151,20 +191,29 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
   }, [supabase, fetchUserData, clearUser]);
 
   // Funções de verificação de permissões
-  const hasPermission = useCallback((permission: string): boolean => {
-    if (!user) return false;
-    return PermissionManager.hasPermission(user.role, permission);
-  }, [user]);
+  const hasPermission = useCallback(
+    (permission: string): boolean => {
+      if (!user) return false;
+      return PermissionManager.hasPermission(user.role, permission);
+    },
+    [user]
+  );
 
-  const canManageRole = useCallback((targetRole: UserRole): boolean => {
-    if (!user) return false;
-    return PermissionManager.canManageRole(user.role, targetRole);
-  }, [user]);
+  const canManageRole = useCallback(
+    (targetRole: UserRole): boolean => {
+      if (!user) return false;
+      return PermissionManager.canManageRole(user.role, targetRole);
+    },
+    [user]
+  );
 
-  const canAccessResource = useCallback((resource: string): boolean => {
-    if (!user) return false;
-    return PermissionManager.canAccessResource(user.role, resource);
-  }, [user]);
+  const canAccessResource = useCallback(
+    (resource: string): boolean => {
+      if (!user) return false;
+      return PermissionManager.canAccessResource(user.role, resource);
+    },
+    [user]
+  );
 
   const getRoleLevel = useCallback((): number => {
     if (!user) return 0;
@@ -191,7 +240,7 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
     getRoleLevel,
     getManageableRoles,
     getAllPermissions,
-    refreshUser
+    refreshUser,
   };
 
   return (
@@ -205,7 +254,9 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
 export function usePermissions(): PermissionsContextType {
   const context = useContext(PermissionsContext);
   if (context === undefined) {
-    throw new Error('usePermissions deve ser usado dentro de um PermissionsProvider');
+    throw new Error(
+      'usePermissions deve ser usado dentro de um PermissionsProvider'
+    );
   }
   return context;
 }
@@ -213,13 +264,13 @@ export function usePermissions(): PermissionsContextType {
 // Hook simplificado para verificar autenticação
 export function useAuth() {
   const { user, loading, error, refreshUser } = usePermissions();
-  
+
   return {
     user,
     loading,
     error,
     isAuthenticated: !!user,
-    refreshUser
+    refreshUser,
   };
 }
 
@@ -250,14 +301,14 @@ export function useCanAccessResource(resource: string): boolean {
 // Hook para obter informações da role atual
 export function useRoleInfo() {
   const { user } = usePermissions();
-  
+
   if (!user) {
     return {
       role: null,
       roleLevel: 0,
       roleDescription: '',
       manageableRoles: [],
-      allPermissions: []
+      allPermissions: [],
     };
   }
 
@@ -266,7 +317,7 @@ export function useRoleInfo() {
     roleLevel: user.roleLevel,
     roleDescription: user.roleDescription,
     manageableRoles: PermissionManager.getManageableRoles(user.role),
-    allPermissions: PermissionManager.getAllPermissions(user.role)
+    allPermissions: PermissionManager.getAllPermissions(user.role),
   };
 }
 
@@ -279,16 +330,17 @@ export function useIsAdmin(): boolean {
 // Hook para verificar se é gerente (qualquer tipo)
 export function useIsManager(): boolean {
   const { user } = usePermissions();
-  return user?.role === 'gerente_adm' || 
-         user?.role === 'gerente_financeiro' || 
-         useIsAdmin();
+  return (
+    user?.role === 'gerente_adm' ||
+    user?.role === 'gerente_financeiro' ||
+    useIsAdmin()
+  );
 }
 
 // Hook para verificar se é supervisor ou acima
 export function useIsSupervisor(): boolean {
   const { user } = usePermissions();
-  return user?.role === 'supervisor_tecnico' || 
-         useIsManager();
+  return user?.role === 'supervisor_tecnico' || useIsManager();
 }
 
 // Hook para verificar se é técnico
@@ -306,7 +358,7 @@ export function useIsAtendente(): boolean {
 // Hook para debug de permissões (apenas em desenvolvimento)
 export function usePermissionsDebug() {
   const context = usePermissions();
-  
+
   if (process.env.NODE_ENV !== 'development') {
     return null;
   }
@@ -318,20 +370,20 @@ export function usePermissionsDebug() {
       userRole: context.user?.role,
       userLevel: context.user?.roleLevel,
       allPermissions: context.getAllPermissions(),
-      manageableRoles: context.getManageableRoles()
-    }
+      manageableRoles: context.getManageableRoles(),
+    },
   };
 }
 
 // Componente para renderização condicional baseada em permissões
-export function PermissionGate({ 
-  permission, 
-  permissions, 
-  role, 
-  roles, 
+export function PermissionGate({
+  permission,
+  permissions,
+  role,
+  roles,
   resource,
-  fallback = null, 
-  children 
+  fallback = null,
+  children,
 }: {
   permission?: string;
   permissions?: string[];
@@ -380,12 +432,20 @@ export function RoleDebugInfo() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 bg-gray-800 text-white p-4 rounded-lg text-xs max-w-sm">
-      <h4 className="font-bold mb-2">Debug - Permissões</h4>
-      <p><strong>Role:</strong> {debug.user?.role || 'N/A'}</p>
-      <p><strong>Nível:</strong> {debug.user?.roleLevel || 0}</p>
-      <p><strong>Permissões:</strong> {debug.getAllPermissions().length}</p>
-      <p><strong>Pode gerenciar:</strong> {debug.getManageableRoles().join(', ')}</p>
+    <div className="fixed bottom-4 right-4 max-w-sm rounded-lg bg-gray-800 p-4 text-xs text-white">
+      <h4 className="mb-2 font-bold">Debug - Permissões</h4>
+      <p>
+        <strong>Role:</strong> {debug.user?.role || 'N/A'}
+      </p>
+      <p>
+        <strong>Nível:</strong> {debug.user?.roleLevel || 0}
+      </p>
+      <p>
+        <strong>Permissões:</strong> {debug.getAllPermissions().length}
+      </p>
+      <p>
+        <strong>Pode gerenciar:</strong> {debug.getManageableRoles().join(', ')}
+      </p>
     </div>
   );
 }

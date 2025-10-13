@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+
 import { Server as NetServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 
@@ -12,24 +13,25 @@ declare global {
 const SocketHandler = (req: NextRequest, res: any) => {
   if (!global.io) {
     console.log('Inicializando servidor Socket.IO...');
-    
+
     // Create HTTP server from Next.js server
     const httpServer: NetServer = res.socket.server;
-    
+
     // Create Socket.IO server
     global.io = new SocketIOServer(httpServer, {
       path: '/api/socket',
       addTrailingSlash: false,
       cors: {
-        origin: process.env.NODE_ENV === 'production' 
-          ? process.env.NEXT_PUBLIC_APP_URL 
-          : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+        origin:
+          process.env.NODE_ENV === 'production'
+            ? process.env.NEXT_PUBLIC_APP_URL
+            : ['http://localhost:3000', 'http://127.0.0.1:3000'],
         methods: ['GET', 'POST'],
         credentials: true,
       },
     });
 
-    global.io.on('connection', (socket) => {
+    global.io.on('connection', socket => {
       console.log('Cliente conectado:', socket.id);
 
       // Join user to their specific room for targeted notifications
@@ -41,7 +43,9 @@ const SocketHandler = (req: NextRequest, res: any) => {
       // Join technician to technician room for work order notifications
       socket.on('join-technician-room', (technicianId: string) => {
         socket.join(`technician-${technicianId}`);
-        console.log(`Técnico ${technicianId} entrou na sala technician-${technicianId}`);
+        console.log(
+          `Técnico ${technicianId} entrou na sala technician-${technicianId}`
+        );
       });
 
       // Join admin to admin room for all notifications
@@ -51,16 +55,18 @@ const SocketHandler = (req: NextRequest, res: any) => {
       });
 
       // Handle order status updates
-      socket.on('order-status-update', (data) => {
+      socket.on('order-status-update', data => {
         console.log('Atualização de status da ordem:', data);
         // Broadcast to relevant rooms
         socket.to(`user-${data.clientId}`).emit('order-status-changed', data);
-        socket.to(`technician-${data.technicianId}`).emit('order-status-changed', data);
+        socket
+          .to(`technician-${data.technicianId}`)
+          .emit('order-status-changed', data);
         socket.to('admin').emit('order-status-changed', data);
       });
 
       // Handle new order creation
-      socket.on('new-order-created', (data) => {
+      socket.on('new-order-created', data => {
         console.log('Nova ordem criada:', data);
         // Notify all technicians and admins
         socket.to('admin').emit('new-order-notification', data);

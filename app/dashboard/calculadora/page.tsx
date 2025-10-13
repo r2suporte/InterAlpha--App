@@ -1,82 +1,94 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { 
-  ResponsiveContainer, 
-  ResponsiveStack, 
-  ResponsiveText, 
-  useBreakpoint, 
-  ShowHide 
-} from '@/components/ui/responsive-utils'
-import { Calculator, DollarSign, Percent, TrendingUp } from "lucide-react"
+import { useState } from 'react';
+
+import { Calculator, DollarSign, Percent, TrendingUp } from 'lucide-react';
+
+import { EnhancedSidebar } from '@/components/navigation/enhanced-sidebar';
+import { SiteHeader } from '@/components/site-header';
+import { BackButton } from '@/components/ui/back-button';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  ResponsiveContainer,
+  ResponsiveStack,
+  ResponsiveText,
+  ShowHide,
+  useBreakpoint,
+} from '@/components/ui/responsive-utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
 export default function CalculadoraPage() {
-  const [valorCusto, setValorCusto] = useState("")
-  const [margemLucro, setMargemLucro] = useState("")
-  const [valorVenda, setValorVenda] = useState("")
-  const [tipoCalculo, setTipoCalculo] = useState("margem")
-  const { isMobile } = useBreakpoint()
+  const [valorCusto, setValorCusto] = useState('');
+  const [margemLucro, setMargemLucro] = useState('');
+  const [valorVenda, setValorVenda] = useState('');
+  const [tipoCalculo, setTipoCalculo] = useState('margem');
+  const { isMobile } = useBreakpoint();
 
   const calcularValores = () => {
-    const custo = parseFloat(valorCusto) || 0
-    const margem = parseFloat(margemLucro) || 0
+    const custo = parseFloat(valorCusto) || 0;
+    const margem = parseFloat(margemLucro) || 0;
 
-    if (tipoCalculo === "margem" && custo > 0 && margem > 0) {
-      const venda = custo * (1 + margem / 100)
-      setValorVenda(venda.toFixed(2))
-    } else if (tipoCalculo === "markup" && custo > 0 && margem > 0) {
-      const venda = custo + (custo * margem / 100)
-      setValorVenda(venda.toFixed(2))
+    if (tipoCalculo === 'margem' && custo > 0 && margem > 0) {
+      const venda = custo * (1 + margem / 100);
+      setValorVenda(venda.toFixed(2));
+    } else if (tipoCalculo === 'markup' && custo > 0 && margem > 0) {
+      const venda = custo + (custo * margem) / 100;
+      setValorVenda(venda.toFixed(2));
     }
-  }
+  };
 
   const calcularMargem = () => {
-    const custo = parseFloat(valorCusto) || 0
-    const venda = parseFloat(valorVenda) || 0
+    const custo = parseFloat(valorCusto) || 0;
+    const venda = parseFloat(valorVenda) || 0;
 
     if (custo > 0 && venda > 0) {
-      const margem = ((venda - custo) / custo) * 100
-      setMargemLucro(margem.toFixed(2))
+      const margem = ((venda - custo) / custo) * 100;
+      setMargemLucro(margem.toFixed(2));
     }
-  }
+  };
 
   const limparCalculos = () => {
-    setValorCusto("")
-    setMargemLucro("")
-    setValorVenda("")
-  }
+    setValorCusto('');
+    setMargemLucro('');
+    setValorVenda('');
+  };
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <EnhancedSidebar />
       <SidebarInset>
         <SiteHeader />
         <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
           {/* Header */}
-          <ResponsiveStack direction="vertical" className="space-y-2">
-            <ResponsiveText 
-              size={isMobile ? "2xl" : "3xl"}
-              className="font-bold tracking-tight"
-            >
-              Calculadora Financeira
-            </ResponsiveText>
-            <ResponsiveText 
-              size={isMobile ? "sm" : "base"}
-              className="text-muted-foreground"
-            >
-              Calcule preços, margens de lucro e valores para seus serviços
-            </ResponsiveText>
-          </ResponsiveStack>
+          <div className="mb-4 flex items-center gap-4">
+            <BackButton href="/dashboard" />
+            <ResponsiveStack direction="vertical" className="space-y-2">
+              <ResponsiveText
+                size={isMobile ? '2xl' : '3xl'}
+                className="font-bold tracking-tight"
+              >
+                Calculadora Financeira
+              </ResponsiveText>
+              <ResponsiveText
+                size={isMobile ? 'sm' : 'base'}
+                className="text-muted-foreground"
+              >
+                Calcule preços, margens de lucro e valores para seus serviços
+              </ResponsiveText>
+            </ResponsiveStack>
+          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Calculadora Principal */}
             <Card>
               <CardHeader>
@@ -107,13 +119,15 @@ export default function CalculadoraPage() {
                     step="0.01"
                     placeholder="0.00"
                     value={valorCusto}
-                    onChange={(e) => setValorCusto(e.target.value)}
+                    onChange={e => setValorCusto(e.target.value)}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="margem-lucro">
-                    {tipoCalculo === "margem" ? "Margem de Lucro (%)" : "Markup (%)"}
+                    {tipoCalculo === 'margem'
+                      ? 'Margem de Lucro (%)'
+                      : 'Markup (%)'}
                   </Label>
                   <Input
                     id="margem-lucro"
@@ -121,7 +135,7 @@ export default function CalculadoraPage() {
                     step="0.01"
                     placeholder="0.00"
                     value={margemLucro}
-                    onChange={(e) => setMargemLucro(e.target.value)}
+                    onChange={e => setMargemLucro(e.target.value)}
                   />
                 </div>
 
@@ -133,7 +147,7 @@ export default function CalculadoraPage() {
                     step="0.01"
                     placeholder="0.00"
                     value={valorVenda}
-                    onChange={(e) => setValorVenda(e.target.value)}
+                    onChange={e => setValorVenda(e.target.value)}
                   />
                 </div>
 
@@ -141,7 +155,11 @@ export default function CalculadoraPage() {
                   <Button onClick={calcularValores} className="flex-1">
                     Calcular Preço
                   </Button>
-                  <Button onClick={calcularMargem} variant="outline" className="flex-1">
+                  <Button
+                    onClick={calcularMargem}
+                    variant="outline"
+                    className="flex-1"
+                  >
                     Calcular Margem
                   </Button>
                   <Button onClick={limparCalculos} variant="outline">
@@ -163,29 +181,50 @@ export default function CalculadoraPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Valor de Custo:</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        Valor de Custo:
+                      </span>
                       <span className="font-medium">
-                        R$ {valorCusto ? parseFloat(valorCusto).toFixed(2) : "0,00"}
+                        R${' '}
+                        {valorCusto
+                          ? parseFloat(valorCusto).toFixed(2)
+                          : '0,00'}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Margem/Markup:</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        Margem/Markup:
+                      </span>
                       <span className="font-medium">
-                        {margemLucro ? parseFloat(margemLucro).toFixed(2) : "0,00"}%
+                        {margemLucro
+                          ? parseFloat(margemLucro).toFixed(2)
+                          : '0,00'}
+                        %
                       </span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Valor de Venda:</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        Valor de Venda:
+                      </span>
                       <span className="font-medium text-green-600">
-                        R$ {valorVenda ? parseFloat(valorVenda).toFixed(2) : "0,00"}
+                        R${' '}
+                        {valorVenda
+                          ? parseFloat(valorVenda).toFixed(2)
+                          : '0,00'}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center border-t pt-2">
-                      <span className="text-sm text-muted-foreground">Lucro Bruto:</span>
+                    <div className="flex items-center justify-between border-t pt-2">
+                      <span className="text-sm text-muted-foreground">
+                        Lucro Bruto:
+                      </span>
                       <span className="font-medium text-blue-600">
-                        R$ {valorCusto && valorVenda ? 
-                          (parseFloat(valorVenda) - parseFloat(valorCusto)).toFixed(2) : "0,00"}
+                        R${' '}
+                        {valorCusto && valorVenda
+                          ? (
+                              parseFloat(valorVenda) - parseFloat(valorCusto)
+                            ).toFixed(2)
+                          : '0,00'}
                       </span>
                     </div>
                   </div>
@@ -202,14 +241,14 @@ export default function CalculadoraPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-2">
-                    {[20, 30, 40, 50, 60, 80, 100, 150].map((margem) => (
+                    {[20, 30, 40, 50, 60, 80, 100, 150].map(margem => (
                       <Button
                         key={margem}
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          setMargemLucro(margem.toString())
-                          setTipoCalculo("margem")
+                          setMargemLucro(margem.toString());
+                          setTipoCalculo('margem');
                         }}
                       >
                         {margem}%
@@ -228,9 +267,13 @@ export default function CalculadoraPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ul className="text-sm space-y-2 text-muted-foreground">
-                    <li>• <strong>Margem:</strong> Percentual sobre o custo</li>
-                    <li>• <strong>Markup:</strong> Valor adicionado ao custo</li>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li>
+                      • <strong>Margem:</strong> Percentual sobre o custo
+                    </li>
+                    <li>
+                      • <strong>Markup:</strong> Valor adicionado ao custo
+                    </li>
                     <li>• Considere custos operacionais</li>
                     <li>• Analise a concorrência</li>
                     <li>• Avalie o valor percebido pelo cliente</li>
@@ -242,5 +285,5 @@ export default function CalculadoraPage() {
         </ResponsiveContainer>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }
