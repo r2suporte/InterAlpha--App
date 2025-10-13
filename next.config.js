@@ -29,9 +29,9 @@ const nextConfig = {
       },
     ];
   },
-  experimental: {
-    bundlePagesRouterDependencies: true,
-  },
+  // removed unsupported experimental flags for compatibility with the
+  // installed Next.js version. If you need experimental options, add them
+  // behind a feature-flag or verify compatibility with your Next.js version.
   serverExternalPackages: ['bcryptjs'],
   eslint: {
     // Durante o build, apenas erros fatais bloqueiam
