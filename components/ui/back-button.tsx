@@ -22,8 +22,13 @@ export function BackButton({ href, className, children }: BackButtonProps) {
     e.preventDefault();
     e.stopPropagation();
 
+    alert('TESTE BackButton: clicado! href=' + (href || 'back'));
+
     // Prevenir múltiplos cliques
-    if (isNavigatingRef.current) return;
+    if (isNavigatingRef.current) {
+      alert('TESTE: Navegação já em andamento, bloqueado');
+      return;
+    }
     
     isNavigatingRef.current = true;
 
