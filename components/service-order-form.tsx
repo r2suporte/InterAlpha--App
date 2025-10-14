@@ -185,7 +185,12 @@ interface OrdemServicoCriada {
   created_at: string;
 }
 
-export function ServiceOrderForm() {
+interface ServiceOrderFormProps {
+  ordemId?: string | null;
+  onSuccess?: () => void;
+}
+
+export function ServiceOrderForm({ ordemId, onSuccess }: ServiceOrderFormProps = {}) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -639,6 +644,13 @@ export function ServiceOrderForm() {
       });
       setSelectedClient(null);
       setCurrentStep(1);
+
+      // Chamar callback de sucesso se fornecido
+      if (onSuccess) {
+        setTimeout(() => {
+          onSuccess();
+        }, 1500);
+      }
     } catch (error) {
       console.error('Erro ao enviar:', error);
       alert('Erro ao criar ordem de serviço');
