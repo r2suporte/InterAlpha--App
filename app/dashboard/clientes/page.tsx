@@ -171,18 +171,8 @@ export default function ClientesPage() {
   const router = useRouter();
 
   useEffect(() => {
-    checkAuth();
     fetchClientes();
   }, []);
-
-  const checkAuth = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
-    }
-  };
 
   const fetchClientes = async () => {
     try {
