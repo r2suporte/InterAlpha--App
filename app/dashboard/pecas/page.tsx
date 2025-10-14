@@ -353,8 +353,6 @@ export default function PecasPage() {
             <ShowHide hide={['sm']}>
               <Button
                 onClick={() => {
-                  alert('TESTE: Botão clicado! Estado atual: ' + mostrarFormulario);
-                  console.log('Botão Nova Peça clicado');
                   setMostrarFormulario(true);
                 }}
                 className="flex items-center gap-2"
@@ -367,8 +365,6 @@ export default function PecasPage() {
             <ShowHide on={['sm']}>
               <Button
                 onClick={() => {
-                  alert('TESTE MOBILE: Botão clicado! Estado: ' + mostrarFormulario);
-                  console.log('Botão Nova clicado (mobile)');
                   setMostrarFormulario(true);
                 }}
                 className="flex w-full items-center gap-2"

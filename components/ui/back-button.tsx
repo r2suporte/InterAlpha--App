@@ -19,44 +19,31 @@ export function BackButton({ href, className, children }: BackButtonProps) {
   const isNavigatingRef = useRef(false);
 
   const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    alert('TESTE BackButton: clicado! href=' + (href || 'back'));
-
+    // NÃO usar preventDefault pois bloqueia a navegação do Next.js
+    
     // Prevenir múltiplos cliques
     if (isNavigatingRef.current) {
-      alert('TESTE: Navegação já em andamento, bloqueado');
       return;
     }
     
     isNavigatingRef.current = true;
 
-    try {
-      if (href) {
-        // Navegação para URL específica
-        router.push(href);
+    if (href) {
+      // Navegação para URL específica
+      router.push(href);
+    } else {
+      // Voltar no histórico ou ir para dashboard
+      if (typeof window !== 'undefined' && window.history.length > 1) {
+        router.back();
       } else {
-        // Voltar no histórico ou ir para dashboard
-        if (typeof window !== 'undefined' && window.history.length > 1) {
-          router.back();
-        } else {
-          router.push('/dashboard');
-        }
+        router.push('/dashboard');
       }
-    } catch (error) {
-      console.error('Erro na navegação:', error);
-      // Fallback
-      const targetUrl = href || '/dashboard';
-      if (typeof window !== 'undefined') {
-        window.location.href = targetUrl;
-      }
-    } finally {
-      // Reset após delay
-      setTimeout(() => {
-        isNavigatingRef.current = false;
-      }, 1000);
     }
+
+    // Reset após delay
+    setTimeout(() => {
+      isNavigatingRef.current = false;
+    }, 1000);
   };
 
   return (
