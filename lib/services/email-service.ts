@@ -62,6 +62,7 @@ class EmailService {
 
   async sendOrdemServicoEmail(
     ordemServico: OrdemServicoEmail,
+    pdfBuffer?: Buffer | null,
     loginCredentials?: { login: string; senha: string }
   ) {
     return await metricsService.measureOperation(
@@ -77,12 +78,23 @@ class EmailService {
           loginCredentials
         );
 
-        const mailOptions = {
+        const mailOptions: any = {
           from: `"InterAlpha" <${process.env.SMTP_USER}>`,
           to: ordemServico.cliente.email,
           subject: `Nova Ordem de Serviço #${ordemServico.numero_os} - InterAlpha`,
           html: emailHtml,
         };
+
+        // Adicionar PDF como anexo se disponível
+        if (pdfBuffer) {
+          mailOptions.attachments = [
+            {
+              filename: `OS_${ordemServico.numero_os}.pdf`,
+              content: pdfBuffer,
+              contentType: 'application/pdf',
+            },
+          ];
+        }
 
         try {
           const result = await this.transporter.sendMail(mailOptions);

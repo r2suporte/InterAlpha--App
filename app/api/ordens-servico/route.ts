@@ -13,7 +13,10 @@ import {
   withAuthenticatedApiMetrics,
   withBusinessMetrics,
 } from '@/lib/middleware/metrics-middleware';
+import EmailService from '@/lib/services/email-service';
+import PDFGenerator from '@/lib/services/pdf-generator';
 import { smsService } from '@/lib/services/sms-service';
+import WhatsAppService from '@/lib/services/whatsapp-service';
 import { createClient } from '@/lib/supabase/server';
 import {
   OrdemServico,
@@ -384,10 +387,77 @@ async function createOrdemServico(request: NextRequest) {
           clienteParaSMS,
           'criacao'
         );
-        console.log(`SMS de criação enviado para ordem ${novaOrdem.numero_os}`);
+        console.log(`✅ SMS de criação enviado para ordem ${novaOrdem.numero_os}`);
       } catch (smsError) {
-        console.error('Erro ao enviar SMS de criação:', smsError);
+        console.error('❌ Erro ao enviar SMS de criação:', smsError);
         // Não falhar a criação da ordem por causa do SMS
+      }
+    }
+
+    // ✅ NOVO: Gerar PDF da Ordem de Serviço
+    let pdfBuffer: Buffer | null = null;
+    if (!isTestEnvironment && novaOrdem?.id) {
+      try {
+        console.log(`📄 Gerando PDF para ordem ${novaOrdem.numero_os}...`);
+        const pdfGenerator = new PDFGenerator();
+        pdfBuffer = await pdfGenerator.generateOrdemServicoPDF(novaOrdem);
+        console.log(`✅ PDF gerado com sucesso para ordem ${novaOrdem.numero_os}`);
+      } catch (pdfError) {
+        console.error('❌ Erro ao gerar PDF:', pdfError);
+        // Continuar sem o PDF
+      }
+    }
+
+    // ✅ NOVO: Enviar Email com PDF anexo
+    if (!isTestEnvironment && novaOrdem?.cliente?.email) {
+      try {
+        console.log(`📧 Enviando email para ${novaOrdem.cliente.email}...`);
+        
+        const emailService = new EmailService();
+        const ordemParaEmail = {
+          id: novaOrdem.id,
+          numero_os: novaOrdem.numero_os,
+          descricao: novaOrdem.descricao || novaOrdem.problema_reportado || '',
+          valor: novaOrdem.valor_servico + novaOrdem.valor_pecas,
+          data_inicio: novaOrdem.created_at || new Date().toISOString(),
+          cliente: {
+            nome: novaOrdem.cliente.nome,
+            email: novaOrdem.cliente.email,
+            telefone: novaOrdem.cliente.telefone,
+          },
+        };
+
+        await emailService.sendOrdemServicoEmail(ordemParaEmail, pdfBuffer);
+        console.log(`✅ Email enviado com sucesso para ordem ${novaOrdem.numero_os}`);
+      } catch (emailError) {
+        console.error('❌ Erro ao enviar email:', emailError);
+        // Não falhar a criação da ordem por causa do email
+      }
+    }
+
+    // ✅ NOVO: Enviar WhatsApp
+    if (!isTestEnvironment && novaOrdem?.cliente?.telefone) {
+      try {
+        console.log(`📱 Enviando WhatsApp para ${novaOrdem.cliente.telefone}...`);
+        
+        const whatsappService = new WhatsAppService();
+        const ordemParaWhatsApp = {
+          id: novaOrdem.id,
+          numero_os: novaOrdem.numero_os,
+          descricao: novaOrdem.descricao || novaOrdem.problema_reportado || '',
+          valor: novaOrdem.valor_servico + novaOrdem.valor_pecas,
+          data_inicio: novaOrdem.created_at || new Date().toISOString(),
+          cliente: {
+            nome: novaOrdem.cliente.nome,
+            telefone: novaOrdem.cliente.telefone,
+          },
+        };
+
+        await whatsappService.sendOrdemServicoMessage(ordemParaWhatsApp);
+        console.log(`✅ WhatsApp enviado com sucesso para ordem ${novaOrdem.numero_os}`);
+      } catch (whatsappError) {
+        console.error('❌ Erro ao enviar WhatsApp:', whatsappError);
+        // Não falhar a criação da ordem por causa do WhatsApp
       }
     }
 
