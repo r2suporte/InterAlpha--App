@@ -178,23 +178,80 @@ export const buscarEnderecoPorCEP = async (
   }
 };
 
+/**
+ * Busca dados do CNPJ usando múltiplas APIs com fallback
+ * 1. Tenta BrasilAPI primeiro (mais rápida)
+ * 2. Se falhar, tenta ReceitaWS (backup confiável)
+ */
 export const buscarDadosCNPJ = async (
   cnpjValue: string
 ): Promise<CNPJResponse | null> => {
+  const cleanCnpj = cnpjValue.replace(/\D/g, '');
+
+  // Validações iniciais
+  if (cleanCnpj.length !== 14) {
+    return null;
+  }
+
+  if (!validarCNPJ(cleanCnpj)) {
+    return null;
+  }
+
+  // TENTATIVA 1: BrasilAPI
   try {
-    const cleanCnpj = cnpjValue.replace(/\D/g, '');
-
-    if (cleanCnpj.length !== 14) {
-      return null;
-    }
-
-    // Validar CNPJ antes de fazer a consulta
-    if (!validarCNPJ(cleanCnpj)) {
-      return null;
-    }
-
+    console.log('🔍 Tentando BrasilAPI...');
     const response = await fetch(
-      `https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`
+      `https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log('✅ BrasilAPI respondeu com sucesso');
+
+      return {
+        cnpj: data.cnpj,
+        nome: data.razao_social || data.nome_fantasia || '',
+        fantasia: data.nome_fantasia,
+        situacao: data.descricao_situacao_cadastral || 'Ativo',
+        atividade_principal: data.cnae_fiscal
+          ? [
+              {
+                code: data.cnae_fiscal.codigo,
+                text: data.cnae_fiscal.descricao,
+              },
+            ]
+          : [],
+        endereco: {
+          logradouro: data.logradouro || '',
+          numero: data.numero || '',
+          complemento: data.complemento || '',
+          bairro: data.bairro || '',
+          municipio: data.municipio || '',
+          uf: data.uf || '',
+          cep: data.cep ? data.cep.replace(/\D/g, '') : '',
+        },
+        telefone: data.ddd_telefone_1
+          ? `(${data.ddd_telefone_1.substring(0, 2)}) ${data.ddd_telefone_1.substring(2)}`
+          : '',
+        email: data.email || '',
+      };
+    }
+
+    // Se não for 404, logar o erro mas continuar para fallback
+    if (response.status !== 404) {
+      console.warn(`⚠️ BrasilAPI retornou ${response.status}, tentando fallback...`);
+    }
+  } catch (error) {
+    console.warn('⚠️ BrasilAPI falhou:', error instanceof Error ? error.message : 'Erro desconhecido');
+  }
+
+  // TENTATIVA 2: ReceitaWS (Fallback)
+  try {
+    console.log('🔍 Tentando ReceitaWS (fallback)...');
+    const response = await fetch(
+      `https://www.receitaws.com.br/v1/cnpj/${cleanCnpj}`,
+      { signal: AbortSignal.timeout(10000) }
     );
 
     if (!response.ok) {
@@ -205,28 +262,45 @@ export const buscarDadosCNPJ = async (
           situacao: 'CNPJ não encontrado',
           atividade_principal: [],
           erro: true,
-          message: 'CNPJ não encontrado',
+          message: 'CNPJ não encontrado na base de dados',
         };
       }
-      throw new Error('Erro ao buscar dados do CNPJ');
+      if (response.status === 429) {
+        return {
+          cnpj: cleanCnpj,
+          nome: '',
+          situacao: 'Limite de consultas atingido',
+          atividade_principal: [],
+          erro: true,
+          message: 'Aguarde alguns segundos e tente novamente',
+        };
+      }
+      throw new Error(`HTTP ${response.status}`);
     }
 
     const data = await response.json();
 
-    // Mapear os dados da API para nossa interface
-    const cnpjData: CNPJResponse = {
+    // Verificar se há erro na resposta
+    if (data.status === 'ERROR') {
+      return {
+        cnpj: cleanCnpj,
+        nome: '',
+        situacao: 'CNPJ não encontrado',
+        atividade_principal: [],
+        erro: true,
+        message: data.message || 'CNPJ não encontrado',
+      };
+    }
+
+    console.log('✅ ReceitaWS respondeu com sucesso');
+
+    // Mapear dados da ReceitaWS para nossa interface
+    return {
       cnpj: data.cnpj,
-      nome: data.razao_social || data.nome_fantasia || '',
-      fantasia: data.nome_fantasia,
-      situacao: data.descricao_situacao_cadastral || 'Ativo',
-      atividade_principal: data.cnae_fiscal
-        ? [
-            {
-              code: data.cnae_fiscal.codigo,
-              text: data.cnae_fiscal.descricao,
-            },
-          ]
-        : [],
+      nome: data.nome || '',
+      fantasia: data.fantasia,
+      situacao: data.situacao || 'Ativo',
+      atividade_principal: data.atividade_principal || [],
       endereco: {
         logradouro: data.logradouro || '',
         numero: data.numero || '',
@@ -236,24 +310,22 @@ export const buscarDadosCNPJ = async (
         uf: data.uf || '',
         cep: data.cep ? data.cep.replace(/\D/g, '') : '',
       },
-      telefone: data.ddd_telefone_1
-        ? `(${data.ddd_telefone_1.substring(0, 2)}) ${data.ddd_telefone_1.substring(2)}`
-        : '',
+      telefone: data.telefone || '',
       email: data.email || '',
     };
-
-    return cnpjData;
   } catch (error) {
-    console.error('Erro ao buscar dados do CNPJ:', error);
-    return {
-      cnpj: cnpjValue,
-      nome: '',
-      situacao: 'Erro na consulta',
-      atividade_principal: [],
-      erro: true,
-      message: 'Erro ao consultar CNPJ',
-    };
+    console.error('❌ ReceitaWS também falhou:', error instanceof Error ? error.message : 'Erro desconhecido');
   }
+
+  // Se ambas as APIs falharam
+  return {
+    cnpj: cleanCnpj,
+    nome: '',
+    situacao: 'Serviço temporariamente indisponível',
+    atividade_principal: [],
+    erro: true,
+    message: 'Não foi possível consultar o CNPJ. Tente novamente em alguns instantes.',
+  };
 };
 
 // Determinar tipo de pessoa baseado no documento
