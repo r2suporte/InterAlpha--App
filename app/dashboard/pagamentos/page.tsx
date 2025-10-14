@@ -236,10 +236,13 @@ export default function PagamentosPage() {
             <ShowHide hide={['sm']}>
               <Dialog
                 open={dialogNovoPagamento}
-                onOpenChange={setDialogNovoPagamento}
+                onOpenChange={(open) => {
+                  console.log('Dialog Novo Pagamento:', open);
+                  setDialogNovoPagamento(open);
+                }}
               >
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button onClick={() => console.log('Trigger Novo Pagamento clicado')}>
                     <Plus className="mr-2 h-4 w-4" />
                     Novo Pagamento
                   </Button>
