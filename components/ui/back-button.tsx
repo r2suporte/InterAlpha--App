@@ -18,7 +18,7 @@ export function BackButton({ href, className, children }: BackButtonProps) {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
 
-  const handleNavigation = useCallback(async () => {
+  const handleNavigation = useCallback(() => {
     if (isNavigating) return;
 
     setIsNavigating(true);
@@ -26,14 +26,14 @@ export function BackButton({ href, className, children }: BackButtonProps) {
     try {
       if (href) {
         // Navegação para URL específica
-        await router.push(href);
+        router.push(href);
       } else {
         // Verificar se há histórico para voltar
         if (window.history.length > 1) {
           router.back();
         } else {
           // Se não há histórico, ir para dashboard
-          await router.push('/dashboard');
+          router.push('/dashboard');
         }
       }
     } catch (error) {

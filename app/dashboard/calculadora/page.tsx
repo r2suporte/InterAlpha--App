@@ -115,11 +115,15 @@ export default function CalculadoraPage() {
                   <Label htmlFor="valor-custo">Valor de Custo (R$)</Label>
                   <Input
                     id="valor-custo"
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="0.00"
                     value={valorCusto}
-                    onChange={e => setValorCusto(e.target.value)}
+                    onChange={e => {
+                      const value = e.target.value.replace(/[^0-9.,]/g, '');
+                      setValorCusto(value);
+                    }}
+                    onBlur={calcularValores}
                   />
                 </div>
 
