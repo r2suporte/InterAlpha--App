@@ -151,12 +151,16 @@ export function withLogging<T extends any[]>(
           }
         }
 
-        const level =
-          response.status >= 500
-            ? 'error'
-            : response.status >= 400
-              ? 'warn'
-              : 'info';
+        // Helper function to determine log level from status code
+        function getLogLevelFromStatus(
+          status: number
+        ): 'error' | 'warn' | 'info' {
+          if (status >= 500) return 'error';
+          if (status >= 400) return 'warn';
+          return 'info';
+        }
+
+        const level = getLogLevelFromStatus(response.status);
 
         if (level === 'error') {
           logger.error(

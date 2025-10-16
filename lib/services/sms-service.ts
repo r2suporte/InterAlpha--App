@@ -233,20 +233,24 @@ export class SMSService {
     const numeroOrdem = ordemServico.numero_ordem;
 
     switch (tipo) {
-      case 'criacao':
+      case 'criacao': {
         return `🔧 InterAlpha - Olá ${nomeCliente}! Sua ordem de serviço #${numeroOrdem} foi criada. Problema: ${ordemServico.descricao_problema}. Acompanhe o status pelo portal do cliente.`;
+      }
 
-      case 'atualizacao':
+      case 'atualizacao': {
         return `📱 InterAlpha - ${nomeCliente}, sua ordem #${numeroOrdem} foi atualizada. Status: ${ordemServico.status}. Acesse o portal para mais detalhes.`;
+      }
 
-      case 'conclusao':
+      case 'conclusao': {
         const valor = ordemServico.valor_total
           ? ` Valor: R$ ${ordemServico.valor_total.toFixed(2)}.`
           : '';
         return `✅ InterAlpha - ${nomeCliente}, sua ordem #${numeroOrdem} foi concluída!${valor} Obrigado pela confiança!`;
+      }
 
-      default:
+      default: {
         return `📱 InterAlpha - ${nomeCliente}, atualização sobre sua ordem #${numeroOrdem}. Status: ${ordemServico.status}.`;
+      }
     }
   }
 

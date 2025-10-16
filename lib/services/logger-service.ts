@@ -386,8 +386,14 @@ export function createRequestLogger(logger: LoggerService) {
     duration: number,
     context?: Partial<LogContext>
   ) {
-    const level: LogLevel =
-      statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
+    // Helper function to determine log level from status code
+    function getLogLevelFromStatus(code: number): LogLevel {
+      if (code >= 500) return 'error';
+      if (code >= 400) return 'warn';
+      return 'info';
+    }
+
+    const level: LogLevel = getLogLevelFromStatus(statusCode);
     const message = `${method} ${url} - ${statusCode}`;
     const requestContext = {
       method,

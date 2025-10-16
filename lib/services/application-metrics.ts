@@ -84,6 +84,19 @@ export class ApplicationMetricsService {
     this.startBufferFlush();
   }
 
+  // Helper function to determine metric unit
+  private getUnitForMetric(category: string, name: string): ApplicationMetric['unit'] {
+    if (category === 'performance' && name.includes('time')) return 'ms';
+    if (category === 'performance' && name === 'bundle_size') return 'bytes';
+    if (category === 'business' && name === 'conversion_rate') return 'percentage';
+    if (category === 'business' && name === 'revenue') return 'count';
+    if (category === 'system' && name.includes('usage')) return 'percentage';
+    if (category === 'system' && name === 'network_latency') return 'ms';
+    if (category === 'system' && name.includes('usage')) return 'percentage';
+    if (category === 'error' && name === 'error_rate') return 'percentage';
+    return 'count';
+  }
+
   // 📊 Registrar Métrica
   async recordMetric(
     metric: Omit<ApplicationMetric, 'timestamp'>
@@ -112,11 +125,7 @@ export class ApplicationMetricsService {
       category: 'performance',
       name,
       value,
-      unit: name.includes('time')
-        ? 'ms'
-        : name === 'bundle_size'
-          ? 'bytes'
-          : 'count',
+      unit: this.getUnitForMetric('performance', name),
       tags,
       metadata,
     });
@@ -150,7 +159,7 @@ export class ApplicationMetricsService {
       category: 'error',
       name,
       value,
-      unit: name === 'error_rate' ? 'percentage' : 'count',
+      unit: this.getUnitForMetric('error', name),
       tags,
       metadata,
     });
@@ -167,12 +176,7 @@ export class ApplicationMetricsService {
       category: 'business',
       name,
       value,
-      unit:
-        name === 'conversion_rate'
-          ? 'percentage'
-          : name === 'revenue'
-            ? 'count'
-            : 'count',
+      unit: this.getUnitForMetric('business', name),
       tags,
       metadata,
     });
@@ -189,11 +193,7 @@ export class ApplicationMetricsService {
       category: 'system',
       name,
       value,
-      unit: name.includes('usage')
-        ? 'percentage'
-        : name === 'network_latency'
-          ? 'ms'
-          : 'bytes',
+      unit: this.getUnitForMetric('system', name),
       tags,
       metadata,
     });

@@ -27,7 +27,13 @@ const Checkbox = React.forwardRef<
 
     // Preserve original shape where possible
     // Callers that expect boolean will get true/false; others may receive 'indeterminate'.
-    const normalized: boolean | 'indeterminate' = value === true ? true : value === 'indeterminate' ? 'indeterminate' : false;
+    function normalizeCheckedValue(val: CheckedState): boolean | 'indeterminate' {
+      if (val === true) return true;
+      if (val === 'indeterminate') return 'indeterminate';
+      return false;
+    }
+
+    const normalized: boolean | 'indeterminate' = normalizeCheckedValue(value);
     onCheckedChange(normalized);
   };
 

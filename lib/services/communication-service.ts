@@ -246,7 +246,7 @@ export class CommunicationService {
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       switch (channel) {
-        case 'whatsapp':
+        case 'whatsapp': {
           const telefone = cliente.celular || cliente.telefone;
           if (!telefone) {
             throw new Error('Cliente não possui telefone para WhatsApp');
@@ -260,8 +260,9 @@ export class CommunicationService {
             messageId: whatsappResult.messages[0]?.id,
             error: undefined,
           };
+        }
 
-        case 'sms':
+        case 'sms': {
           const telefoneSMS = cliente.celular || cliente.telefone;
           if (!telefoneSMS) {
             throw new Error('Cliente não possui telefone para SMS');
@@ -272,8 +273,9 @@ export class CommunicationService {
             messageId: smsResult.messageId,
             error: smsResult.error,
           };
+        }
 
-        case 'email':
+        case 'email': {
           if (!cliente.email) {
             throw new Error('Cliente não possui email');
           }
@@ -299,9 +301,11 @@ export class CommunicationService {
             messageId: emailResult?.messageId,
             error: undefined,
           };
+        }
 
-        default:
+        default: {
           throw new Error(`Canal não suportado: ${channel}`);
+        }
       }
     } catch (error) {
       return {
@@ -377,17 +381,21 @@ export class CommunicationService {
 
     // Conteúdo específico por canal
     switch (channel) {
-      case 'whatsapp':
+      case 'whatsapp': {
         return this.generateWhatsAppContent(ordemServico, nomeCliente, tipo);
+      }
 
-      case 'sms':
+      case 'sms': {
         return this.generateSMSContent(ordemServico, nomeCliente, tipo);
+      }
 
-      case 'email':
+      case 'email': {
         return this.generateEmailContent(ordemServico, cliente, tipo);
+      }
 
-      default:
+      default: {
         return { message: `Atualização sobre ordem #${numeroOrdem}` };
+      }
     }
   }
 
@@ -400,23 +408,26 @@ export class CommunicationService {
     const numeroOrdem = ordemServico.numero_ordem;
 
     switch (tipo) {
-      case 'criacao':
+      case 'criacao': {
         return {
           message: `🔧 *InterAlpha - Nova Ordem de Serviço*\n\nOlá ${nomeCliente}!\n\nSua ordem de serviço *#${numeroOrdem}* foi criada com sucesso.\n\n📋 *Problema:* ${ordemServico.descricao_problema}\n📅 *Data:* ${new Date(ordemServico.data_criacao).toLocaleDateString('pt-BR')}\n\nAcompanhe o status pelo nosso portal do cliente.\n\n_InterAlpha - Especialistas em Apple_ 🍎`,
         };
+      }
 
-      case 'atualizacao':
+      case 'atualizacao': {
         return {
           message: `📱 *InterAlpha - Atualização*\n\n${nomeCliente}, sua ordem *#${numeroOrdem}* foi atualizada.\n\n🔄 *Status:* ${ordemServico.status}\n\nAcesse o portal para mais detalhes.\n\n_InterAlpha - Especialistas em Apple_ 🍎`,
         };
+      }
 
-      case 'conclusao':
+      case 'conclusao': {
         const valor = ordemServico.valor_total
           ? `\n💰 *Valor:* R$ ${ordemServico.valor_total.toFixed(2)}`
           : '';
         return {
           message: `✅ *InterAlpha - Serviço Concluído*\n\n${nomeCliente}, sua ordem *#${numeroOrdem}* foi concluída!${valor}\n\n🎉 Obrigado pela confiança!\n\n_InterAlpha - Especialistas em Apple_ 🍎`,
         };
+      }
     }
   }
 
@@ -429,23 +440,26 @@ export class CommunicationService {
     const numeroOrdem = ordemServico.numero_ordem;
 
     switch (tipo) {
-      case 'criacao':
+      case 'criacao': {
         return {
           message: `🔧 InterAlpha - ${nomeCliente}, ordem #${numeroOrdem} criada. Problema: ${ordemServico.descricao_problema}. Acompanhe pelo portal.`,
         };
+      }
 
-      case 'atualizacao':
+      case 'atualizacao': {
         return {
           message: `📱 InterAlpha - ${nomeCliente}, ordem #${numeroOrdem} atualizada. Status: ${ordemServico.status}. Acesse o portal.`,
         };
+      }
 
-      case 'conclusao':
+      case 'conclusao': {
         const valor = ordemServico.valor_total
           ? ` Valor: R$ ${ordemServico.valor_total.toFixed(2)}.`
           : '';
         return {
           message: `✅ InterAlpha - ${nomeCliente}, ordem #${numeroOrdem} concluída!${valor} Obrigado!`,
         };
+      }
     }
   }
 
@@ -458,7 +472,7 @@ export class CommunicationService {
     const numeroOrdem = ordemServico.numero_ordem;
 
     switch (tipo) {
-      case 'criacao':
+      case 'criacao': {
         return {
           subject: `InterAlpha - Nova Ordem de Serviço #${numeroOrdem}`,
           message: `
@@ -481,8 +495,9 @@ export class CommunicationService {
             <em>Especialistas em Apple</em> 🍎</p>
           `,
         };
+      }
 
-      case 'atualizacao':
+      case 'atualizacao': {
         return {
           subject: `InterAlpha - Atualização da Ordem #${numeroOrdem}`,
           message: `
@@ -503,8 +518,9 @@ export class CommunicationService {
             <em>Especialistas em Apple</em> 🍎</p>
           `,
         };
+      }
 
-      case 'conclusao':
+      case 'conclusao': {
         const valor = ordemServico.valor_total
           ? `<p><strong>Valor Total:</strong> R$ ${ordemServico.valor_total.toFixed(2)}</p>`
           : '';
@@ -529,6 +545,14 @@ export class CommunicationService {
             <em>Especialistas em Apple</em> 🍎</p>
           `,
         };
+      }
+
+      default: {
+        return {
+          subject: `InterAlpha - Ordem #${numeroOrdem}`,
+          message: `<p>Atualização sobre sua ordem #${numeroOrdem}.</p>`,
+        };
+      }
     }
   }
 

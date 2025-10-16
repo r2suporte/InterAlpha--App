@@ -56,7 +56,8 @@ export function DocumentSelector({
         // Só determinar automaticamente se o documento estiver completo
         if (cleanValue.length === 11) {
           return 'cpf';
-        } else if (cleanValue.length === 14) {
+        }
+        if (cleanValue.length === 14) {
           return 'cnpj';
         }
       }
@@ -66,6 +67,14 @@ export function DocumentSelector({
   const [inputValue, setInputValue] = useState(value);
   const [isValid, setIsValid] = useState<boolean | null>(null);
   const [showValidation, setShowValidation] = useState(false);
+
+  // Helper function to get validation class
+  const getValidationClass = (show: boolean, valid: boolean | null): string => {
+    if (!show) return '';
+    if (valid === true) return 'border-green-500 focus:border-green-500 focus:ring-green-500';
+    if (valid === false) return 'border-red-500 focus:border-red-500 focus:ring-red-500';
+    return '';
+  };
 
   // Função para validar o documento
   const validateDocument = (
@@ -182,13 +191,10 @@ export function DocumentSelector({
             id={id}
             placeholder={getPlaceholderText()}
             required={required}
-            className={`w-full pr-10 ${
-              showValidation
-                ? isValid
-                  ? 'border-green-500 focus:border-green-500 focus:ring-green-500'
-                  : 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                : ''
-            }`}
+            className={`w-full pr-10 ${getValidationClass(
+              showValidation,
+              isValid
+            )}`}
           />
           {showValidation && (
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">

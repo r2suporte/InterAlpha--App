@@ -226,6 +226,20 @@ export function ServiceOrderForm({ ordemId, onSuccess }: ServiceOrderFormProps =
     }
   };
 
+  // Helper function to get step title class based on state
+  const getStepTitleClass = (isActive: boolean, isCompleted: boolean): string => {
+    if (isActive) return 'text-blue-600';
+    if (isCompleted) return 'text-green-600';
+    return 'text-gray-500';
+  };
+
+  // Helper function to get input border class based on validation
+  const getInputBorderClass = (hasError: boolean): string => {
+    return hasError
+      ? 'border-red-300 focus:border-red-500'
+      : 'border-gray-200 focus:border-blue-500';
+  };
+
   const handleClientSelect = (client: Cliente) => {
     setSelectedClient(client);
     setFormData(prev => ({
@@ -453,7 +467,10 @@ export function ServiceOrderForm({ ordemId, onSuccess }: ServiceOrderFormProps =
               </div>
               <div className="mt-3 text-center">
                 <div
-                  className={`text-sm font-semibold ${isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-500'}`}
+                  className={`text-sm font-semibold ${getStepTitleClass(
+                    isActive,
+                    isCompleted
+                  )}`}
                 >
                   {step.title}
                 </div>
@@ -511,7 +528,9 @@ export function ServiceOrderForm({ ordemId, onSuccess }: ServiceOrderFormProps =
             }
           >
             <SelectTrigger
-              className={`h-12 rounded-xl border-2 transition-colors ${fieldValidation ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'}`}
+              className={`h-12 rounded-xl border-2 transition-colors ${getInputBorderClass(
+                !!fieldValidation
+              )}`}
             >
               <SelectValue placeholder={placeholder} />
             </SelectTrigger>
@@ -661,7 +680,7 @@ export function ServiceOrderForm({ ordemId, onSuccess }: ServiceOrderFormProps =
 
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case 1:
+      case 1: {
         return (
           <Card className="overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-xl">
             <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 pb-8 text-white">
@@ -793,8 +812,9 @@ export function ServiceOrderForm({ ordemId, onSuccess }: ServiceOrderFormProps =
             </CardContent>
           </Card>
         );
+      }
 
-      case 2:
+      case 2: {
         const DeviceIcon = getDeviceIcon(formData.deviceType);
         return (
           <Card className="overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-purple-50 via-white to-pink-50 shadow-xl">
@@ -849,8 +869,9 @@ export function ServiceOrderForm({ ordemId, onSuccess }: ServiceOrderFormProps =
             </CardContent>
           </Card>
         );
+      }
 
-      case 3:
+      case 3: {
         return (
           <Card className="overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-orange-50 via-white to-red-50 shadow-xl">
             <CardHeader className="bg-gradient-to-r from-orange-500 to-red-600 pb-8 text-white">
@@ -913,8 +934,9 @@ export function ServiceOrderForm({ ordemId, onSuccess }: ServiceOrderFormProps =
             </CardContent>
           </Card>
         );
+      }
 
-      case 4:
+      case 4: {
         return (
           <Card className="overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-yellow-50 via-white to-amber-50 shadow-xl">
             <CardHeader className="bg-gradient-to-r from-yellow-500 to-amber-600 pb-8 text-white">
@@ -1084,9 +1106,11 @@ export function ServiceOrderForm({ ordemId, onSuccess }: ServiceOrderFormProps =
             </CardContent>
           </Card>
         );
+      }
 
-      default:
+      default: {
         return null;
+      }
     }
   };
 

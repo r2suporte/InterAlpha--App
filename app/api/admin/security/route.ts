@@ -13,6 +13,16 @@ import {
  * Acesso restrito apenas para administradores
  */
 
+// Helper function para determinar status de segurança
+function getSecurityStatus(
+  criticalEventsCount: number,
+  highSeverityEventsCount: number
+): 'critical' | 'warning' | 'normal' {
+  if (criticalEventsCount > 0) return 'critical';
+  if (highSeverityEventsCount > 5) return 'warning';
+  return 'normal';
+}
+
 export async function GET(request: NextRequest) {
   try {
     // TODO: Verificar se o usuário é administrador
@@ -26,7 +36,7 @@ export async function GET(request: NextRequest) {
     const limit = Number.parseInt(searchParams.get('limit') || '100', 10);
 
     switch (action) {
-      case 'events':
+      case 'events': {
         // Retorna eventos de segurança recentes
         const events = getRecentSecurityEvents(limit);
         return NextResponse.json({
@@ -36,8 +46,9 @@ export async function GET(request: NextRequest) {
             total: events.length,
           },
         });
+      }
 
-      case 'stats':
+      case 'stats': {
         // Retorna estatísticas de segurança
         const securityStats = getSecurityStats();
         const rateLimitStats = getRateLimitStats();
@@ -50,8 +61,9 @@ export async function GET(request: NextRequest) {
             timestamp: new Date().toISOString(),
           },
         });
+      }
 
-      case 'dashboard':
+      case 'dashboard': {
         // Retorna dados completos para dashboard
         const dashboardEvents = getRecentSecurityEvents(50);
         const dashboardStats = getSecurityStats();
@@ -82,12 +94,10 @@ export async function GET(request: NextRequest) {
               eventsLastHour: recentEvents.length,
               criticalEvents: criticalEvents.length,
               highSeverityEvents: highSeverityEvents.length,
-              status:
-                criticalEvents.length > 0
-                  ? 'critical'
-                  : highSeverityEvents.length > 5
-                    ? 'warning'
-                    : 'normal',
+              status: getSecurityStatus(
+                criticalEvents.length,
+                highSeverityEvents.length
+              ),
             },
             recentEvents: recentEvents.slice(0, 10),
             topThreats: [
@@ -122,8 +132,9 @@ export async function GET(request: NextRequest) {
             rateLimit: dashboardRateLimit,
           },
         });
+      }
 
-      default:
+      default: {
         return NextResponse.json(
           {
             error: 'Ação inválida',
@@ -131,6 +142,7 @@ export async function GET(request: NextRequest) {
           },
           { status: 400 }
         );
+      }
     }
   } catch (error) {
     console.error('Erro na API de segurança:', error);
@@ -152,7 +164,7 @@ export async function POST(request: NextRequest) {
     const { action } = body;
 
     switch (action) {
-      case 'cleanup':
+      case 'cleanup': {
         // Limpar eventos antigos
         const { daysToKeep = 30 } = body;
         const { cleanupOldEvents } = await import(
@@ -165,8 +177,9 @@ export async function POST(request: NextRequest) {
           message: `${removedCount} eventos antigos removidos`,
           data: { removedCount, daysToKeep },
         });
+      }
 
-      case 'reset-rate-limit':
+      case 'reset-rate-limit': {
         // Resetar rate limit para um IP específico
         const { ip, endpoint } = body;
         if (!ip) {
@@ -185,8 +198,9 @@ export async function POST(request: NextRequest) {
           success: true,
           message: `Rate limit resetado para IP ${ip}${endpoint ? ` no endpoint ${endpoint}` : ''}`,
         });
+      }
 
-      default:
+      default: {
         return NextResponse.json(
           {
             error: 'Ação inválida',
@@ -194,6 +208,7 @@ export async function POST(request: NextRequest) {
           },
           { status: 400 }
         );
+      }
     }
   } catch (error) {
     console.error('Erro na API de segurança (POST):', error);

@@ -340,7 +340,7 @@ const ChartRenderer: React.FC<{
           </BarChart>
         );
 
-      case 'composed':
+      case 'composed': {
         return (
           <ComposedChart {...commonProps}>
             <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -361,8 +361,9 @@ const ChartRenderer: React.FC<{
             />
           </ComposedChart>
         );
+      }
 
-      case 'pie':
+      case 'pie': {
         const pieData = data.slice(-7).map((item, index) => ({
           name: `Dia ${index + 1}`,
           value: item[config.dataKeys[0] as keyof ChartDataPoint] as number,
@@ -386,9 +387,11 @@ const ChartRenderer: React.FC<{
             <Tooltip />
           </PieChart>
         );
+      }
 
-      default:
+      default: {
         return <div>Tipo de gráfico não suportado</div>;
+      }
     }
   };
 

@@ -51,6 +51,15 @@ export default function EquipamentoForm({
   initialData,
   isLoading = false,
 }: EquipamentoFormProps) {
+  // Helper function to get badge variant based on severity
+  const getBadgeVariant = (
+    severidade: string
+  ): 'default' | 'destructive' | 'secondary' => {
+    if (severidade === 'alta') return 'destructive';
+    if (severidade === 'media') return 'default';
+    return 'secondary';
+  };
+
   const [formData, setFormData] = useState<EquipamentoFormData>({
     tipo: initialData?.tipo || 'macbook_air',
     modelo: initialData?.modelo || '',
@@ -614,13 +623,7 @@ export default function EquipamentoForm({
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <Badge
-                        variant={
-                          dano.severidade === 'alta'
-                            ? 'destructive'
-                            : dano.severidade === 'media'
-                              ? 'default'
-                              : 'secondary'
-                        }
+                        variant={getBadgeVariant(dano.severidade)}
                       >
                         {dano.severidade}
                       </Badge>

@@ -79,9 +79,17 @@ export function logSecurityEvent(
     securityEvents.shift(); // Remove o mais antigo
   }
 
+  // Helper function to get log level from severity
+  function getLogLevel(
+    sev: 'critical' | 'high' | 'medium' | 'low'
+  ): 'error' | 'warn' | 'info' {
+    if (sev === 'critical') return 'error';
+    if (sev === 'high') return 'warn';
+    return 'info';
+  }
+
   // Log no console para desenvolvimento
-  const logLevel =
-    severity === 'critical' ? 'error' : severity === 'high' ? 'warn' : 'info';
+  const logLevel = getLogLevel(severity);
   console[logLevel](`[SECURITY] ${eventType.toUpperCase()}:`, {
     ip,
     endpoint: request.nextUrl.pathname,
