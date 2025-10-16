@@ -62,6 +62,15 @@ import {
   calcularMargemLucro,
 } from '@/types/pecas';
 
+// 🎯 Determinar status badge baseado no status da peça
+function getStatusBadge(status: StatusPeca): 'success' | 'warning' | 'error' | 'pending' | 'info' {
+  if (status === 'disponivel') return 'success';
+  if (status === 'baixo_estoque') return 'warning';
+  if (status === 'sem_estoque') return 'error';
+  if (status === 'em_pedido') return 'pending';
+  return 'info';
+}
+
 // Dados mock para demonstração
 const mockPecas: Peca[] = [
   {
@@ -607,17 +616,7 @@ export default function PecasPage() {
                           </td>
                           <td className="px-4 py-3">
                             <StatusBadge
-                              status={
-                                peca.status === 'disponivel'
-                                  ? 'success'
-                                  : peca.status === 'baixo_estoque'
-                                    ? 'warning'
-                                    : peca.status === 'sem_estoque'
-                                      ? 'error'
-                                      : peca.status === 'em_pedido'
-                                        ? 'pending'
-                                        : 'info'
-                              }
+                              status={getStatusBadge(peca.status)}
                               text={STATUS_PECA_LABELS[peca.status]}
                             />
                           </td>

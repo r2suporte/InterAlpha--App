@@ -185,6 +185,57 @@ interface OrdemServicoCriada {
   created_at: string;
 }
 
+// 🎯 Renderizar campo baseado no tipo
+function renderFieldInput(
+  type: string,
+  value: string | number,
+  placeholder: string,
+  options: string[] | undefined | null,
+  fieldValidation: string | null,
+  handleInputChange: (field: string, val: string) => void
+): React.ReactNode {
+  if (type === 'select' && options) {
+    return (
+      <Select
+        value={value as string}
+        onValueChange={val => handleInputChange('field', val)}
+      >
+        <SelectTrigger className="h-12 rounded-xl border-2 border-gray-200 transition-colors focus:border-blue-500">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map(option => (
+            <SelectItem key={option} value={option}>
+              {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  if (type === 'textarea') {
+    return (
+      <Textarea
+        value={value}
+        onChange={e => handleInputChange('field', e.target.value)}
+        placeholder={placeholder}
+        className={`min-h-[100px] resize-none rounded-xl border-2 transition-colors ${fieldValidation ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'}`}
+      />
+    );
+  }
+
+  return (
+    <Input
+      type={type}
+      value={value}
+      onChange={e => handleInputChange('field', e.target.value)}
+      placeholder={placeholder}
+      className={`h-12 rounded-xl border-2 transition-colors ${fieldValidation ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'}`}
+    />
+  );
+}
+
 interface ServiceOrderFormProps {
   ordemId?: string | null;
   onSuccess?: () => void;
@@ -451,13 +502,7 @@ export function ServiceOrderForm({ ordemId, onSuccess }: ServiceOrderFormProps =
           return (
             <div key={step.id} className="flex flex-1 flex-col items-center">
               <div
-                className={`relative flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all duration-300 ${
-                  isActive
-                    ? 'scale-110 border-blue-500 bg-blue-500 text-white shadow-lg'
-                    : isCompleted
-                      ? 'border-green-500 bg-green-500 text-white'
-                      : 'border-gray-300 bg-white text-gray-400'
-                } `}
+                className={`relative flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all duration-300 ${getStepTitleClass(isActive, isCompleted)}`}
               >
                 {isCompleted ? (
                   <CheckCircle className="h-6 w-6" />
@@ -520,48 +565,7 @@ export function ServiceOrderForm({ ordemId, onSuccess }: ServiceOrderFormProps =
           )}
         </Label>
 
-        {type === 'select' && options ? (
-          <Select
-            value={value}
-            onValueChange={val =>
-              handleInputChange(field as keyof ServiceOrderData, val)
-            }
-          >
-            <SelectTrigger
-              className={`h-12 rounded-xl border-2 transition-colors ${getInputBorderClass(
-                !!fieldValidation
-              )}`}
-            >
-              <SelectValue placeholder={placeholder} />
-            </SelectTrigger>
-            <SelectContent>
-              {options.map(option => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : type === 'textarea' ? (
-          <Textarea
-            value={value}
-            onChange={e =>
-              handleInputChange(field as keyof ServiceOrderData, e.target.value)
-            }
-            placeholder={placeholder}
-            className={`min-h-[100px] resize-none rounded-xl border-2 transition-colors ${fieldValidation ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'}`}
-          />
-        ) : (
-          <Input
-            type={type}
-            value={value}
-            onChange={e =>
-              handleInputChange(field as keyof ServiceOrderData, e.target.value)
-            }
-            placeholder={placeholder}
-            className={`h-12 rounded-xl border-2 transition-colors ${fieldValidation ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'}`}
-          />
-        )}
+        {renderFieldInput(type, value, placeholder, options || undefined, fieldValidation, handleInputChange)}
 
         {fieldValidation && (
           <div className="flex items-center gap-2 text-sm text-red-600">

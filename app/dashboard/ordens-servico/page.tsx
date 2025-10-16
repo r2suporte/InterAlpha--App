@@ -15,6 +15,13 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, List } from 'lucide-react';
 import { useState } from 'react';
 
+// 🎯 Determinar descrição da view
+function getViewDescription(view: 'list' | 'create' | 'edit', _isMobile: boolean): string {
+  if (view === 'list') return 'Gerencie todas as ordens de serviço da autorizada Apple';
+  if (view === 'create') return 'Criação de nova ordem de serviço para dispositivos Apple';
+  return 'Edição de ordem de serviço';
+}
+
 export default function OrdensServicoPage() {
   const { isMobile } = useBreakpoint();
   const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
@@ -76,11 +83,7 @@ export default function OrdensServicoPage() {
               size={isMobile ? 'sm' : 'base'}
               className="text-muted-foreground"
             >
-              {view === 'list'
-                ? 'Gerencie todas as ordens de serviço da autorizada Apple'
-                : view === 'create'
-                ? 'Criação de nova ordem de serviço para dispositivos Apple'
-                : 'Edição de ordem de serviço'}
+              {getViewDescription(view, isMobile)}
             </ResponsiveText>
           </div>
 

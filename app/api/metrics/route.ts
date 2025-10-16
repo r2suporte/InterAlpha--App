@@ -139,6 +139,12 @@ function detectAnomalies(services: any[]): Array<{
 }
 
 // 📈 GET - Obter métricas de performance
+function getHoursBack(timeRange: string): number {
+  if (timeRange === '1h') return 1;
+  if (timeRange === '6h') return 6;
+  return 24;
+}
+
 async function getMetrics(request: NextRequest) {
   try {
     const supabase = createClient();
@@ -147,7 +153,7 @@ async function getMetrics(request: NextRequest) {
 
     // Calcular período de tempo
     const now = new Date();
-    const hoursBack = timeRange === '1h' ? 1 : timeRange === '6h' ? 6 : 24;
+    const hoursBack = getHoursBack(timeRange);
     const startTime = new Date(now.getTime() - hoursBack * 60 * 60 * 1000);
 
     // Obter estatísticas de cada serviço
