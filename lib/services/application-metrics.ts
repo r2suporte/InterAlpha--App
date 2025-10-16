@@ -78,7 +78,7 @@ export class ApplicationMetricsService {
   private metricsBuffer: ApplicationMetric[] = [];
   private readonly BUFFER_SIZE = 100;
   private readonly FLUSH_INTERVAL = 30000; // 30 segundos
-  private flushTimer?: NodeJS.Timeout;
+  private flushTimer?: ReturnType<typeof setInterval>;
 
   constructor() {
     this.startBufferFlush();

@@ -36,7 +36,7 @@ interface KPIData {
 }
 
 // 🔧 Configuração do Supabase
-const supabase = createClient(
+const _supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
@@ -66,8 +66,8 @@ function calculateTrend(current: number, previous: number): {
 async function getFinancialMetrics(): Promise<KPIMetric[]> {
   try {
     // Simular consultas ao banco de dados
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
+    // const currentMonth = new Date().getMonth();
+    // const currentYear = new Date().getFullYear();
     
     // Receita atual vs anterior
     const currentRevenue = Math.random() * 200000 + 100000; // 100k-300k

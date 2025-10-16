@@ -4,21 +4,15 @@ import React, { useEffect, useState } from 'react';
 
 import {
   Activity,
-  AlertCircle,
-  AlertTriangle,
-  BarChart3,
   CheckCircle,
   Clock,
-  Database,
   Mail,
   MessageSquare,
   Phone,
   RefreshCw,
   TrendingDown,
   TrendingUp,
-  Users,
   XCircle,
-  Zap,
 } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';

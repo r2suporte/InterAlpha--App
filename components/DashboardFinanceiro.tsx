@@ -2,19 +2,14 @@ import React, { useEffect, useState } from 'react';
 
 import {
   AlertCircle,
-  Calendar,
   CheckCircle,
   Clock,
   DollarSign,
   Download,
-  Filter,
-  TrendingDown,
   TrendingUp,
-  XCircle,
 } from 'lucide-react';
 
 import {
-  FORMA_PAGAMENTO_LABELS,
   FormaPagamento,
   MetricasFinanceiras,
   STATUS_FINANCEIRO_LABELS,
@@ -61,14 +56,6 @@ const dadosSimulados: MetricasFinanceiras = {
   ],
   crescimento_receita_mes: 12.5,
   ordens_em_atraso: 3,
-};
-
-const statusColors = {
-  aguardando_orcamento: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  orcamento_enviado: 'bg-blue-100 text-blue-800 border-blue-200',
-  aguardando_pagamento: 'bg-orange-100 text-orange-800 border-orange-200',
-  pago: 'bg-green-100 text-green-800 border-green-200',
-  cancelado: 'bg-red-100 text-red-800 border-red-200',
 };
 
 export default function DashboardFinanceiro({

@@ -18,7 +18,7 @@ import { Peca, calcularMargemLucro } from '../types/pecas';
 interface PecasOrdemServicoProps {
   ordemServicoId: string;
   pecasUtilizadas: PecaUtilizada[];
-  onPecasChange: (pecas: PecaUtilizada[]) => void;
+  onPecasChange: (_pecas: PecaUtilizada[]) => void;
   readonly?: boolean;
 }
 
@@ -39,7 +39,6 @@ export default function PecasOrdemServico({
   );
   const [busca, setBusca] = useState('');
   const [mostrarBusca, setMostrarBusca] = useState(false);
-  const [carregando, setCarregando] = useState(false);
 
   // Simular dados de peças disponíveis
   useEffect(() => {
@@ -360,7 +359,7 @@ export default function PecasOrdemServico({
                       onChange={e =>
                         atualizarQuantidade(
                           index,
-                          parseInt(e.target.value) || 1
+                          Number.parseInt(e.target.value, 10) || 1
                         )
                       }
                       disabled={readonly}

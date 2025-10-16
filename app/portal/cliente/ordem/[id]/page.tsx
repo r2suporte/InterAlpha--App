@@ -10,12 +10,9 @@ import {
   ArrowLeft,
   Calendar,
   CheckCircle,
-  Clock,
   DollarSign,
   FileText,
   Mail,
-  MapPin,
-  Package,
   Phone,
   User,
   Wrench,
@@ -71,7 +68,7 @@ export default function OrdemServicoDetalhes() {
   const [aprovacoes, setAprovacoes] = useState<Aprovacao[]>([]);
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const { isLoading, startLoading, stopLoading } = useLoadingState();
-  const { error: showError, success } = useToast();
+  const { error: showError } = useToast();
   const [error, setError] = useState('');
   const [processando, setProcessando] = useState<string | null>(null);
   const router = useRouter();
@@ -118,7 +115,7 @@ export default function OrdemServicoDetalhes() {
         setError(errorMessage);
         showError('Erro', errorMessage);
       }
-    } catch (error) {
+  } catch (_error) {
       const errorMessage = 'Erro ao carregar dados';
       setError(errorMessage);
       showError('Erro', errorMessage);
@@ -156,7 +153,7 @@ export default function OrdemServicoDetalhes() {
         const errorData = await response.json();
         setError(errorData.error || 'Erro ao processar aprovação');
       }
-    } catch (error) {
+  } catch (_error) {
       setError('Erro ao processar aprovação');
     } finally {
       setProcessando(null);

@@ -3,9 +3,7 @@
 import React, { useEffect, useState } from 'react';
 
 import {
-  AlertCircle,
   Calculator,
-  Calendar,
   FileText,
   Package,
   Save,
@@ -28,8 +26,8 @@ import { FormField } from './form/form-field';
 
 interface OrdemServicoFormProps {
   ordemServico?: OrdemServicoFormData;
-  onSave: (dados: OrdemServicoFormData) => void;
-  onSubmit?: (dados: OrdemServicoFormData) => void;
+  onSave: (_dados: OrdemServicoFormData) => void;
+  onSubmit?: (_dados: OrdemServicoFormData) => void;
   onCancel: () => void;
   readonly?: boolean;
 }
@@ -78,11 +76,8 @@ export default function OrdemServicoForm({
   const [erros, setErros] = useState<Record<string, string>>({});
 
   // Hook para buscar técnicos
-  const {
-    technicians,
-    loading: loadingTechnicians,
-    getActiveTechnicians,
-  } = useTechnicians();
+  const { loading: loadingTechnicians, getActiveTechnicians } =
+    useTechnicians();
 
   // Simular dados de equipamentos
   useEffect(() => {
@@ -218,19 +213,6 @@ export default function OrdemServicoForm({
     return Object.keys(novosErros).length === 0;
   };
 
-  const handleSave = async () => {
-    if (!onSave || !validarFormulario()) return;
-
-    setCarregando(true);
-    try {
-      await onSave(formData);
-    } catch (error) {
-      console.error('Erro ao salvar ordem de serviço:', error);
-    } finally {
-      setCarregando(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -238,9 +220,9 @@ export default function OrdemServicoForm({
       return;
     }
 
+    setCarregando(true);
     try {
-      console.log('Ordem de serviço criada:', formData);
-      console.log('Peças utilizadas:', pecasUtilizadas);
+      await onSave(formData);
 
       if (onSubmit) {
         await onSubmit(formData);
@@ -277,6 +259,8 @@ export default function OrdemServicoForm({
       setPecasUtilizadas([]);
     } catch (error) {
       console.error('Erro ao criar ordem de serviço:', error);
+    } finally {
+      setCarregando(false);
     }
   };
 

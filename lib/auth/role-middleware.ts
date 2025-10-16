@@ -285,7 +285,7 @@ function getRequiredPermissions(pathname: string, method: string): string[] {
 export function createRoleMiddleware(options?: {
   allowedRoles?: UserRole[];
   requiredPermissions?: string[];
-  customCheck?: (user: AuthenticatedUser, request: NextRequest) => boolean;
+  customCheck?: (_user: AuthenticatedUser, _request: NextRequest) => boolean;
 }) {
   return async function roleMiddleware(
     request: NextRequest,

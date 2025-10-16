@@ -53,19 +53,19 @@ export const cpfSchema = z
     // Validação do algoritmo do CPF
     let sum = 0;
     for (let i = 0; i < 9; i++) {
-      sum += parseInt(cleanCpf.charAt(i)) * (10 - i);
+  sum += Number.parseInt(cleanCpf.charAt(i), 10) * (10 - i);
     }
     let remainder = (sum * 10) % 11;
     if (remainder === 10 || remainder === 11) remainder = 0;
-    if (remainder !== parseInt(cleanCpf.charAt(9))) return false;
+  if (remainder !== Number.parseInt(cleanCpf.charAt(9), 10)) return false;
 
     sum = 0;
     for (let i = 0; i < 10; i++) {
-      sum += parseInt(cleanCpf.charAt(i)) * (11 - i);
+  sum += Number.parseInt(cleanCpf.charAt(i), 10) * (11 - i);
     }
     remainder = (sum * 10) % 11;
     if (remainder === 10 || remainder === 11) remainder = 0;
-    if (remainder !== parseInt(cleanCpf.charAt(10))) return false;
+  if (remainder !== Number.parseInt(cleanCpf.charAt(10), 10)) return false;
 
     return true;
   }, 'CPF inválido');
@@ -87,21 +87,21 @@ export const cnpjSchema = z
 
     let sum = 0;
     for (let i = 0; i < 12; i++) {
-      sum += parseInt(cleanCnpj.charAt(i)) * weights1[i];
+  sum += Number.parseInt(cleanCnpj.charAt(i), 10) * weights1[i];
     }
     let remainder = sum % 11;
     const digit1 = remainder < 2 ? 0 : 11 - remainder;
 
-    if (digit1 !== parseInt(cleanCnpj.charAt(12))) return false;
+  if (digit1 !== Number.parseInt(cleanCnpj.charAt(12), 10)) return false;
 
     sum = 0;
     for (let i = 0; i < 13; i++) {
-      sum += parseInt(cleanCnpj.charAt(i)) * weights2[i];
+  sum += Number.parseInt(cleanCnpj.charAt(i), 10) * weights2[i];
     }
     remainder = sum % 11;
     const digit2 = remainder < 2 ? 0 : 11 - remainder;
 
-    return digit2 === parseInt(cleanCnpj.charAt(13));
+  return digit2 === Number.parseInt(cleanCnpj.charAt(13), 10);
   }, 'CNPJ inválido');
 
 // Validador de CEP

@@ -6,13 +6,11 @@ import {
   Bell,
   BellRing,
   CheckCircle,
-  Clock,
   Filter,
   Settings,
   Shield,
   TrendingDown,
   TrendingUp,
-  X,
   Zap,
   Eye,
   EyeOff,
@@ -21,7 +19,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -345,8 +342,8 @@ export const AlertSystem: React.FC = () => {
         setAlerts(generateMockAlerts());
         setRules(generateMockRules());
         setAnomalies(detectAnomalies());
-      } catch (error) {
-        console.error('Erro ao carregar dados:', error);
+      } catch (_error) {
+        console.error('Erro ao carregar dados:', _error);
       } finally {
         setLoading(false);
       }

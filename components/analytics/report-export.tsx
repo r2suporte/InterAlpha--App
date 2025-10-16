@@ -6,8 +6,6 @@ import {
   FileText,
   FileSpreadsheet,
   File,
-  Calendar,
-  Filter,
   Settings,
   ChevronDown,
   Loader2,

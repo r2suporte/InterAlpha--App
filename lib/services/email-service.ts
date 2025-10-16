@@ -42,7 +42,7 @@ class EmailService {
   private initializeTransporter() {
     const config: EmailConfig = {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
+  port: parseInt(process.env.SMTP_PORT || '587', 10),
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: process.env.SMTP_USER || '',
@@ -62,9 +62,28 @@ class EmailService {
 
   async sendOrdemServicoEmail(
     ordemServico: OrdemServicoEmail,
-    pdfBuffer?: Buffer | null,
-    loginCredentials?: { login: string; senha: string }
+    pdfBufferOrCredentials?: Buffer | null | { login: string; senha: string },
+    explicitCredentials?: { login: string; senha: string }
   ) {
+    let pdfBuffer: Buffer | null = null;
+    let loginCredentials: { login: string; senha: string } | undefined;
+
+    if (pdfBufferOrCredentials) {
+      if (Buffer.isBuffer(pdfBufferOrCredentials)) {
+        pdfBuffer = pdfBufferOrCredentials;
+      } else if (
+        typeof pdfBufferOrCredentials === 'object' &&
+        'login' in pdfBufferOrCredentials &&
+        'senha' in pdfBufferOrCredentials
+      ) {
+        loginCredentials = pdfBufferOrCredentials;
+      }
+    }
+
+    if (explicitCredentials) {
+      loginCredentials = explicitCredentials;
+    }
+
     return await metricsService.measureOperation(
       'email',
       'sendOrdemServicoEmail',
@@ -85,8 +104,8 @@ class EmailService {
           html: emailHtml,
         };
 
-        // Adicionar PDF como anexo se disponível
-        if (pdfBuffer) {
+  // Adicionar PDF como anexo se disponível
+  if (pdfBuffer) {
           mailOptions.attachments = [
             {
               filename: `OS_${ordemServico.numero_os}.pdf`,

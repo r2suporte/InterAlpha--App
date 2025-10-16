@@ -57,7 +57,7 @@ export class LoggerService {
   private logBuffer: LogEntry[] = [];
   private bufferSize = 100;
   private flushInterval = 5000; // 5 segundos
-  private flushTimer?: NodeJS.Timeout;
+  private flushTimer?: ReturnType<typeof setTimeout>;
 
   // 📊 Níveis de log em ordem de prioridade
   private static readonly LOG_LEVELS: Record<LogLevel, number> = {

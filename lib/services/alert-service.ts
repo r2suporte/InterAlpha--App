@@ -66,7 +66,7 @@ interface AppMetricRow {
 export class AlertService {
   private supabase = createClient();
   private metricsService = new ApplicationMetricsService();
-  private alertCheckInterval: NodeJS.Timeout | null = null;
+  private alertCheckInterval: ReturnType<typeof setInterval> | null = null;
   private lastAlertCheck: Map<string, Date> = new Map();
 
   // Regras de alerta padrão

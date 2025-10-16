@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { AlertCircle, Loader2 } from 'lucide-react';
 
@@ -34,7 +34,6 @@ import {
   determinarTipoPessoa,
   formatarCEP,
   formatarCpfCnpj,
-  formatarTelefone,
   getMascaraCpfCnpj,
   limparDocumento,
   validarCEP,

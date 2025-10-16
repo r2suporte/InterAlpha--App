@@ -62,29 +62,6 @@ export async function verifyJWT(token: string): Promise<JWTPayload> {
 }
 
 /**
- * Converte string de tempo para segundos
- */
-function getExpirationTime(expiresIn: string): number {
-  const timeUnit = expiresIn.slice(-1);
-  const timeValue = parseInt(expiresIn.slice(0, -1));
-
-  switch (timeUnit) {
-    case 's':
-      return timeValue;
-    case 'm':
-      return timeValue * 60;
-    case 'h':
-      return timeValue * 60 * 60;
-    case 'd':
-      return timeValue * 24 * 60 * 60;
-    case 'w':
-      return timeValue * 7 * 24 * 60 * 60;
-    default:
-      return 7 * 24 * 60 * 60; // 7 dias por padrão
-  }
-}
-
-/**
  * Cria token para cliente
  */
 export async function createClientToken(

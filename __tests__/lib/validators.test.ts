@@ -399,6 +399,11 @@ describe('Validators', () => {
         status: 404,
       } as Response);
 
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+      } as Response);
+
       const resultado = await buscarDadosCNPJ('11222333000181');
       expect(resultado).toEqual({
         cnpj: '11222333000181',
@@ -406,7 +411,7 @@ describe('Validators', () => {
         situacao: 'CNPJ não encontrado',
         atividade_principal: [],
         erro: true,
-        message: 'CNPJ não encontrado',
+        message: 'CNPJ não encontrado na base de dados',
       });
     });
 
@@ -416,28 +421,34 @@ describe('Validators', () => {
         status: 500,
       } as Response);
 
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+      } as Response);
+
       const resultado = await buscarDadosCNPJ('11222333000181');
       expect(resultado).toEqual({
         cnpj: '11222333000181',
         nome: '',
-        situacao: 'Erro na consulta',
+        situacao: 'Serviço temporariamente indisponível',
         atividade_principal: [],
         erro: true,
-        message: 'Erro ao consultar CNPJ',
+        message: 'Não foi possível consultar o CNPJ. Tente novamente em alguns instantes.',
       });
     });
 
     it('retorna erro quando fetch falha', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
       const resultado = await buscarDadosCNPJ('11222333000181');
       expect(resultado).toEqual({
         cnpj: '11222333000181',
         nome: '',
-        situacao: 'Erro na consulta',
+        situacao: 'Serviço temporariamente indisponível',
         atividade_principal: [],
         erro: true,
-        message: 'Erro ao consultar CNPJ',
+        message: 'Não foi possível consultar o CNPJ. Tente novamente em alguns instantes.',
       });
     });
   });

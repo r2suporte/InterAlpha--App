@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import {
   AlertCircle,
   Banknote,
@@ -11,7 +13,6 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface MetricaCard {
@@ -22,7 +23,7 @@ interface MetricaCard {
     valor: number;
     tipo: 'positiva' | 'negativa' | 'neutra';
   };
-  icone: React.ReactNode;
+  icone: ReactNode;
   cor?: 'default' | 'success' | 'warning' | 'danger';
 }
 

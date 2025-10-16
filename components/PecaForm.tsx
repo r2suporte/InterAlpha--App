@@ -35,7 +35,7 @@ interface PecaFormData {
 
 interface PecaFormProps {
   peca?: Peca;
-  onSubmit: (data: PecaFormData) => Promise<void>;
+  onSubmit: (_data: PecaFormData) => Promise<void>;
   onCancel: () => void;
   fornecedores: Fornecedor[];
   isLoading?: boolean;
@@ -201,6 +201,16 @@ export default function PecaForm({
   };
 
   const margem = calcularMargem();
+
+  const getMargemColor = (percentual: number) => {
+    if (percentual >= 20) {
+      return 'text-green-600';
+    }
+    if (percentual >= 10) {
+      return 'text-yellow-600';
+    }
+    return 'text-red-600';
+  };
 
   return (
     <div className="mx-auto max-w-4xl rounded-lg bg-white p-6 shadow-lg">
@@ -442,13 +452,9 @@ export default function PecaForm({
                   Margem de Lucro:
                 </span>
                 <span
-                  className={`text-sm font-bold ${
-                    margem.percentual >= 20
-                      ? 'text-green-600'
-                      : margem.percentual >= 10
-                        ? 'text-yellow-600'
-                        : 'text-red-600'
-                  }`}
+                  className={`text-sm font-bold ${getMargemColor(
+                    margem.percentual
+                  )}`}
                 >
                   {margem.percentual.toFixed(1)}% (R$ {margem.valor.toFixed(2)})
                 </span>

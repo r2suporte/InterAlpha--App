@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action') || 'stats';
-    const limit = parseInt(searchParams.get('limit') || '100');
+    const limit = Number.parseInt(searchParams.get('limit') || '100', 10);
 
     switch (action) {
       case 'events':
@@ -59,8 +59,9 @@ export async function GET(request: NextRequest) {
 
         // Calcular métricas adicionais
         const now = new Date();
-        const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const lastHour = new Date(now.getTime() - 60 * 60 * 1000);
+        const last24hMs = 24 * 60 * 60 * 1000;
+        const lastHourMs = 60 * 60 * 1000;
+        const lastHour = new Date(now.getTime() - lastHourMs);
 
         const recentEvents = dashboardEvents.filter(
           e => new Date(e.timestamp) > lastHour

@@ -147,7 +147,7 @@ async function createAlert(request: NextRequest) {
   }
 }
 
-async function checkAlerts(request: NextRequest) {
+async function checkAlerts(_request: NextRequest) {
   try {
     const triggeredAlerts = await alertService.checkAlerts();
 

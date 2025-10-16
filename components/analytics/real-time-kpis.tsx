@@ -5,11 +5,8 @@ import React, { useEffect, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
-  ArrowDown,
-  ArrowUp,
   BarChart3,
   CheckCircle,
-  Clock,
   DollarSign,
   Minus,
   Package,

@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -27,13 +27,13 @@ import { PermissionManager, UserRole } from '@/lib/auth/permissions';
  */
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children: ReactNode;
   requiredRole?: UserRole;
   requiredRoles?: UserRole[];
   requiredPermission?: string;
   requiredPermissions?: string[];
   requiredResource?: string;
-  fallback?: React.ReactNode;
+  fallback?: ReactNode;
   redirectTo?: string;
   showAccessDenied?: boolean;
 }
@@ -116,7 +116,7 @@ export function ProtectedRoute({
     return showAccessDenied ? <AccessDenied /> : fallback || null;
   }
 
-  return <>{children}</>;
+  return children;
 }
 
 // Componente de acesso negado
@@ -159,8 +159,8 @@ export function AdminOnly({
   children,
   fallback,
 }: {
-  children: React.ReactNode;
-  fallback?: React.ReactNode;
+  children: ReactNode;
+  fallback?: ReactNode;
 }) {
   return (
     <ProtectedRoute
@@ -177,8 +177,8 @@ export function ManagerOnly({
   children,
   fallback,
 }: {
-  children: React.ReactNode;
-  fallback?: React.ReactNode;
+  children: ReactNode;
+  fallback?: ReactNode;
 }) {
   return (
     <ProtectedRoute
@@ -195,8 +195,8 @@ export function TechnicianOnly({
   children,
   fallback,
 }: {
-  children: React.ReactNode;
-  fallback?: React.ReactNode;
+  children: ReactNode;
+  fallback?: ReactNode;
 }) {
   return (
     <ProtectedRoute
@@ -213,8 +213,8 @@ export function SupervisorOnly({
   children,
   fallback,
 }: {
-  children: React.ReactNode;
-  fallback?: React.ReactNode;
+  children: ReactNode;
+  fallback?: ReactNode;
 }) {
   return (
     <ProtectedRoute

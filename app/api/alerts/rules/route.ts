@@ -6,7 +6,7 @@ import { AlertService } from '@/lib/services/alert-service';
 
 const alertService = new AlertService();
 
-async function getRules(request: NextRequest) {
+async function getRules(_request: NextRequest) {
   try {
     const rules = await alertService.getRules();
 
@@ -26,7 +26,7 @@ async function getRules(request: NextRequest) {
   }
 }
 
-async function initializeDefaultRules(request: NextRequest) {
+async function initializeDefaultRules(_request: NextRequest) {
   try {
     await alertService.initializeDefaultRules();
 

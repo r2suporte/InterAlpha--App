@@ -6,13 +6,11 @@ import {
   Activity,
   AlertTriangle,
   Ban,
-  Clock,
   Download,
   Eye,
   RefreshCw,
   Shield,
   TrendingUp,
-  Users,
 } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';

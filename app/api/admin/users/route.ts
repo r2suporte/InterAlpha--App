@@ -15,7 +15,7 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 // Função interna para listar usuários
-async function getUsers(request: NextRequest, user: AuthenticatedUser) {
+async function getUsers(_request: NextRequest, _user: AuthenticatedUser) {
   try {
     const { data: users, error } = await supabaseAdmin
       .from('users')
