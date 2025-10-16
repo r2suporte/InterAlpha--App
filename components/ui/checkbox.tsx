@@ -12,7 +12,7 @@ type CheckboxProps = Omit<
   React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>,
   'onCheckedChange' | 'checked'
 > & {
-  onCheckedChange?: (value: boolean | 'indeterminate') => void;
+  onCheckedChange?: (_value: boolean | 'indeterminate') => void;
   checked?: boolean | 'indeterminate';
 };
 

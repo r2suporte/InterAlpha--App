@@ -32,7 +32,7 @@ import { Label } from './label';
 
 interface DocumentSelectorProps {
   value: string;
-  onChange: (value: string, tipoPessoa: TipoPessoa) => void;
+  onChange: (_value: string, _tipoPessoa: TipoPessoa) => void;
   id?: string;
   placeholder?: string;
   required?: boolean;

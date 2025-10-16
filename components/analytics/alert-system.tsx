@@ -180,9 +180,9 @@ const detectAnomalies = (): AnomalyDetection[] => {
 // 📊 Componente de card de alerta
 const AlertCard: React.FC<{
   alert: Alert;
-  onAcknowledge: (id: string) => void;
-  onResolve: (id: string) => void;
-  onMarkRead: (id: string) => void;
+  onAcknowledge: (_id: string) => void;
+  onResolve: (_id: string) => void;
+  onMarkRead: (_id: string) => void;
 }> = ({ alert, onAcknowledge, onResolve, onMarkRead }) => {
   const SeverityIcon = SEVERITY_ICONS[alert.severity];
   const TrendIcon = alert.trend === 'up' ? TrendingUp : TrendingDown;
@@ -255,7 +255,7 @@ const AlertCard: React.FC<{
 // ⚙️ Componente de configuração de regras
 const RuleConfiguration: React.FC<{
   rules: AlertRule[];
-  onUpdateRule: (rule: AlertRule) => void;
+  onUpdateRule: (_rule: AlertRule) => void;
 }> = ({ rules, onUpdateRule }) => {
   return (
     <div className="space-y-4">

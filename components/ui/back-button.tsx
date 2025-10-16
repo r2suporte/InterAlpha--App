@@ -18,7 +18,7 @@ export function BackButton({ href, className, children }: BackButtonProps) {
   const router = useRouter();
   const isNavigatingRef = useRef(false);
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (_e: React.MouseEvent) => {
     // NÃO usar preventDefault pois bloqueia a navegação do Next.js
     
     // Prevenir múltiplos cliques

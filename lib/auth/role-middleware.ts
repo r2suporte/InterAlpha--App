@@ -290,8 +290,8 @@ export function createRoleMiddleware(options?: {
   return async function roleMiddleware(
     request: NextRequest,
     handler: (
-      request: NextRequest,
-      user: AuthenticatedUser
+      _request: NextRequest,
+      _user: AuthenticatedUser
     ) => Promise<NextResponse>
   ): Promise<NextResponse> {
     try {

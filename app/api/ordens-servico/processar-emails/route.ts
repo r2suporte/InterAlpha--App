@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import EmailService from '@/lib/services/email-service';
 import { createClient } from '@/lib/supabase/server';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
 

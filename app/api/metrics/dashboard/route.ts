@@ -345,7 +345,7 @@ async function getAlerts(supabase: any) {
 }
 
 // 📊 Handler Principal
-async function getDashboardMetrics(request: NextRequest) {
+async function getDashboardMetrics(_request: NextRequest) {
   try {
     const supabase = createClient();
 

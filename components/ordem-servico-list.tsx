@@ -55,8 +55,8 @@ interface OrdemServico {
 }
 
 interface OrdemServicoListProps {
-  onEdit?: (id: string) => void;
-  onView?: (id: string) => void;
+  onEdit?: (_id: string) => void;
+  onView?: (_id: string) => void;
   onCreateNew?: () => void;
 }
 

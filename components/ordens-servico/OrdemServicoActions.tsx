@@ -35,12 +35,12 @@ import OrdemAssinaturaCliente from '../OrdemAssinaturaCliente';
 
 interface OrdemServicoActionsProps {
   ordem: OrdemServico;
-  onUpdate?: (ordem: OrdemServico) => void;
+  onUpdate?: (_ordem: OrdemServico) => void;
 }
 
 export function OrdemServicoActions({
   ordem,
-  onUpdate,
+  _onUpdate,
 }: OrdemServicoActionsProps) {
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const {

@@ -8,7 +8,7 @@ interface InputMaskProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   mask: string;
   value: string;
-  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (_event: React.ChangeEvent<HTMLInputElement>) => void;
   className?: string;
 }
 

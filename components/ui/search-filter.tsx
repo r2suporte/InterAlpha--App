@@ -31,7 +31,7 @@ import { cn } from '@/lib/utils';
 
 interface SearchBarProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (_value: string) => void;
   placeholder?: string;
   className?: string;
   onClear?: () => void;
@@ -75,7 +75,7 @@ interface FilterOption {
 
 interface FilterSelectProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (_value: string) => void;
   options: FilterOption[];
   placeholder?: string;
   label?: string;
@@ -128,7 +128,7 @@ interface ActiveFilter {
 
 interface ActiveFiltersProps {
   filters: ActiveFilter[];
-  onRemoveFilter: (key: string) => void;
+  onRemoveFilter: (_key: string) => void;
   onClearAll: () => void;
   className?: string;
 }
@@ -216,8 +216,8 @@ export function FilterPanel({
 interface DateRangeFilterProps {
   startDate: string;
   endDate: string;
-  onStartDateChange: (date: string) => void;
-  onEndDateChange: (date: string) => void;
+  onStartDateChange: (_date: string) => void;
+  onEndDateChange: (_date: string) => void;
   label?: string;
   className?: string;
 }
@@ -258,11 +258,11 @@ export function DateRangeFilter({
 // Componente completo que combina search e filtros
 interface SearchAndFilterProps {
   searchValue: string;
-  onSearchChange: (value: string) => void;
+  onSearchChange: (_value: string) => void;
   searchPlaceholder?: string;
   filters?: React.ReactNode;
   activeFilters?: ActiveFilter[];
-  onRemoveFilter?: (key: string) => void;
+  onRemoveFilter?: (_key: string) => void;
   onClearAllFilters?: () => void;
   className?: string;
   actions?: React.ReactNode;

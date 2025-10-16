@@ -137,7 +137,7 @@ const AVAILABLE_FIELDS = [
 // 🎨 Componente de seleção de formato
 const FormatSelector: React.FC<{
   selectedFormat: string;
-  onFormatChange: (format: string) => void;
+  onFormatChange: (_format: string) => void;
 }> = ({ selectedFormat, onFormatChange }) => {
   return (
     <div className="space-y-3">
@@ -191,7 +191,7 @@ const FormatSelector: React.FC<{
 // 📅 Componente de configuração de opções
 const ExportOptionsPanel: React.FC<{
   options: ExportOptions;
-  onOptionsChange: (options: ExportOptions) => void;
+  onOptionsChange: (_options: ExportOptions) => void;
 }> = ({ options, onOptionsChange }) => {
   const updateOptions = (updates: Partial<ExportOptions>) => {
     onOptionsChange({ ...options, ...updates });

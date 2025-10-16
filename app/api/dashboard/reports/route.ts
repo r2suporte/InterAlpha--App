@@ -292,7 +292,7 @@ export async function GET(request: NextRequest) {
   const middleware = requireAuth();
   return await middleware(
     request,
-    async (req: NextRequest, user: AuthenticatedUser) => {
+    async (req: NextRequest, _user: AuthenticatedUser) => {
       return await withAuthenticatedApiMetrics(getDashboardReports)(req);
     }
   );

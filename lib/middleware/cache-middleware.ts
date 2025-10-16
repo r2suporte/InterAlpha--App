@@ -4,8 +4,8 @@ import { CACHE_TTL, cacheService } from '@/lib/services/cache-service';
 
 interface CacheOptions {
   ttl?: number;
-  keyGenerator?: (req: NextRequest) => string;
-  shouldCache?: (req: NextRequest, res: NextResponse) => boolean;
+  keyGenerator?: (_req: NextRequest) => string;
+  shouldCache?: (_req: NextRequest, _res: NextResponse) => boolean;
   varyBy?: string[];
 }
 

@@ -83,7 +83,7 @@ async function handleStatusAction(
   status: string,
   messageId: string,
   to: string,
-  supabase: any
+  _supabase: any
 ) {
   try {
     switch (status) {

@@ -22,12 +22,12 @@ export interface Toast {
 
 interface ToastContextType {
   toasts: Toast[];
-  addToast: (toast: Omit<Toast, 'id'>) => void;
-  removeToast: (id: string) => void;
-  success: (title: string, description?: string) => void;
-  error: (title: string, description?: string) => void;
-  warning: (title: string, description?: string) => void;
-  info: (title: string, description?: string) => void;
+  addToast: (_toast: Omit<Toast, 'id'>) => void;
+  removeToast: (_id: string) => void;
+  success: (_title: string, _description?: string) => void;
+  error: (_title: string, _description?: string) => void;
+  warning: (_title: string, _description?: string) => void;
+  info: (_title: string, _description?: string) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);

@@ -41,7 +41,7 @@ import {
 } from '@/types/equipamentos';
 
 interface EquipamentoFormProps {
-  onSubmit: (data: EquipamentoFormData) => void;
+  onSubmit: (_data: EquipamentoFormData) => void;
   initialData?: Partial<EquipamentoFormData>;
   isLoading?: boolean;
 }

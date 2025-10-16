@@ -192,7 +192,7 @@ function renderFieldInput(
   placeholder: string,
   options: string[] | undefined | null,
   fieldValidation: string | null,
-  handleInputChange: (field: string, val: string) => void
+  handleInputChange: (_field: string, _val: string) => void
 ): React.ReactNode {
   if (type === 'select' && options) {
     return (
@@ -241,7 +241,7 @@ interface ServiceOrderFormProps {
   onSuccess?: () => void;
 }
 
-export function ServiceOrderForm({ ordemId, onSuccess }: ServiceOrderFormProps = {}) {
+export function ServiceOrderForm({ _ordemId, onSuccess }: ServiceOrderFormProps = {}) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -494,7 +494,7 @@ export function ServiceOrderForm({ ordemId, onSuccess }: ServiceOrderFormProps =
   const renderStepIndicator = () => (
     <div className="mb-8 w-full">
       <div className="mb-6 flex items-center justify-between">
-        {FORM_STEPS.map((step, index) => {
+        {FORM_STEPS.map((step, _index) => {
           const Icon = step.icon;
           const isActive = currentStep === step.id;
           const isCompleted = currentStep > step.id;

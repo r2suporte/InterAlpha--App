@@ -33,7 +33,7 @@ interface Cliente {
 }
 
 interface ClientSearchProps {
-  onClientSelect: (client: Cliente) => void;
+  onClientSelect: (_client: Cliente) => void;
   onCreateNew: () => void;
   selectedClient?: Cliente | null;
 }

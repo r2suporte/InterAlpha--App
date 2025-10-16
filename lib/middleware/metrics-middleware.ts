@@ -16,7 +16,7 @@ interface MetricsConfig {
 
 // 🎯 Middleware Principal de Métricas
 export function withMetrics(
-  handler: (request: NextRequest) => Promise<NextResponse>,
+  handler: (_request: NextRequest) => Promise<NextResponse>,
   config: MetricsConfig = {
     trackPerformance: true,
     trackUsage: true,
@@ -99,7 +99,7 @@ export function withMetrics(
 
 // API Pública (sem autenticação)
 export function withPublicApiMetrics(
-  handler: (request: NextRequest) => Promise<NextResponse>
+  handler: (_request: NextRequest) => Promise<NextResponse>
 ) {
   return withMetrics(handler, {
     trackPerformance: true,
@@ -112,7 +112,7 @@ export function withPublicApiMetrics(
 
 // API Autenticada
 export function withAuthenticatedApiMetrics(
-  handler: (request: NextRequest) => Promise<NextResponse>
+  handler: (_request: NextRequest) => Promise<NextResponse>
 ) {
   return withMetrics(handler, {
     trackPerformance: true,
@@ -125,7 +125,7 @@ export function withAuthenticatedApiMetrics(
 
 // API de Admin
 export function withAdminApiMetrics(
-  handler: (request: NextRequest) => Promise<NextResponse>
+  handler: (_request: NextRequest) => Promise<NextResponse>
 ) {
   return withMetrics(handler, {
     trackPerformance: true,
@@ -138,7 +138,7 @@ export function withAdminApiMetrics(
 
 // API de Métricas (com tracking reduzido para evitar loops)
 export function withMetricsApiMetrics(
-  handler: (request: NextRequest) => Promise<NextResponse>
+  handler: (_request: NextRequest) => Promise<NextResponse>
 ) {
   return withMetrics(handler, {
     trackPerformance: true,
@@ -151,9 +151,9 @@ export function withMetricsApiMetrics(
 
 // 📊 Middleware para Métricas de Negócio
 export function withBusinessMetrics(
-  handler: (request: NextRequest) => Promise<NextResponse>,
+  handler: (_request: NextRequest) => Promise<NextResponse>,
   businessMetricName: string,
-  extractValue?: (request: NextRequest, response: NextResponse) => number
+  extractValue?: (_request: NextRequest, _response: NextResponse) => number
 ) {
   return async (request: NextRequest): Promise<NextResponse> => {
     const response = await handler(request);
@@ -266,7 +266,7 @@ export class ApiMetricsCollector {
 
 // 🔍 Middleware para Análise de Performance de Queries
 export function withDatabaseMetrics(
-  handler: (request: NextRequest) => Promise<NextResponse>
+  handler: (_request: NextRequest) => Promise<NextResponse>
 ) {
   return async (request: NextRequest): Promise<NextResponse> => {
     const startTime = performance.now();

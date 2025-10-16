@@ -29,10 +29,10 @@ interface FilterConfig {
 
 interface SearchAndFilterProps {
   searchValue: string;
-  onSearchChange: (value: string) => void;
+  onSearchChange: (_value: string) => void;
   searchPlaceholder?: string;
   filters: Record<string, any>;
-  onFiltersChange: (filters: Record<string, any>) => void;
+  onFiltersChange: (_filters: Record<string, any>) => void;
   filterOptions: FilterConfig[];
   className?: string;
 }

@@ -76,7 +76,7 @@ function extractRequestContext(request: NextRequest): LogContext {
  * 🎯 Middleware principal de logging
  */
 export function withLogging<T extends any[]>(
-  handler: (...args: T) => Promise<NextResponse>,
+  handler: (..._args: T) => Promise<NextResponse>,
   config: LoggingMiddlewareConfig = {}
 ) {
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
@@ -223,7 +223,7 @@ export function withLogging<T extends any[]>(
  * 🎯 Middleware específico para APIs públicas
  */
 export function withPublicApiLogging<T extends any[]>(
-  handler: (...args: T) => Promise<NextResponse>
+  handler: (..._args: T) => Promise<NextResponse>
 ) {
   return withLogging(handler, {
     logRequestBody: false,
@@ -236,7 +236,7 @@ export function withPublicApiLogging<T extends any[]>(
  * 🔐 Middleware específico para APIs autenticadas
  */
 export function withAuthenticatedApiLogging<T extends any[]>(
-  handler: (...args: T) => Promise<NextResponse>
+  handler: (..._args: T) => Promise<NextResponse>
 ) {
   return withLogging(handler, {
     logRequestBody: true,
@@ -258,7 +258,7 @@ export function withAuthenticatedApiLogging<T extends any[]>(
  * 🔧 Middleware específico para APIs administrativas
  */
 export function withAdminApiLogging<T extends any[]>(
-  handler: (...args: T) => Promise<NextResponse>
+  handler: (..._args: T) => Promise<NextResponse>
 ) {
   return withLogging(handler, {
     logRequestBody: true,
@@ -282,7 +282,7 @@ export function withAdminApiLogging<T extends any[]>(
  * 📊 Middleware para logging de métricas
  */
 export function withMetricsLogging<T extends any[]>(
-  handler: (...args: T) => Promise<NextResponse>
+  handler: (..._args: T) => Promise<NextResponse>
 ) {
   return withLogging(handler, {
     enableRequestLogging: false,

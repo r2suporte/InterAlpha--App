@@ -61,9 +61,9 @@ interface Cliente {
 interface ClientesListProps {
   clientes: Cliente[];
   isLoading?: boolean;
-  onEdit: (cliente: Cliente) => void;
-  onDelete: (cliente: Cliente) => void;
-  onView: (cliente: Cliente) => void;
+  onEdit: (_cliente: Cliente) => void;
+  onDelete: (_cliente: Cliente) => void;
+  onView: (_cliente: Cliente) => void;
 }
 
 export function ClientesList({

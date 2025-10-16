@@ -60,7 +60,7 @@ interface FormData {
 
 interface ClienteFormProps {
   initialData?: Partial<FormData>;
-  onSubmit: (data: FormData) => Promise<void>;
+  onSubmit: (_data: FormData) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
   title: string;
