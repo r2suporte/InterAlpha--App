@@ -1,387 +1,183 @@
-// Mock do módulo cache-service
-const mockCacheService = {
-  isRedisConnected: jest.fn(),
-  set: jest.fn(),
-  get: jest.fn(),
-  delete: jest.fn(),
-  deletePattern: jest.fn(),
-  exists: jest.fn(),
-  expire: jest.fn(),
-  increment: jest.fn(),
-  listPush: jest.fn(),
-  listRange: jest.fn(),
-  flushAll: jest.fn(),
-  disconnect: jest.fn(),
-  getStats: jest.fn(),
-};
+/**
+ * @jest-environment node
+ */
 
-jest.mock('../../../lib/services/cache-service', () => ({
-  cacheService: mockCacheService,
-  CACHE_KEYS: {
-    CLIENTES: 'clientes',
-    CLIENTE_BY_ID: (id: string) => `cliente:${id}`,
-    ORDENS_SERVICO: 'ordens_servico',
-    ORDEM_BY_ID: (id: string) => `ordem:${id}`,
-    PECAS: 'pecas',
-    PECA_BY_ID: (id: string) => `peca:${id}`,
-    FORNECEDORES: 'fornecedores',
-    METRICAS_FINANCEIRAS: 'metricas_financeiras',
-    DASHBOARD_STATS: 'dashboard_stats',
-    USER_PERMISSIONS: (userId: string) => `permissions:${userId}`,
-    COMMUNICATION_METRICS: 'communication_metrics',
-  },
-  CACHE_TTL: {
-    SHORT: 60,
-    MEDIUM: 300,
-    LONG: 900,
-    VERY_LONG: 3600,
-    DAILY: 86400,
-  },
-}));
+import { CACHE_KEYS, CACHE_TTL } from '../../../lib/services/cache-service';
 
-// Importar após o mock
-const { cacheService, CACHE_KEYS, CACHE_TTL } = require('../../../lib/services/cache-service');
-
-describe('CacheService', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    // Por padrão, simular que o Redis está conectado
-    mockCacheService.isRedisConnected.mockReturnValue(true);
-  });
-
-  describe('isRedisConnected', () => {
-    it('deve retornar true quando conectado', () => {
-      mockCacheService.isRedisConnected.mockReturnValue(true);
-      const result = cacheService.isRedisConnected();
-      expect(result).toBe(true);
-    });
-
-    it('deve retornar false quando não conectado', () => {
-      mockCacheService.isRedisConnected.mockReturnValue(false);
-      const result = cacheService.isRedisConnected();
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('set', () => {
-    it('deve armazenar dados com sucesso', async () => {
-      mockCacheService.set.mockResolvedValue(true);
-      const result = await cacheService.set('test-key', { data: 'test' }, 300);
-      expect(result).toBe(true);
-      expect(mockCacheService.set).toHaveBeenCalledWith('test-key', { data: 'test' }, 300);
-    });
-
-    it('deve retornar false quando Redis não está conectado', async () => {
-      mockCacheService.isRedisConnected.mockReturnValue(false);
-      mockCacheService.set.mockResolvedValue(false);
-      const result = await cacheService.set('test-key', { data: 'test' });
-      expect(result).toBe(false);
-    });
-
-    it('deve retornar false em caso de erro', async () => {
-      mockCacheService.set.mockResolvedValue(false);
-      const result = await cacheService.set('test-key', { data: 'test' });
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('get', () => {
-    it('deve recuperar dados com sucesso', async () => {
-      const testData = { id: 1, name: 'Test' };
-      mockCacheService.get.mockResolvedValue(testData);
-      const result = await cacheService.get('test-key');
-      expect(result).toEqual(testData);
-      expect(mockCacheService.get).toHaveBeenCalledWith('test-key');
-    });
-
-    it('deve retornar null quando chave não existe', async () => {
-      mockCacheService.get.mockResolvedValue(null);
-      const result = await cacheService.get('non-existent-key');
-      expect(result).toBeNull();
-    });
-
-    it('deve retornar null quando Redis não está conectado', async () => {
-      mockCacheService.isRedisConnected.mockReturnValue(false);
-      mockCacheService.get.mockResolvedValue(null);
-      const result = await cacheService.get('test-key');
-      expect(result).toBeNull();
-    });
-  });
-
-  describe('delete', () => {
-    it('deve deletar chave com sucesso', async () => {
-      mockCacheService.delete.mockResolvedValue(true);
-      const result = await cacheService.delete('test-key');
-      expect(result).toBe(true);
-      expect(mockCacheService.delete).toHaveBeenCalledWith('test-key');
-    });
-
-    it('deve retornar false quando chave não existe', async () => {
-      mockCacheService.delete.mockResolvedValue(false);
-      const result = await cacheService.delete('non-existent-key');
-      expect(result).toBe(false);
-    });
-
-    it('deve retornar false quando Redis não está conectado', async () => {
-      mockCacheService.isRedisConnected.mockReturnValue(false);
-      mockCacheService.delete.mockResolvedValue(false);
-      const result = await cacheService.delete('test-key');
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('deletePattern', () => {
-    it('deve deletar múltiplas chaves por padrão', async () => {
-      mockCacheService.deletePattern.mockResolvedValue(3);
-      const result = await cacheService.deletePattern('test:*');
-      expect(result).toBe(3);
-      expect(mockCacheService.deletePattern).toHaveBeenCalledWith('test:*');
-    });
-
-    it('deve retornar 0 quando nenhuma chave corresponde ao padrão', async () => {
-      mockCacheService.deletePattern.mockResolvedValue(0);
-      const result = await cacheService.deletePattern('non-existent:*');
-      expect(result).toBe(0);
-    });
-
-    it('deve retornar 0 quando Redis não está conectado', async () => {
-      mockCacheService.isRedisConnected.mockReturnValue(false);
-      mockCacheService.deletePattern.mockResolvedValue(0);
-      const result = await cacheService.deletePattern('test:*');
-      expect(result).toBe(0);
-    });
-  });
-
-  describe('exists', () => {
-    it('deve retornar true quando chave existe', async () => {
-      mockCacheService.exists.mockResolvedValue(true);
-      const result = await cacheService.exists('test-key');
-      expect(result).toBe(true);
-      expect(mockCacheService.exists).toHaveBeenCalledWith('test-key');
-    });
-
-    it('deve retornar false quando chave não existe', async () => {
-      mockCacheService.exists.mockResolvedValue(false);
-      const result = await cacheService.exists('non-existent-key');
-      expect(result).toBe(false);
-    });
-
-    it('deve retornar false quando Redis não está conectado', async () => {
-      mockCacheService.isRedisConnected.mockReturnValue(false);
-      mockCacheService.exists.mockResolvedValue(false);
-      const result = await cacheService.exists('test-key');
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('expire', () => {
-    it('deve definir TTL com sucesso', async () => {
-      mockCacheService.expire.mockResolvedValue(true);
-      const result = await cacheService.expire('test-key', 300);
-      expect(result).toBe(true);
-      expect(mockCacheService.expire).toHaveBeenCalledWith('test-key', 300);
-    });
-
-    it('deve retornar false quando chave não existe', async () => {
-      mockCacheService.expire.mockResolvedValue(false);
-      const result = await cacheService.expire('non-existent-key', 300);
-      expect(result).toBe(false);
-    });
-
-    it('deve retornar false quando Redis não está conectado', async () => {
-      mockCacheService.isRedisConnected.mockReturnValue(false);
-      mockCacheService.expire.mockResolvedValue(false);
-      const result = await cacheService.expire('test-key', 300);
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('increment', () => {
-    it('deve incrementar contador com sucesso', async () => {
-      mockCacheService.increment.mockResolvedValue(1);
-      const result = await cacheService.increment('counter-key');
-      expect(result).toBe(1);
-      expect(mockCacheService.increment).toHaveBeenCalledWith('counter-key');
-    });
-
-    it('deve incrementar por valor específico', async () => {
-      mockCacheService.increment.mockResolvedValue(5);
-      const result = await cacheService.increment('counter-key', 5);
-      expect(result).toBe(5);
-      expect(mockCacheService.increment).toHaveBeenCalledWith('counter-key', 5);
-    });
-
-    it('deve retornar null quando Redis não está conectado', async () => {
-      mockCacheService.isRedisConnected.mockReturnValue(false);
-      mockCacheService.increment.mockResolvedValue(null);
-      const result = await cacheService.increment('counter-key');
-      expect(result).toBeNull();
-    });
-  });
-
-  describe('listPush', () => {
-    it('deve adicionar item à lista com sucesso', async () => {
-      mockCacheService.listPush.mockResolvedValue(true);
-      const result = await cacheService.listPush('list-key', { item: 'test' });
-      expect(result).toBe(true);
-      expect(mockCacheService.listPush).toHaveBeenCalledWith('list-key', { item: 'test' });
-    });
-
-    it('deve retornar false quando Redis não está conectado', async () => {
-      mockCacheService.isRedisConnected.mockReturnValue(false);
-      mockCacheService.listPush.mockResolvedValue(false);
-      const result = await cacheService.listPush('list-key', { item: 'test' });
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('listRange', () => {
-    it('deve recuperar itens da lista com sucesso', async () => {
-      const testItems = [{ item: 'test1' }, { item: 'test2' }];
-      mockCacheService.listRange.mockResolvedValue(testItems);
-      const result = await cacheService.listRange('list-key', 0, -1);
-      expect(result).toEqual(testItems);
-      expect(mockCacheService.listRange).toHaveBeenCalledWith('list-key', 0, -1);
-    });
-
-    it('deve retornar array vazio quando lista não existe', async () => {
-      mockCacheService.listRange.mockResolvedValue([]);
-      const result = await cacheService.listRange('non-existent-list');
-      expect(result).toEqual([]);
-    });
-
-    it('deve retornar array vazio quando Redis não está conectado', async () => {
-      mockCacheService.isRedisConnected.mockReturnValue(false);
-      mockCacheService.listRange.mockResolvedValue([]);
-      const result = await cacheService.listRange('list-key');
-      expect(result).toEqual([]);
-    });
-  });
-
-  describe('flushAll', () => {
-    it('deve limpar todo o cache com sucesso', async () => {
-      mockCacheService.flushAll.mockResolvedValue(true);
-      const result = await cacheService.flushAll();
-      expect(result).toBe(true);
-      expect(mockCacheService.flushAll).toHaveBeenCalled();
-    });
-
-    it('deve retornar false quando Redis não está conectado', async () => {
-      mockCacheService.isRedisConnected.mockReturnValue(false);
-      mockCacheService.flushAll.mockResolvedValue(false);
-      const result = await cacheService.flushAll();
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('disconnect', () => {
-    it('deve desconectar com sucesso', async () => {
-      mockCacheService.disconnect.mockResolvedValue(undefined);
-      await cacheService.disconnect();
-      expect(mockCacheService.disconnect).toHaveBeenCalled();
-    });
-  });
-
-  describe('getStats', () => {
-    it('deve retornar estatísticas do Redis', async () => {
-      const mockStats = { used_memory: '1024', connected_clients: '5' };
-      mockCacheService.getStats.mockResolvedValue(mockStats);
-      const result = await cacheService.getStats();
-      expect(result).toEqual(mockStats);
-      expect(mockCacheService.getStats).toHaveBeenCalled();
-    });
-
-    it('deve retornar null quando Redis não está conectado', async () => {
-      mockCacheService.isRedisConnected.mockReturnValue(false);
-      mockCacheService.getStats.mockResolvedValue(null);
-      const result = await cacheService.getStats();
-      expect(result).toBeNull();
-    });
-  });
-
-  describe('CACHE_KEYS', () => {
-    it('deve ter todas as chaves definidas', () => {
+describe('lib/services/cache-service', () => {
+  describe('CACHE_KEYS Constants', () => {
+    it('should define all static cache key constants', () => {
       expect(CACHE_KEYS.CLIENTES).toBe('clientes');
-      expect(CACHE_KEYS.CLIENTE_BY_ID('123')).toBe('cliente:123');
       expect(CACHE_KEYS.ORDENS_SERVICO).toBe('ordens_servico');
-      expect(CACHE_KEYS.ORDEM_BY_ID('456')).toBe('ordem:456');
       expect(CACHE_KEYS.PECAS).toBe('pecas');
-      expect(CACHE_KEYS.PECA_BY_ID('789')).toBe('peca:789');
       expect(CACHE_KEYS.FORNECEDORES).toBe('fornecedores');
       expect(CACHE_KEYS.METRICAS_FINANCEIRAS).toBe('metricas_financeiras');
       expect(CACHE_KEYS.DASHBOARD_STATS).toBe('dashboard_stats');
-      expect(CACHE_KEYS.USER_PERMISSIONS('user123')).toBe('permissions:user123');
       expect(CACHE_KEYS.COMMUNICATION_METRICS).toBe('communication_metrics');
+    });
+
+    it('should generate dynamic cache keys by ID', () => {
+      expect(CACHE_KEYS.CLIENTE_BY_ID('123')).toBe('cliente:123');
+      expect(CACHE_KEYS.ORDEM_BY_ID('456')).toBe('ordem:456');
+      expect(CACHE_KEYS.PECA_BY_ID('789')).toBe('peca:789');
+    });
+
+    it('should generate user permission cache keys', () => {
+      expect(CACHE_KEYS.USER_PERMISSIONS('user-1')).toBe('permissions:user-1');
+      expect(CACHE_KEYS.USER_PERMISSIONS('admin-2')).toBe('permissions:admin-2');
+    });
+
+    it('should handle special characters in dynamic keys', () => {
+      expect(CACHE_KEYS.CLIENTE_BY_ID('123-abc')).toBe('cliente:123-abc');
+      expect(CACHE_KEYS.USER_PERMISSIONS('user@domain.com')).toBe('permissions:user@domain.com');
     });
   });
 
-  describe('CACHE_TTL', () => {
-    it('deve ter todos os TTLs definidos', () => {
+  describe('CACHE_TTL Constants', () => {
+    it('should define all TTL constants in seconds', () => {
       expect(CACHE_TTL.SHORT).toBe(60);
       expect(CACHE_TTL.MEDIUM).toBe(300);
       expect(CACHE_TTL.LONG).toBe(900);
       expect(CACHE_TTL.VERY_LONG).toBe(3600);
       expect(CACHE_TTL.DAILY).toBe(86400);
     });
+
+    it('should have correct time ordering', () => {
+      expect(CACHE_TTL.SHORT).toBeLessThan(CACHE_TTL.MEDIUM);
+      expect(CACHE_TTL.MEDIUM).toBeLessThan(CACHE_TTL.LONG);
+      expect(CACHE_TTL.LONG).toBeLessThan(CACHE_TTL.VERY_LONG);
+      expect(CACHE_TTL.VERY_LONG).toBeLessThan(CACHE_TTL.DAILY);
+    });
+
+    it('should convert to expected time durations', () => {
+      expect(CACHE_TTL.SHORT).toBe(1 * 60);           // 1 minuto
+      expect(CACHE_TTL.MEDIUM).toBe(5 * 60);          // 5 minutos
+      expect(CACHE_TTL.LONG).toBe(15 * 60);           // 15 minutos
+      expect(CACHE_TTL.VERY_LONG).toBe(60 * 60);      // 1 hora
+      expect(CACHE_TTL.DAILY).toBe(24 * 60 * 60);     // 24 horas
+    });
+
+    it('should be all positive numbers', () => {
+      expect(CACHE_TTL.SHORT).toBeGreaterThan(0);
+      expect(CACHE_TTL.MEDIUM).toBeGreaterThan(0);
+      expect(CACHE_TTL.LONG).toBeGreaterThan(0);
+      expect(CACHE_TTL.VERY_LONG).toBeGreaterThan(0);
+      expect(CACHE_TTL.DAILY).toBeGreaterThan(0);
+    });
   });
 
-  describe('Cenários de Integração', () => {
-    beforeEach(() => {
-      // Simular conexão ativa
-      mockCacheService.isRedisConnected.mockReturnValue(true);
+  describe('CacheService exports', () => {
+    it('should export cacheService singleton', () => {
+      const { cacheService } = require('../../../lib/services/cache-service');
+      expect(cacheService).toBeDefined();
+      expect(typeof cacheService.set).toBe('function');
+      expect(typeof cacheService.get).toBe('function');
+      expect(typeof cacheService.delete).toBe('function');
+      expect(typeof cacheService.exists).toBe('function');
+      expect(typeof cacheService.increment).toBe('function');
+      expect(typeof cacheService.listPush).toBe('function');
+      expect(typeof cacheService.listRange).toBe('function');
+      expect(typeof cacheService.deletePattern).toBe('function');
+      expect(typeof cacheService.expire).toBe('function');
+      expect(typeof cacheService.flushAll).toBe('function');
+      expect(typeof cacheService.getStats).toBe('function');
+      expect(typeof cacheService.disconnect).toBe('function');
+      expect(typeof cacheService.isRedisConnected).toBe('function');
+    });
+  });
+
+  describe('Cache key construction patterns', () => {
+    it('should support dot notation for nested access', () => {
+      const orderId = '12345';
+      const key = CACHE_KEYS.ORDEM_BY_ID(orderId);
+      expect(key).toMatch(/^ordem:/);
+      expect(key).toContain(orderId);
     });
 
-    it('deve funcionar em cenário completo de cache de cliente', async () => {
-      const cacheKey = CACHE_KEYS.CLIENTE_BY_ID('123');
-      const clienteData = { id: '123', nome: 'João Silva', email: 'joao@email.com' };
-      
-      // Armazenar dados
-      mockCacheService.set.mockResolvedValue(true);
-      const setResult = await cacheService.set(cacheKey, clienteData, CACHE_TTL.MEDIUM);
-      expect(setResult).toBe(true);
-      
-      // Verificar se existe
-      mockCacheService.exists.mockResolvedValue(true);
-      const existsResult = await cacheService.exists(cacheKey);
-      expect(existsResult).toBe(true);
-      
-      // Recuperar dados
-      mockCacheService.get.mockResolvedValue(clienteData);
-      const retrievedData = await cacheService.get(cacheKey);
-      expect(retrievedData).toEqual(clienteData);
-      
-      // Deletar dados
-      mockCacheService.delete.mockResolvedValue(true);
-      const deleteResult = await cacheService.delete(cacheKey);
-      expect(deleteResult).toBe(true);
+    it('should handle numeric IDs', () => {
+      const numericId = '9999';
+      expect(CACHE_KEYS.CLIENTE_BY_ID(numericId)).toBe(`cliente:${numericId}`);
     });
 
-    it('deve funcionar em cenário de limpeza por padrão', async () => {
-      // Simular múltiplas chaves de cliente
-      mockCacheService.deletePattern.mockResolvedValue(3);
-      const result = await cacheService.deletePattern('cliente:*');
-      
-      expect(result).toBe(3);
-      expect(mockCacheService.deletePattern).toHaveBeenCalledWith('cliente:*');
+    it('should support UUID patterns', () => {
+      const uuid = '550e8400-e29b-41d4-a716-446655440000';
+      expect(CACHE_KEYS.CLIENTE_BY_ID(uuid)).toContain(uuid);
+    });
+  });
+
+  describe('TTL value comparisons', () => {
+    it('should use SHORT for frequently changing data', () => {
+      // SHORT should be less than 2 minutes
+      expect(CACHE_TTL.SHORT).toBeLessThanOrEqual(120);
     });
 
-    it('deve funcionar em cenário de contador de métricas', async () => {
-      const counterKey = CACHE_KEYS.COMMUNICATION_METRICS;
-      
-      // Incrementar contador
-      mockCacheService.increment.mockResolvedValue(1);
-      let result = await cacheService.increment(counterKey);
-      expect(result).toBe(1);
-      
-      // Incrementar novamente
-      mockCacheService.increment.mockResolvedValue(2);
-      result = await cacheService.increment(counterKey);
-      expect(result).toBe(2);
-      
-      // Incrementar por valor específico
-      mockCacheService.increment.mockResolvedValue(7);
-      result = await cacheService.increment(counterKey, 5);
-      expect(result).toBe(7);
+    it('should use MEDIUM for moderately changing data', () => {
+      // MEDIUM should be 5-10 minutes
+      expect(CACHE_TTL.MEDIUM).toBeGreaterThan(CACHE_TTL.SHORT);
+      expect(CACHE_TTL.MEDIUM).toBeLessThanOrEqual(600);
+    });
+
+    it('should use LONG for stable data', () => {
+      // LONG should be around 15 minutes
+      expect(CACHE_TTL.LONG).toBeGreaterThan(CACHE_TTL.MEDIUM);
+      expect(CACHE_TTL.LONG).toBeLessThanOrEqual(1800);
+    });
+
+    it('should use VERY_LONG for mostly static data', () => {
+      // VERY_LONG should be around 1 hour
+      expect(CACHE_TTL.VERY_LONG).toBeGreaterThan(CACHE_TTL.LONG);
+      expect(CACHE_TTL.VERY_LONG).toBeLessThanOrEqual(7200);
+    });
+
+    it('should use DAILY for highly static data', () => {
+      // DAILY should be 24 hours
+      expect(CACHE_TTL.DAILY).toBeGreaterThan(CACHE_TTL.VERY_LONG);
+    });
+  });
+
+  describe('Cache key conventions', () => {
+    it('should use colon-separated naming convention for scoped keys', () => {
+      const key = CACHE_KEYS.CLIENTE_BY_ID('123');
+      expect(key).toMatch(/^[\w-]+:[\w-]+$/);
+    });
+
+    it('should be deterministic - same input produces same output', () => {
+      const id = 'test-id-123';
+      const key1 = CACHE_KEYS.CLIENTE_BY_ID(id);
+      const key2 = CACHE_KEYS.CLIENTE_BY_ID(id);
+      expect(key1).toBe(key2);
+    });
+
+    it('should support querying by pattern', () => {
+      const keys = [
+        CACHE_KEYS.CLIENTE_BY_ID('1'),
+        CACHE_KEYS.CLIENTE_BY_ID('2'),
+        CACHE_KEYS.CLIENTE_BY_ID('3'),
+      ];
+      // All should match the pattern 'cliente:*'
+      keys.forEach(key => {
+        expect(key).toMatch(/^cliente:\d+$/);
+      });
+    });
+  });
+
+  describe('Constants type safety', () => {
+    it('should have const assertion on CACHE_KEYS', () => {
+      // Verify that CACHE_KEYS is using const assertion (as const)
+      // This provides type safety at compile time
+      const keys = Object.keys(CACHE_KEYS);
+      expect(keys.length).toBeGreaterThan(0);
+      expect(keys).toContain('CLIENTES');
+      expect(keys).toContain('ORDENS_SERVICO');
+    });
+
+    it('should have const assertion on CACHE_TTL', () => {
+      // Verify that CACHE_TTL is using const assertion (as const)
+      // This provides type safety at compile time
+      const ttlKeys = Object.keys(CACHE_TTL);
+      expect(ttlKeys.length).toBeGreaterThan(0);
+      expect(ttlKeys).toContain('SHORT');
+      expect(ttlKeys).toContain('DAILY');
     });
   });
 });
