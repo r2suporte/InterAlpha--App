@@ -42,9 +42,9 @@ export class WhatsAppService {
       if (template && templateParams) {
         const result = await this.sendTemplate(validatedNumber.formatted, template, templateParams);
         return result;
-      } else {
+      } 
         messageBody = message;
-      }
+      
 
       // Enviar mensagem via Twilio WhatsApp
       const result = await this.client.messages.create({

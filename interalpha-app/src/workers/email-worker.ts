@@ -40,9 +40,9 @@ export const emailWorker = new Worker<EmailJob>(
           template,
           sentAt: new Date().toISOString(),
         };
-      } else {
+      } 
         throw new Error(result.error || 'Falha no envio do email');
-      }
+      
     } catch (error) {
       console.error(`❌ Erro ao processar email para ${to}:`, error);
       

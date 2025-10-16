@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     // Verificar se é uma requisição válida do Twilio
     const signature = request.headers.get('x-twilio-signature');
-    const url = request.url;
+    const {url} = request;
     const formData = await request.formData();
     
     // Converter FormData para objeto

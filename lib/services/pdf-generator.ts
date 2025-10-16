@@ -187,7 +187,7 @@ export class PDFGenerator {
   private addEquipamentoInfo(ordem: OrdemServico): void {
     this.addSection('Dados do Equipamento');
 
-    const equipamento = ordem.equipamento;
+    const {equipamento} = ordem;
 
     const infoEquipamento = [
       ['Tipo:', equipamento?.tipo || 'N/A'],

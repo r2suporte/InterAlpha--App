@@ -132,7 +132,7 @@ export async function GET() {
       twilio: {
         connected: connectionTest,
         accountSid: process.env.TWILIO_ACCOUNT_SID ? 
-          '***' + process.env.TWILIO_ACCOUNT_SID.slice(-10) : 'não configurado',
+          `***${  process.env.TWILIO_ACCOUNT_SID.slice(-10)}` : 'não configurado',
         phoneNumber: process.env.TWILIO_PHONE_NUMBER || 'não configurado',
         accountInfo: connectionTest ? accountInfo : null,
       },

@@ -41,9 +41,9 @@ export const whatsappWorker = new Worker<WhatsAppJob>(
           template,
           sentAt: new Date().toISOString(),
         };
-      } else {
+      } 
         throw new Error(result.error || 'Falha no envio do WhatsApp');
-      }
+      
     } catch (error) {
       console.error(`❌ Erro ao processar WhatsApp para ${to}:`, error);
       

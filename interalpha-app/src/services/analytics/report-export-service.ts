@@ -179,7 +179,7 @@ export class ReportExportService {
       const paymentMethodsData = data.charts.paymentMethods.map(item => ({
         method: item.name,
         value: item.value,
-        percentage: (item.percentage?.toFixed(2) || '0') + '%'
+        percentage: `${item.percentage?.toFixed(2) || '0'  }%`
       }));
 
       paymentMethodsSheet.addRows(paymentMethodsData);
@@ -198,7 +198,7 @@ export class ReportExportService {
       const orderStatusData = data.charts.orderStatus.map(item => ({
         status: item.name,
         quantity: item.value,
-        percentage: (item.percentage?.toFixed(2) || '0') + '%'
+        percentage: `${item.percentage?.toFixed(2) || '0'  }%`
       }));
 
       orderStatusSheet.addRows(orderStatusData);
@@ -277,7 +277,7 @@ export class ReportExportService {
           ...data.charts.paymentMethods.map(item => [
             item.name,
             item.value.toString(),
-            (item.percentage?.toFixed(2) || '0') + '%'
+            `${item.percentage?.toFixed(2) || '0'  }%`
           ])
         ];
         break;
@@ -288,7 +288,7 @@ export class ReportExportService {
           ...data.charts.orderStatus.map(item => [
             item.name,
             item.value.toString(),
-            (item.percentage?.toFixed(2) || '0') + '%'
+            `${item.percentage?.toFixed(2) || '0'  }%`
           ])
         ];
         break;

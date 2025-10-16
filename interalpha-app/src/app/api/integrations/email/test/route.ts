@@ -109,7 +109,7 @@ export async function GET() {
         connected: connectionTest,
         host: process.env.SMTP_HOST,
         port: process.env.SMTP_PORT,
-        user: process.env.SMTP_USER ? '***' + process.env.SMTP_USER.slice(-10) : 'não configurado',
+        user: process.env.SMTP_USER ? `***${  process.env.SMTP_USER.slice(-10)}` : 'não configurado',
       },
       templates: [
         'test',

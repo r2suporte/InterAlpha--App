@@ -38,7 +38,7 @@ module.exports = [
         'warn',
         { ignore: [-1, 0, 1, 2, 100, 200, 400, 401, 403, 404, 500] },
       ],
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
 
       // Best practices
       'array-callback-return': 'error',

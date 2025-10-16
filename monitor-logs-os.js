@@ -32,7 +32,7 @@ const patterns = {
 };
 
 // Contador de eventos
-let eventos = {
+const eventos = {
   pdf: 0,
   email: 0,
   whatsapp: 0,
@@ -102,7 +102,7 @@ function processarLinha(linha) {
 setInterval(() => {
   const total = eventos.pdf + eventos.email + eventos.whatsapp + eventos.sms;
   if (total > 0) {
-    console.log('\n' + '─'.repeat(60));
+    console.log(`\n${  '─'.repeat(60)}`);
     console.log('📊 RESUMO DE EVENTOS:');
     console.log(`   📄 PDFs gerados: ${eventos.pdf}`);
     console.log(`   📧 Emails enviados: ${eventos.email}`);
@@ -111,7 +111,7 @@ setInterval(() => {
     if (eventos.erros > 0) {
       console.log(`   ❌ Erros encontrados: ${eventos.erros}`);
     }
-    console.log('─'.repeat(60) + '\n');
+    console.log(`${'─'.repeat(60)  }\n`);
   }
 }, 30000);
 

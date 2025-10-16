@@ -142,7 +142,7 @@ export async function GET() {
       twilio: {
         connected: connectionTest,
         accountSid: process.env.TWILIO_ACCOUNT_SID ? 
-          '***' + process.env.TWILIO_ACCOUNT_SID.slice(-10) : 'não configurado',
+          `***${  process.env.TWILIO_ACCOUNT_SID.slice(-10)}` : 'não configurado',
         whatsappNumber: process.env.TWILIO_WHATSAPP_NUMBER || 'não configurado',
       },
       webhook: {

@@ -154,7 +154,7 @@ async function testWhatsApp() {
       console.log(`📢 12. Enviando WhatsApp broadcast para ${recipients.length} destinatários...`);
       await axios.post(API_URL, {
         type: 'broadcast',
-        recipients: recipients,
+        recipients,
         message: 'Comunicado importante: Sistema de WhatsApp funcionando perfeitamente!',
         useRichFormatting: true
       });

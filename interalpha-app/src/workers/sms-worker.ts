@@ -40,9 +40,9 @@ export const smsWorker = new Worker<SMSJob>(
           message: message.substring(0, 50) + (message.length > 50 ? '...' : ''),
           sentAt: new Date().toISOString(),
         };
-      } else {
+      } 
         throw new Error(result.error || 'Falha no envio do SMS');
-      }
+      
     } catch (error) {
       console.error(`❌ Erro ao processar SMS para ${to}:`, error);
       

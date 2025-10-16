@@ -121,7 +121,7 @@ export class SMSService {
       'test': `InterAlpha: Teste de SMS - {timestamp}`,
     };
 
-    let message = templates[template] || templates['test'];
+    let message = templates[template] || templates.test;
 
     // Substituir variáveis na mensagem
     Object.entries(data).forEach(([key, value]) => {
@@ -145,7 +145,7 @@ export class SMSService {
 
     // Garantir que não exceda 160 caracteres
     if (message.length > 160) {
-      message = message.substring(0, 157) + '...';
+      message = `${message.substring(0, 157)  }...`;
     }
 
     return message;

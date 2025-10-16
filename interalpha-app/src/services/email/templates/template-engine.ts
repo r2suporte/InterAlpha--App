@@ -234,7 +234,7 @@ function getDefaultTemplate(templateName: string): HandlebarsTemplateDelegate {
     `,
   };
 
-  const templateSource = defaultTemplates[templateName] || defaultTemplates['test'];
+  const templateSource = defaultTemplates[templateName] || defaultTemplates.test;
   return Handlebars.compile(templateSource);
 }
 

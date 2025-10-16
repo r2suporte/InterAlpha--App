@@ -406,9 +406,7 @@ export class AlertService {
       .single();
 
     if (data?.metadata?.memory_usage_percent) {
-        const mem = (data.metadata as Record<string, unknown>)[
-          'memory_usage_percent'
-        ];
+        const mem = (data.metadata as Record<string, unknown>).memory_usage_percent;
         if (typeof mem === 'number') return mem;
         if (typeof mem === 'string') return Number(mem) || 0;
         return 0;

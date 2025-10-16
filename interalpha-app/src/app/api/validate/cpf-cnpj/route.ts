@@ -55,13 +55,13 @@ export async function POST(request: NextRequest) {
           : cnpj.format(cleanDocument),
         clean: cleanDocument
       })
-    } else {
+    } 
       return NextResponse.json({
         valid: false,
         error: errorMessage,
         type: documentType
       })
-    }
+    
 
   } catch (error) {
     console.error('Erro na validação CPF/CNPJ:', error)

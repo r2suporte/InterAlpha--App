@@ -186,7 +186,7 @@ export class SMSNotifications {
   ): Promise<void> {
     // Garantir que a mensagem não exceda 160 caracteres
     const optimizedMessage = message.length > 160 
-      ? message.substring(0, 157) + '...' 
+      ? `${message.substring(0, 157)  }...` 
       : message;
 
     const smsData: SMSJob = {
@@ -204,7 +204,7 @@ export class SMSNotifications {
     message: string
   ): Promise<void> {
     const optimizedMessage = message.length > 160 
-      ? message.substring(0, 157) + '...' 
+      ? `${message.substring(0, 157)  }...` 
       : message;
 
     const jobs = recipients.map(to => ({
@@ -235,7 +235,7 @@ export class SMSNotifications {
     }
 
     const optimizedMessage = message.length > 160 
-      ? message.substring(0, 157) + '...' 
+      ? `${message.substring(0, 157)  }...` 
       : message;
 
     const smsData: SMSJob = {
