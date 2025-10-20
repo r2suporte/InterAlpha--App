@@ -361,10 +361,14 @@ export default function PecasPage() {
 
             <ShowHide hide={['sm']}>
               <Button
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log('🔵 Clique em Nova Peça - Desktop');
                   setMostrarFormulario(true);
+                  setPecaEditando(undefined);
                 }}
                 className="flex items-center gap-2"
+                type="button"
               >
                 <Plus className="h-4 w-4" />
                 Nova Peça
@@ -373,10 +377,14 @@ export default function PecasPage() {
 
             <ShowHide on={['sm']}>
               <Button
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log('🔵 Clique em Nova Peça - Mobile');
                   setMostrarFormulario(true);
+                  setPecaEditando(undefined);
                 }}
                 className="flex w-full items-center gap-2"
+                type="button"
               >
                 <Plus className="h-4 w-4" />
                 Nova

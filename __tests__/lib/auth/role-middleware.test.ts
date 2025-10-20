@@ -351,6 +351,8 @@ describe('lib/auth/role-middleware', () => {
     it('calls handler when authorized', async () => {
       const mockRequest = {
         headers: { get: jest.fn().mockReturnValue(null) },
+        nextUrl: { pathname: '/api/test' },
+        method: 'GET',
       } as unknown as NextRequest;
 
       mockCookies.mockResolvedValue({
@@ -391,6 +393,8 @@ describe('lib/auth/role-middleware', () => {
     it('supports custom check function', async () => {
       const mockRequest = {
         headers: { get: jest.fn().mockReturnValue(null) },
+        nextUrl: { pathname: '/api/test' },
+        method: 'GET',
       } as unknown as NextRequest;
 
       mockCookies.mockResolvedValue({
@@ -429,22 +433,55 @@ describe('lib/auth/role-middleware', () => {
     });
 
     it('returns 500 on internal error', async () => {
+      const mockError = new Error('Unexpected error');
       const mockRequest = {
-        headers: {
-          get: jest.fn().mockImplementation(() => {
-            throw new Error('Unexpected error');
-          }),
-        },
+        headers: { get: jest.fn().mockReturnValue(null) },
+        nextUrl: { pathname: '/api/test' },
+        method: 'GET',
       } as unknown as NextRequest;
 
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      mockCookies.mockResolvedValue({
+        getAll: jest.fn().mockReturnValue([]),
+      });
 
-      const middleware = createRoleMiddleware();
+      mockCreateServerClient.mockReturnValue({
+        auth: {
+          getSession: jest.fn().mockResolvedValue({
+            data: {
+              session: { user: { id: 'user-error', email: 'error@test.com' } },
+            },
+            error: null,
+          }),
+        },
+        from: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { id: 'user-error', email: 'error@test.com', role: 'admin' },
+          error: null,
+        }),
+      });
+
+      mockPermissionManager.isValidRole.mockReturnValue(true);
+      mockPermissionManager.hasPermission.mockReturnValue(true);
+
+      // Mock customCheck para lançar erro
+      const customCheck = jest.fn().mockImplementation(() => {
+        throw mockError;
+      });
+
+      const middleware = createRoleMiddleware({ customCheck });
       const handler = jest.fn();
+
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
       const response = await middleware(mockRequest, handler);
 
       expect(response.status).toBe(500);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Erro no middleware de autorização:',
+        mockError
+      );
 
       consoleSpy.mockRestore();
     });

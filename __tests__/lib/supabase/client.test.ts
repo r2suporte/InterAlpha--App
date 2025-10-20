@@ -40,6 +40,24 @@ describe('Supabase Client', () => {
     expect(result).not.toBeNull();
   });
 
+  it('should support insert method', () => {
+    const client = createClient();
+    const result = client.from('test').insert({});
+    expect(result).not.toBeNull();
+  });
+
+  it('should support update method', () => {
+    const client = createClient();
+    const result = client.from('test').update({});
+    expect(result).not.toBeNull();
+  });
+
+  it('should support delete method', () => {
+    const client = createClient();
+    const result = client.from('test').delete();
+    expect(result).not.toBeNull();
+  });
+
   describe('Development Mode', () => {
     it('should use mock client in development', () => {
       const client = createClient();
@@ -50,13 +68,45 @@ describe('Supabase Client', () => {
       const client = createClient();
       expect(typeof client.auth.getUser).toBe('function');
       expect(typeof client.auth.signOut).toBe('function');
-      
+
       // Test that methods actually work
       const userResult = await client.auth.getUser();
       expect(userResult.data).not.toBeNull();
-      
+
       const signOutResult = await client.auth.signOut();
       expect(signOutResult.error).toBeNull();
+    });
+
+    it('should support auth.signInWithPassword', async () => {
+      const client = createClient();
+      const result = await client.auth.signInWithPassword({
+        email: 'test@example.com',
+        password: 'password',
+      });
+      expect(result).not.toBeNull();
+      expect(result.data).not.toBeNull();
+      expect(result.data.user).toBeDefined();
+    });
+
+    it('should support auth.signUp', () => {
+      const client = createClient();
+      expect(typeof client.auth.signUp).toBe('function');
+    });
+
+    it('should support single() result method', async () => {
+      const client = createClient();
+      const result = await client.from('test').select('*').single();
+      expect(result).not.toBeNull();
+      expect(result.data).toBeDefined();
+      expect(result.error).toBeDefined();
+    });
+
+    it('should return consistent client structure', () => {
+      const client1 = createClient();
+      const client2 = createClient();
+      
+      expect(typeof client1.from).toBe(typeof client2.from);
+      expect(typeof client1.auth.getUser).toBe(typeof client2.auth.getUser);
     });
   });
 });

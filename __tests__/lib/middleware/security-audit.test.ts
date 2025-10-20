@@ -570,8 +570,8 @@ describe('lib/middleware/security-audit', () => {
       expect(ourEvents.length).toBe(3);
       expect(ourEvents.some((e: any) => e.details.attempts === 5)).toBe(true);
 
-      // Cleanup
-      const removed = cleanupOldEvents(0);
+      // Cleanup - pass negative value to remove recent events (for testing)
+      const removed = cleanupOldEvents(-1);
       expect(removed).toBeGreaterThan(0);
     });
 

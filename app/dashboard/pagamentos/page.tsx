@@ -234,215 +234,130 @@ export default function PagamentosPage() {
             </div>
 
             <ShowHide hide={['sm']}>
-              <Dialog
-                open={dialogNovoPagamento}
-                onOpenChange={setDialogNovoPagamento}
+              <Button
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log('🔵 Clique em Novo Pagamento - Desktop');
+                  setDialogNovoPagamento(true);
+                }}
+                type="button"
               >
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Novo Pagamento
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Novo Pagamento</DialogTitle>
-                    <DialogDescription>
-                      Adicione um novo pagamento ao sistema
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="cliente">Cliente *</Label>
-                      <Input
-                        id="cliente"
-                        value={novoPagamento.cliente}
-                        onChange={e =>
-                          setNovoPagamento({
-                            ...novoPagamento,
-                            cliente: e.target.value,
-                          })
-                        }
-                        placeholder="Nome do cliente"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="valor">Valor *</Label>
-                      <Input
-                        id="valor"
-                        type="number"
-                        step="0.01"
-                        value={novoPagamento.valor}
-                        onChange={e =>
-                          setNovoPagamento({
-                            ...novoPagamento,
-                            valor: e.target.value,
-                          })
-                        }
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="metodo">Método de Pagamento *</Label>
-                      <Select
-                        value={novoPagamento.metodo}
-                        onValueChange={value =>
-                          setNovoPagamento({ ...novoPagamento, metodo: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o método" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Cartão de Crédito">
-                            Cartão de Crédito
-                          </SelectItem>
-                          <SelectItem value="PIX">PIX</SelectItem>
-                          <SelectItem value="Boleto">Boleto</SelectItem>
-                          <SelectItem value="Débito">Débito</SelectItem>
-                          <SelectItem value="Transferência">
-                            Transferência
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="ordemServico">Ordem de Serviço *</Label>
-                      <Input
-                        id="ordemServico"
-                        value={novoPagamento.ordemServico}
-                        onChange={e =>
-                          setNovoPagamento({
-                            ...novoPagamento,
-                            ordemServico: e.target.value,
-                          })
-                        }
-                        placeholder="OS-001"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setDialogNovoPagamento(false)}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleSalvarPagamento}>
-                      Salvar Pagamento
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Pagamento
+              </Button>
             </ShowHide>
 
             <ShowHide on={['sm']}>
-              <Dialog
-                open={dialogNovoPagamento}
-                onOpenChange={setDialogNovoPagamento}
+              <Button
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log('🔵 Clique em Novo Pagamento - Mobile');
+                  setDialogNovoPagamento(true);
+                }}
+                className="w-full"
+                type="button"
               >
-                <DialogTrigger asChild>
-                  <Button className="w-full">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Novo
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Novo Pagamento</DialogTitle>
-                    <DialogDescription>
-                      Adicione um novo pagamento ao sistema
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="cliente-mobile">Cliente *</Label>
-                      <Input
-                        id="cliente-mobile"
-                        value={novoPagamento.cliente}
-                        onChange={e =>
-                          setNovoPagamento({
-                            ...novoPagamento,
-                            cliente: e.target.value,
-                          })
-                        }
-                        placeholder="Nome do cliente"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="valor-mobile">Valor *</Label>
-                      <Input
-                        id="valor-mobile"
-                        type="number"
-                        step="0.01"
-                        value={novoPagamento.valor}
-                        onChange={e =>
-                          setNovoPagamento({
-                            ...novoPagamento,
-                            valor: e.target.value,
-                          })
-                        }
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="metodo-mobile">
-                        Método de Pagamento *
-                      </Label>
-                      <Select
-                        value={novoPagamento.metodo}
-                        onValueChange={value =>
-                          setNovoPagamento({ ...novoPagamento, metodo: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o método" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Cartão de Crédito">
-                            Cartão de Crédito
-                          </SelectItem>
-                          <SelectItem value="PIX">PIX</SelectItem>
-                          <SelectItem value="Boleto">Boleto</SelectItem>
-                          <SelectItem value="Débito">Débito</SelectItem>
-                          <SelectItem value="Transferência">
-                            Transferência
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="ordemServico-mobile">
-                        Ordem de Serviço *
-                      </Label>
-                      <Input
-                        id="ordemServico-mobile"
-                        value={novoPagamento.ordemServico}
-                        onChange={e =>
-                          setNovoPagamento({
-                            ...novoPagamento,
-                            ordemServico: e.target.value,
-                          })
-                        }
-                        placeholder="OS-001"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setDialogNovoPagamento(false)}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleSalvarPagamento}>
-                      Salvar Pagamento
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                <Plus className="mr-2 h-4 w-4" />
+                Novo
+              </Button>
             </ShowHide>
+
           </ResponsiveStack>
+
+          <Dialog
+            open={dialogNovoPagamento}
+            onOpenChange={setDialogNovoPagamento}
+          >
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Novo Pagamento</DialogTitle>
+                <DialogDescription>
+                  Adicione um novo pagamento ao sistema
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="cliente">Cliente *</Label>
+                  <Input
+                    id="cliente"
+                    value={novoPagamento.cliente}
+                    onChange={e =>
+                      setNovoPagamento({
+                        ...novoPagamento,
+                        cliente: e.target.value,
+                      })
+                    }
+                    placeholder="Nome do cliente"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="valor">Valor *</Label>
+                  <Input
+                    id="valor"
+                    type="number"
+                    step="0.01"
+                    value={novoPagamento.valor}
+                    onChange={e =>
+                      setNovoPagamento({
+                        ...novoPagamento,
+                        valor: e.target.value,
+                      })
+                    }
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="metodo">Método de Pagamento *</Label>
+                  <Select
+                    value={novoPagamento.metodo}
+                    onValueChange={value =>
+                      setNovoPagamento({ ...novoPagamento, metodo: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o método" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Cartão de Crédito">
+                        Cartão de Crédito
+                      </SelectItem>
+                      <SelectItem value="PIX">PIX</SelectItem>
+                      <SelectItem value="Boleto">Boleto</SelectItem>
+                      <SelectItem value="Débito">Débito</SelectItem>
+                      <SelectItem value="Transferência">
+                        Transferência
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="ordemServico">Ordem de Serviço *</Label>
+                  <Input
+                    id="ordemServico"
+                    value={novoPagamento.ordemServico}
+                    onChange={e =>
+                      setNovoPagamento({
+                        ...novoPagamento,
+                        ordemServico: e.target.value,
+                      })
+                    }
+                    placeholder="OS-001"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setDialogNovoPagamento(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button onClick={handleSalvarPagamento}>
+                  Salvar Pagamento
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Estatísticas */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
