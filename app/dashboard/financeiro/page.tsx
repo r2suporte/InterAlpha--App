@@ -116,13 +116,16 @@ export default function FinanceiroPage() {
     <>
       <ShowHide on={['md', 'lg', 'xl']}>
         <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" onClick={(e) => {
+            e.preventDefault();
+            console.log('🔵 Clique em Período');
+            setDialogPeriodo(true);
+          }}>
+            <Calendar className="mr-2 h-4 w-4" />
+            Período
+          </Button>
+          
           <Dialog open={dialogPeriodo} onOpenChange={setDialogPeriodo}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Calendar className="mr-2 h-4 w-4" />
-                Período
-              </Button>
-            </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Selecionar Período</DialogTitle>
@@ -166,13 +169,16 @@ export default function FinanceiroPage() {
             </DialogContent>
           </Dialog>
 
+          <Button variant="outline" size="sm" onClick={(e) => {
+            e.preventDefault();
+            console.log('🔵 Clique em Filtros');
+            setDialogFiltros(true);
+          }}>
+            <Filter className="mr-2 h-4 w-4" />
+            Filtros
+          </Button>
+
           <Dialog open={dialogFiltros} onOpenChange={setDialogFiltros}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="mr-2 h-4 w-4" />
-                Filtros
-              </Button>
-            </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Filtros Avançados</DialogTitle>

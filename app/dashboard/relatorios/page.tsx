@@ -317,16 +317,19 @@ export default function RelatoriosPage() {
                       <FileText className="mr-2 h-4 w-4" />
                       {gerandoRelatorio ? 'Gerando...' : 'Gerar Relatório'}
                     </Button>
+                    <Button variant="outline" onClick={(e) => {
+                      e.preventDefault();
+                      console.log('🔵 Clique em Filtros Avançados');
+                      setFiltrosAvancadosOpen(true);
+                    }}>
+                      <Filter className="mr-2 h-4 w-4" />
+                      Filtros Avançados
+                    </Button>
+
                     <Dialog
                       open={filtrosAvancadosOpen}
                       onOpenChange={setFiltrosAvancadosOpen}
                     >
-                      <DialogTrigger asChild>
-                        <Button variant="outline">
-                          <Filter className="mr-2 h-4 w-4" />
-                          Filtros Avançados
-                        </Button>
-                      </DialogTrigger>
                       <DialogContent className="sm:max-w-[425px]">
                         <DialogHeader>
                           <DialogTitle>Filtros Avançados</DialogTitle>

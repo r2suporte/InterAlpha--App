@@ -170,6 +170,32 @@ export default function ReceitasPage() {
     alert('Receita adicionada com sucesso!');
   };
 
+  const handleExportarReceitas = () => {
+    console.log('🔵 Exportando receitas...');
+    const dados = receitas.map(r => ({
+      descricao: r.descricao,
+      valor: r.valor,
+      data: r.data,
+      categoria: r.categoria,
+      status: r.status,
+      cliente: r.cliente || '',
+      ordem_servico: r.ordem_servico || '',
+    }));
+    
+    const blob = new Blob([JSON.stringify(dados, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `receitas-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    console.log('✅ Receitas exportadas');
+  };
+
   const formatarMoeda = (valor: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -297,13 +323,16 @@ export default function ReceitasPage() {
                   </CardDescription>
                 </div>
                 <div className="flex flex-col space-y-2 md:flex-row md:space-x-2 md:space-y-0">
+                  <Button onClick={(e) => {
+                    e.preventDefault();
+                    console.log('🔵 Clique em Nova Receita');
+                    setDialogAberto(true);
+                  }}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nova Receita
+                  </Button>
+                  
                   <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Nova Receita
-                      </Button>
-                    </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Nova Receita</DialogTitle>
@@ -441,7 +470,11 @@ export default function ReceitasPage() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={(e) => {
+                    e.preventDefault();
+                    console.log('🔵 Clique em Exportar Receitas');
+                    handleExportarReceitas();
+                  }}>
                     <Download className="mr-2 h-4 w-4" />
                     Exportar
                   </Button>

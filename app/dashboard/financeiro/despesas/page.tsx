@@ -212,6 +212,32 @@ export default function DespesasPage() {
     alert('Despesa adicionada com sucesso!');
   };
 
+  const handleExportarDespesas = () => {
+    console.log('🔵 Exportando despesas...');
+    const dados = despesas.map(d => ({
+      descricao: d.descricao,
+      valor: d.valor,
+      data: d.data,
+      categoria: d.categoria,
+      status: d.status,
+      fornecedor: d.fornecedor || '',
+      data_vencimento: d.data_vencimento || '',
+    }));
+    
+    const blob = new Blob([JSON.stringify(dados, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `despesas-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    console.log('✅ Despesas exportadas');
+  };
+
   const despesasFiltradas = despesas.filter(despesa => {
     const matchCategoria =
       filtroCategoria === 'Todas' || despesa.categoria === filtroCategoria;
@@ -329,13 +355,16 @@ export default function DespesasPage() {
                   </CardDescription>
                 </div>
                 <div className="flex flex-col space-y-2 md:flex-row md:space-x-2 md:space-y-0">
+                  <Button onClick={(e) => {
+                    e.preventDefault();
+                    console.log('🔵 Clique em Nova Despesa');
+                    setDialogAberto(true);
+                  }}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nova Despesa
+                  </Button>
+                  
                   <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Nova Despesa
-                      </Button>
-                    </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Nova Despesa</DialogTitle>
@@ -452,7 +481,11 @@ export default function DespesasPage() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={(e) => {
+                    e.preventDefault();
+                    console.log('🔵 Clique em Exportar Despesas');
+                    handleExportarDespesas();
+                  }}>
                     <Download className="mr-2 h-4 w-4" />
                     Exportar
                   </Button>
