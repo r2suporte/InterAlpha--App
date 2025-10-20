@@ -531,12 +531,20 @@ export default function ClientesPage() {
 
             <ShowHide hide={['sm']}>
               <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={(e) => {
+                  e.preventDefault();
+                  console.log('🔵 Clique em Filtros');
+                  // Aqui você pode adicionar lógica de filtros
+                }}>
                   <Filter className="mr-2 h-4 w-4" />
                   Filtros
                 </Button>
                 <Button
-                  onClick={openCreateModal}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    console.log('🔵 Clique em Novo Cliente');
+                    openCreateModal();
+                  }}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl"
                 >
                   <UserPlus className="mr-2 h-4 w-4" />
@@ -548,7 +556,11 @@ export default function ClientesPage() {
             <ShowHide on={['sm']}>
               <div className="flex w-full items-center space-x-2">
                 <Button
-                  onClick={openCreateModal}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    console.log('🔵 Clique em Novo Cliente (Mobile)');
+                    openCreateModal();
+                  }}
                   className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl"
                 >
                   <UserPlus className="mr-2 h-4 w-4" />
@@ -561,7 +573,10 @@ export default function ClientesPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={(e) => {
+                      e.preventDefault();
+                      console.log('🔵 Clique em Filtros (Mobile)');
+                    }}>
                       <Filter className="mr-2 h-4 w-4" />
                       Filtros
                     </DropdownMenuItem>
@@ -656,7 +671,11 @@ export default function ClientesPage() {
                   </CardDescription>
                   {!searchTerm && (
                     <Button
-                      onClick={openCreateModal}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        console.log('🔵 Clique em Criar Primeiro Cliente');
+                        openCreateModal();
+                      }}
                       className="bg-blue-600 hover:bg-blue-700"
                     >
                       <Plus className="mr-2 h-4 w-4" />
