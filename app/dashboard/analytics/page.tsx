@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 import {
   BarChart3,
@@ -11,11 +10,11 @@ import {
   Calendar,
   Settings,
   RefreshCw,
-  ArrowLeft,
 } from 'lucide-react';
 
 import { EnhancedSidebar } from '@/components/navigation/enhanced-sidebar';
 import { SiteHeader } from '@/components/site-header';
+import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -101,15 +100,7 @@ export default function AnalyticsPage() {
                 className="space-y-4 sm:space-y-0"
               >
                 <div className="flex items-center space-x-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => router.back()}
-                    className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Voltar
-                  </Button>
+                  <BackButton href="/dashboard" />
                   
                   <div className="space-y-1">
                     <ResponsiveText

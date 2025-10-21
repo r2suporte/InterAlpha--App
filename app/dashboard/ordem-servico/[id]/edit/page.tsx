@@ -2,14 +2,12 @@
 
 import { useEffect, useState } from 'react';
 
-import { useParams, useRouter } from 'next/navigation';
-
-import { AlertCircle, ArrowLeft } from 'lucide-react';
+import { useParams } from 'next/navigation';
 
 import OrdemServicoForm from '@/components/OrdemServicoForm';
 import { EnhancedSidebar } from '@/components/navigation/enhanced-sidebar';
 import { SiteHeader } from '@/components/site-header';
-import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/ui/back-button';
 import { PageLoading } from '@/components/ui/loading';
 import { useLoadingState } from '@/components/ui/loading-states';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
@@ -49,7 +47,6 @@ const convertToFormData = (ordem: OrdemServico): OrdemServicoFormData => {
 
 export default function EditOrdemServicoPage() {
   const params = useParams();
-  const router = useRouter();
   const [ordem, setOrdem] = useState<OrdemServico | null>(null);
   const { isLoading, startLoading, stopLoading } = useLoadingState();
   const { error: showError } = useToast();
@@ -84,14 +81,10 @@ export default function EditOrdemServicoPage() {
     }
   }, [params.id, startLoading, stopLoading, showError]);
 
-  const handleSave = (dados: OrdemServicoFormData) => {
+  const handleSave = () => {
     // Aqui você pode implementar a lógica de salvamento
-    console.log('Dados salvos:', dados);
-    router.push(`/dashboard/ordem-servico/${params.id}`);
-  };
-
-  const handleCancel = () => {
-    router.back();
+    console.log('Dados salvos');
+    // Retornar para página anterior
   };
 
   if (isLoading) {
@@ -115,15 +108,11 @@ export default function EditOrdemServicoPage() {
         <SidebarInset>
           <SiteHeader />
           <div className="flex flex-1 flex-col items-center justify-center">
-            <AlertCircle className="mb-4 h-12 w-12 text-red-500" />
             <h2 className="mb-2 text-xl font-semibold text-gray-900">
               Erro ao carregar
             </h2>
             <p className="mb-4 text-gray-600">{error}</p>
-            <Button onClick={() => router.back()}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar
-            </Button>
+            <BackButton href="/dashboard/ordens-servico" />
           </div>
         </SidebarInset>
       </SidebarProvider>
@@ -139,10 +128,7 @@ export default function EditOrdemServicoPage() {
           <div className="@container/main flex flex-1 flex-col gap-6 p-6">
             {/* Header */}
             <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" onClick={handleCancel}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Voltar
-              </Button>
+              <BackButton href="/dashboard/ordens-servico" />
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">
                   Editar OS {ordem.numero_os}
@@ -156,7 +142,7 @@ export default function EditOrdemServicoPage() {
               <OrdemServicoForm
                 ordemServico={convertToFormData(ordem)}
                 onSave={handleSave}
-                onCancel={handleCancel}
+                onCancel={() => window.history.back()}
               />
             </div>
           </div>
