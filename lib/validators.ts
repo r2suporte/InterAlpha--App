@@ -1,5 +1,25 @@
 import { cnpj, cpf } from 'cpf-cnpj-validator';
 
+/**
+ * Implementar debounce para evitar muitas chamadas de API
+ */
+export const debounce = <T extends (...args: any[]) => any>(
+  func: T,
+  delay: number
+): ((...args: Parameters<T>) => void) => {
+  let timeoutId: NodeJS.Timeout | null = null;
+
+  return (...args: Parameters<T>) => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
+    timeoutId = setTimeout(() => {
+      func(...args);
+    }, delay);
+  };
+};
+
 // Tipos para validação
 export type TipoPessoa = 'fisica' | 'juridica';
 
@@ -45,6 +65,16 @@ export interface CNPJResponse {
   email?: string;
   erro?: boolean;
   message?: string;
+}
+
+export interface CPFResponse {
+  cpf: string;
+  nome?: string;
+  situacao: string;
+  disponivel?: boolean;
+  erro?: boolean;
+  message?: string;
+  aviso?: string;
 }
 
 // Validações de CPF e CNPJ
@@ -325,6 +355,53 @@ export const buscarDadosCNPJ = async (
     atividade_principal: [],
     erro: true,
     message: 'Não foi possível consultar o CNPJ. Tente novamente em alguns instantes.',
+  };
+};
+
+/**
+ * Busca validação de CPF
+ * 
+ * ⚠️ OBSERVAÇÃO IMPORTANTE:
+ * Não existe API pública gratuita e confiável para consultar dados pessoais por CPF.
+ * Esta função retorna informações básicas:
+ * - Valida o CPF localmente
+ * - Retorna status de validação
+ * - Avisa ao usuário sobre as limitações
+ */
+export const buscarDadosCPF = async (
+  cpfValue: string
+): Promise<CPFResponse | null> => {
+  const cleanCpf = cpfValue.replace(/\D/g, '');
+
+  // Validações iniciais
+  if (cleanCpf.length !== 11) {
+    return null;
+  }
+
+  if (!validarCPF(cleanCpf)) {
+    return {
+      cpf: cleanCpf,
+      situacao: 'CPF Inválido',
+      disponivel: false,
+      erro: true,
+      message: 'O CPF fornecido não é válido',
+    };
+  }
+
+  // Simulação: Adicionar delay para parecer uma busca real
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  console.log('✅ CPF validado localmente');
+
+  // Retornar validação bem-sucedida
+  // Nota: Dados pessoais reais não estão disponíveis em APIs públicas gratuitas
+  return {
+    cpf: cleanCpf,
+    situacao: 'CPF Válido',
+    disponivel: true,
+    erro: false,
+    message: 'CPF validado com sucesso',
+    aviso: 'Nota: Dados pessoais específicos não estão disponíveis em APIs públicas por questões de segurança/privacidade.',
   };
 };
 
