@@ -90,15 +90,13 @@ export function createClient() {
   const isDevelopmentMode = false; // Alterado para false - credenciais do Supabase configuradas
 
   // Se as variáveis não estão configuradas, são inválidas, ou estamos em modo dev
-  if (isDevelopmentMode || !supabaseUrl || !supabaseKey || 
-      supabaseUrl.includes('localhost') || 
-      supabaseKey.includes('Ej8Ej8Ej8') ||
-      supabaseKey.length < 100) { // Chaves JWT válidas são longas
+  if (isDevelopmentMode || !supabaseUrl || !supabaseKey) { 
     console.warn('🔧 Supabase não configurado - usando modo de desenvolvimento offline');
     return createMockClient();
   }
 
   try {
+    console.log('✅ Conectando com Supabase real:', supabaseUrl);
     return createBrowserClient(supabaseUrl, supabaseKey);
   } catch (error) {
     console.error('❌ Erro ao conectar com Supabase:', error);
