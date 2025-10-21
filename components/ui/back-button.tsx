@@ -18,6 +18,7 @@ export function BackButton({ href, className, children, onClick }: BackButtonPro
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     
     if (onClick) {
       onClick();
