@@ -6,7 +6,6 @@ import { useParams, useRouter } from 'next/navigation';
 
 import {
   AlertCircle,
-  ArrowLeft,
   Calendar,
   CheckCircle,
   Clock,
@@ -22,6 +21,7 @@ import { EnhancedSidebar } from '@/components/navigation/enhanced-sidebar';
 import { OrdemServicoActions } from '@/components/ordens-servico/OrdemServicoActions';
 import { SiteHeader } from '@/components/site-header';
 import { Badge } from '@/components/ui/badge';
+import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageLoading } from '@/components/ui/loading';
@@ -137,10 +137,7 @@ export default function OrdemServicoDetalhePage() {
               Erro ao carregar
             </h2>
             <p className="mb-4 text-gray-600">{error}</p>
-            <Button onClick={() => router.back()}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar
-            </Button>
+            <BackButton href="/dashboard/ordem-servico" />
           </div>
         </SidebarInset>
       </SidebarProvider>
@@ -159,14 +156,7 @@ export default function OrdemServicoDetalhePage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.back()}
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Voltar
-                </Button>
+                <BackButton href="/dashboard/ordem-servico" />
                 <div>
                   <h1 className="text-3xl font-bold tracking-tight">
                     OS {ordem.numero_os}
