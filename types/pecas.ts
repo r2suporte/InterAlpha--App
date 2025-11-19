@@ -197,21 +197,24 @@ export function validarPartNumber(partNumber: string): {
   isValid: boolean;
   message: string;
 } {
+  const MIN_LENGTH = 3;
+  const MAX_LENGTH = 50;
+
   if (!partNumber || partNumber.trim().length === 0) {
     return { isValid: false, message: 'Part number é obrigatório' };
   }
 
-  if (partNumber.length < 3) {
+  if (partNumber.length < MIN_LENGTH) {
     return {
       isValid: false,
-      message: 'Part number deve ter pelo menos 3 caracteres',
+      message: `Part number deve ter pelo menos ${MIN_LENGTH} caracteres`,
     };
   }
 
-  if (partNumber.length > 50) {
+  if (partNumber.length > MAX_LENGTH) {
     return {
       isValid: false,
-      message: 'Part number não pode ter mais de 50 caracteres',
+      message: `Part number não pode ter mais de ${MAX_LENGTH} caracteres`,
     };
   }
 

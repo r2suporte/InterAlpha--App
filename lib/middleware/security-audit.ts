@@ -182,7 +182,7 @@ export function securityAuditMiddleware(
   request: NextRequest
 ): NextResponse | null {
   const { ip, userAgent } = getClientInfo(request);
-  const {pathname} = request.nextUrl;
+  const { pathname } = request.nextUrl;
 
   // Detectar tentativas de SQL Injection
   if (detectSQLInjection(request)) {
@@ -258,35 +258,46 @@ export function securityAuditMiddleware(
 /**
  * Envia alerta de segurança crítico
  */
+/**
+ * Envia alerta de segurança crítico
+ */
 async function sendSecurityAlert(event: SecurityEvent) {
-  // TODO: Implementar integração com sistema de alertas
-  console.error('[CRITICAL SECURITY ALERT]', event);
+  const webhookUrl = process.env.SECURITY_WEBHOOK_URL || process.env.SLACK_WEBHOOK_URL;
 
-  // Exemplo de integração com webhook/Slack
-  if (process.env.SECURITY_WEBHOOK_URL) {
+  if (webhookUrl) {
     try {
-      await fetch(process.env.SECURITY_WEBHOOK_URL, {
+      await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: `🚨 ALERTA DE SEGURANÇA CRÍTICO`,
+          text: `🚨 *ALERTA DE SEGURANÇA CRÍTICO*`,
           attachments: [
             {
-              color: 'danger',
+              color: '#ff0000', // Red for critical
               fields: [
                 { title: 'Tipo', value: event.eventType, short: true },
                 { title: 'Severidade', value: event.severity, short: true },
                 { title: 'IP', value: event.ip, short: true },
                 { title: 'Endpoint', value: event.endpoint, short: true },
                 { title: 'Timestamp', value: event.timestamp, short: false },
+                { title: 'Detalhes', value: JSON.stringify(event.details), short: false },
               ],
             },
           ],
         }),
       });
     } catch (error) {
-      console.error('Erro ao enviar alerta de segurança:', error);
+      console.error('Erro ao enviar alerta de segurança via webhook:', error);
     }
+  } else {
+    // Fallback: Log estruturado para sistemas de monitoramento de logs (CloudWatch, Datadog, etc.)
+    console.error(JSON.stringify({
+      level: 'CRITICAL',
+      message: 'SECURITY ALERT',
+      event,
+      timestamp: new Date().toISOString(),
+      note: 'Configure SECURITY_WEBHOOK_URL or SLACK_WEBHOOK_URL to receive alerts via webhook.',
+    }));
   }
 }
 

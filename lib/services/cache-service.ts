@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import { logger } from './logger-service';
 
 interface CacheConfig {
   host: string;
@@ -21,9 +22,9 @@ class CacheService {
     try {
       const config: CacheConfig = {
         host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379', 10),
+        port: parseInt(process.env.REDIS_PORT || '6379', 10),
         password: process.env.REDIS_PASSWORD,
-  db: parseInt(process.env.REDIS_DB || '0', 10),
+        db: parseInt(process.env.REDIS_DB || '0', 10),
         retryDelayOnFailover: 100,
         maxRetriesPerRequest: 3,
       };
@@ -31,21 +32,21 @@ class CacheService {
       this.redis = new Redis(config);
 
       this.redis.on('connect', () => {
-        console.log('✅ Redis conectado com sucesso');
+        logger.info('✅ Redis conectado com sucesso');
         this.isConnected = true;
       });
 
       this.redis.on('error', error => {
-        console.error('❌ Erro na conexão Redis:', error);
+        logger.error('❌ Erro na conexão Redis:', error);
         this.isConnected = false;
       });
 
       this.redis.on('close', () => {
-        console.log('🔌 Conexão Redis fechada');
+        logger.info('🔌 Conexão Redis fechada');
         this.isConnected = false;
       });
     } catch (error) {
-      console.error('❌ Erro ao inicializar Redis:', error);
+      logger.error('❌ Erro ao inicializar Redis:', error as Error);
     }
   }
 
@@ -65,7 +66,7 @@ class CacheService {
     ttlSeconds: number = 300
   ): Promise<boolean> {
     if (!this.isRedisConnected()) {
-      console.warn('⚠️ Redis não conectado, operação de cache ignorada');
+      logger.warn('⚠️ Redis não conectado, operação de cache ignorada');
       return false;
     }
 
@@ -74,7 +75,7 @@ class CacheService {
       await this.redis!.setex(key, ttlSeconds, serializedValue);
       return true;
     } catch (error) {
-      console.error('❌ Erro ao armazenar no cache:', error);
+      logger.error('❌ Erro ao armazenar no cache:', error as Error);
       return false;
     }
   }
@@ -94,7 +95,7 @@ class CacheService {
       }
       return null;
     } catch (error) {
-      console.error('❌ Erro ao recuperar do cache:', error);
+      logger.error('❌ Erro ao recuperar do cache:', error as Error);
       return null;
     }
   }
@@ -111,7 +112,7 @@ class CacheService {
       const result = await this.redis!.del(key);
       return result > 0;
     } catch (error) {
-      console.error('❌ Erro ao deletar do cache:', error);
+      logger.error('❌ Erro ao deletar do cache:', error as Error);
       return false;
     }
   }
@@ -131,7 +132,7 @@ class CacheService {
       }
       return 0;
     } catch (error) {
-      console.error('❌ Erro ao deletar padrão do cache:', error);
+      logger.error('❌ Erro ao deletar padrão do cache:', error as Error);
       return 0;
     }
   }
@@ -148,7 +149,7 @@ class CacheService {
       const result = await this.redis!.exists(key);
       return result === 1;
     } catch (error) {
-      console.error('❌ Erro ao verificar existência no cache:', error);
+      logger.error('❌ Erro ao verificar existência no cache:', error as Error);
       return false;
     }
   }
@@ -165,7 +166,7 @@ class CacheService {
       const result = await this.redis!.expire(key, ttlSeconds);
       return result === 1;
     } catch (error) {
-      console.error('❌ Erro ao definir TTL:', error);
+      logger.error('❌ Erro ao definir TTL:', error as Error);
       return false;
     }
   }
@@ -181,7 +182,7 @@ class CacheService {
     try {
       return await this.redis!.incrby(key, amount);
     } catch (error) {
-      console.error('❌ Erro ao incrementar contador:', error);
+      logger.error('❌ Erro ao incrementar contador:', error as Error);
       return null;
     }
   }
@@ -199,7 +200,7 @@ class CacheService {
       await this.redis!.lpush(key, serializedValue);
       return true;
     } catch (error) {
-      console.error('❌ Erro ao adicionar à lista:', error);
+      logger.error('❌ Erro ao adicionar à lista:', error as Error);
       return false;
     }
   }
@@ -220,7 +221,7 @@ class CacheService {
       const values = await this.redis!.lrange(key, start, end);
       return values.map(value => JSON.parse(value) as T);
     } catch (error) {
-      console.error('❌ Erro ao recuperar lista:', error);
+      logger.error('❌ Erro ao recuperar lista:', error as Error);
       return [];
     }
   }
@@ -237,7 +238,7 @@ class CacheService {
       await this.redis!.flushall();
       return true;
     } catch (error) {
-      console.error('❌ Erro ao limpar cache:', error);
+      logger.error('❌ Erro ao limpar cache:', error as Error);
       return false;
     }
   }
@@ -273,7 +274,7 @@ class CacheService {
         keyspace,
       } as Record<string, unknown>;
     } catch (error) {
-      console.error('❌ Erro ao obter estatísticas:', error);
+      logger.error('❌ Erro ao obter estatísticas:', error as Error);
       return null;
     }
   }

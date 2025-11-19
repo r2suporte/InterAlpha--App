@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { checkRolePermission } from '@/lib/auth/role-middleware';
+import prisma from '@/lib/prisma';
 import { smsService } from '@/lib/services/sms-service';
-import { createClient } from '@/lib/supabase/server';
 import { StatusOrdemServico } from '@/types/ordens-servico';
 
 // PATCH - Atualizar status da ordem de serviço
@@ -12,6 +13,17 @@ export async function PATCH(
   try {
     const { id: ordemId } = await params;
     const { status } = await request.json();
+
+    // Verificar autenticação
+    const authResult = await checkRolePermission(request);
+    if (!authResult.authenticated || !authResult.user) {
+      return NextResponse.json(
+        { error: 'Não autorizado', message: authResult.error || 'Usuário não autenticado' },
+        { status: 401 }
+      );
+    }
+
+    const currentUser = authResult.user;
 
     if (!status) {
       return NextResponse.json(
@@ -60,58 +72,40 @@ export async function PATCH(
       });
     }
 
-    const supabase = await createClient();
-
     // Verificar se a ordem existe
-    const { data: ordemExistente, error: errorBusca } = await supabase
-      .from('ordens_servico')
-      .select('id, status')
-      .eq('id', ordemId)
-      .single();
+    const ordemExistente = await prisma.ordemServico.findUnique({
+      where: { id: ordemId },
+      select: { id: true, status: true },
+    });
 
-    if (errorBusca) {
-      if (errorBusca.code === 'PGRST116') {
-        return NextResponse.json(
-          { error: 'Ordem de serviço não encontrada' },
-          { status: 404 }
-        );
-      }
-      console.error('Erro ao buscar ordem existente:', errorBusca);
+    if (!ordemExistente) {
       return NextResponse.json(
-        { error: 'Erro ao verificar ordem de serviço' },
-        { status: 500 }
+        { error: 'Ordem de serviço não encontrada' },
+        { status: 404 }
       );
     }
 
     // Atualizar status
-    const { data: ordemAtualizada, error: errorUpdate } = await supabase
-      .from('ordens_servico')
-      .update({
-        status: statusNormalizado as StatusOrdemServico,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', ordemId)
-      .select()
-      .single();
-
-    if (errorUpdate) {
-      console.error('Erro ao atualizar status da ordem:', errorUpdate);
-      return NextResponse.json(
-        { error: 'Erro ao atualizar status da ordem de serviço' },
-        { status: 500 }
-      );
-    }
+    const ordemAtualizada = await prisma.ordemServico.update({
+      where: { id: ordemId },
+      data: {
+        status: statusNormalizado,
+        updatedAt: new Date(),
+      },
+    });
 
     // Criar histórico de mudança de status (apenas se não for ambiente de teste)
     if (!isTestEnvironment) {
-      await supabase.from('status_historico').insert({
-        ordem_servico_id: ordemId,
-        status_anterior: ordemExistente.status,
-        status_novo: statusNormalizado,
-        motivo: `Status alterado para ${status}`,
-        usuario_id: 'system', // TODO: Pegar do usuário logado
-        usuario_nome: 'Sistema', // TODO: Pegar do usuário logado
-        data_mudanca: new Date().toISOString(),
+      await prisma.statusHistorico.create({
+        data: {
+          ordemServicoId: ordemId,
+          statusAnterior: ordemExistente.status,
+          statusNovo: statusNormalizado,
+          motivo: `Status alterado para ${status}`,
+          usuarioId: currentUser.id,
+          usuarioNome: currentUser.name,
+          dataMudanca: new Date(),
+        },
       });
     }
 
@@ -119,49 +113,51 @@ export async function PATCH(
     if (!isTestEnvironment && ordemExistente.status !== statusNormalizado) {
       try {
         // Buscar dados completos da ordem e cliente para o SMS
-        const { data: ordemCompleta } = await supabase
-          .from('ordens_servico')
-          .select(
-            `
-            *,
-            cliente:clientes(id, nome, email, telefone)
-          `
-          )
-          .eq('id', ordemId)
-          .single();
+        const ordemCompleta = await prisma.ordemServico.findUnique({
+          where: { id: ordemId },
+          include: {
+            cliente: {
+              select: {
+                id: true,
+                nome: true,
+                email: true,
+                telefone: true,
+              },
+            },
+          },
+        });
 
         if (ordemCompleta?.cliente) {
           const ordemParaSMS = {
             id: ordemCompleta.id,
-            numero_ordem: ordemCompleta.numero_os,
-            cliente_id: ordemCompleta.cliente_id,
+            numero_ordem: ordemCompleta.numeroOs,
+            cliente_id: ordemCompleta.clienteId,
             status: statusNormalizado,
-            descricao_problema:
-              ordemCompleta.descricao || ordemCompleta.problema_reportado || '',
-            valor_total:
-              (ordemCompleta.valor_servico || 0) +
-              (ordemCompleta.valor_pecas || 0),
-            data_criacao: ordemCompleta.created_at,
-            tecnico_responsavel: ordemCompleta.tecnico_id,
+            descricao_problema: ordemCompleta.descricao || '',
+            valor_total: Number(ordemCompleta.valorTotal || 0),
+            data_criacao: ordemCompleta.createdAt.toISOString(),
+            tecnico_responsavel: ordemCompleta.tecnicoId || undefined,
           };
 
           const clienteParaSMS = {
             id: ordemCompleta.cliente.id,
             nome: ordemCompleta.cliente.nome,
-            telefone: ordemCompleta.cliente.telefone,
-            celular: ordemCompleta.cliente.telefone,
-            email: ordemCompleta.cliente.email,
+            telefone: ordemCompleta.cliente.telefone || undefined,
+            celular: ordemCompleta.cliente.telefone || undefined, // Fallback
+            email: ordemCompleta.cliente.email || undefined,
           };
 
           const tipoSMS =
             statusNormalizado === 'concluida' ? 'conclusao' : 'atualizacao';
+
           await smsService.sendOrdemServicoSMS(
             ordemParaSMS,
             clienteParaSMS,
             tipoSMS
           );
+
           console.log(
-            `SMS de ${tipoSMS} enviado para ordem ${ordemCompleta.numero_os}`
+            `SMS de ${tipoSMS} enviado para ordem ${ordemCompleta.numeroOs}`
           );
         }
       } catch (smsError) {
@@ -174,7 +170,10 @@ export async function PATCH(
       success: true,
       message: 'Status atualizado com sucesso',
       status, // Retornar o status original para compatibilidade com o teste
-      data: ordemAtualizada,
+      data: {
+        ...ordemAtualizada,
+        updated_at: ordemAtualizada.updatedAt.toISOString(), // Manter compatibilidade de resposta
+      },
     });
   } catch (error) {
     console.error('Erro na atualização do status:', error);

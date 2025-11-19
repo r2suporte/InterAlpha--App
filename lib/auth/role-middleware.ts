@@ -5,9 +5,11 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { createServerClient } from '@supabase/ssr';
-
 import { PermissionManager, UserRole } from './permissions';
+import { verifyJWT } from './jwt';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 // Tipos para configuração de rotas
 export interface RoutePermission {
@@ -19,6 +21,7 @@ export interface RoutePermission {
 export interface AuthenticatedUser {
   id: string;
   email: string;
+  name: string;
   role: UserRole;
 }
 
@@ -123,104 +126,71 @@ export async function checkRolePermission(request: NextRequest): Promise<{
   try {
     // Verifica se há um token Bearer no header Authorization
     const authHeader = request.headers.get('authorization');
-    let session = null;
-    let sessionError = null;
-    // Cliente Supabase que será reutilizado para consultas com o mesmo contexto
-    let supabaseClient: any = null;
+    let token: string | null = null;
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      // Autenticação via Bearer token
-      const token = authHeader.substring(7);
-
-      supabaseClient = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            getAll() {
-              return [];
-            },
-            setAll() {
-              // Não fazer nada para Bearer tokens
-            },
-          },
-          // Propaga Authorization para que consultas usem o mesmo contexto
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        }
-      );
-
-      // Define a sessão manualmente com o token
-      const { data, error } = await supabaseClient.auth.getUser(token);
-
-      if (error || !data.user) {
-        return {
-          authenticated: false,
-          error: 'Token inválido',
-        };
-      }
-
-      session = {
-        user: data.user,
-        access_token: token,
-      };
+      token = authHeader.substring(7);
     } else {
-      // Autenticação via cookies (para navegador)
+      // Tenta pegar do cookie
       const cookieStore = await cookies();
-
-      supabaseClient = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            getAll() {
-              return cookieStore.getAll();
-            },
-            setAll(cookiesToSet) {
-              try {
-                cookiesToSet.forEach(({ name, value, options }) =>
-                  cookieStore.set(name, value, options)
-                );
-              } catch {
-                // The `setAll` method was called from a Server Component.
-                // This can be ignored if you have middleware refreshing
-                // user sessions.
-              }
-            },
-          },
-        }
-      );
-
-      // Verifica se o usuário está autenticado via cookies
-      const {
-        data: { session: cookieSession },
-        error,
-      } = await supabaseClient.auth.getSession();
-      session = cookieSession;
-      sessionError = error;
+      token = cookieStore.get('auth-token')?.value || null;
     }
 
-    if (sessionError || !session?.user) {
+    if (!token) {
       return {
         authenticated: false,
-        error: 'Usuário não autenticado',
+        error: 'Token não fornecido',
       };
     }
 
-    // Reutiliza o mesmo cliente configurado para que RLS reconheça o contexto
-    const supabaseForUserData = supabaseClient!;
+    // Verifica o token usando nossa lib JWT (agora com Stack Auth SDK)
+    // O check anterior (!token) garante que token é string aqui, mas o TS pode se perder
+    const payload = await verifyJWT(token as string);
 
-    // Busca informações do usuário no banco de dados
-    const { data: userData, error: userError } = await supabaseForUserData
-      .from('users')
-      .select('id, email, role')
-      .eq('id', session.user.id)
-      .single();
+    // Busca informações do usuário no banco de dados (Neon via Prisma)
+    const userId = payload.userId;
 
-    if (userError || !userData) {
+    if (!userId) {
+      return {
+        authenticated: false,
+        error: 'Token inválido: ID do usuário não encontrado',
+      };
+    }
+
+    // Tenta buscar usuário no banco local
+    let userData = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true, role: true },
+    });
+
+    // Se não existir no banco local, mas autenticou no Stack Auth, criar registro local
+    if (!userData && payload.email) {
+      try {
+        userData = await prisma.user.create({
+          data: {
+            id: userId,
+            email: payload.email,
+            name: payload.email.split('@')[0], // Nome temporário
+            role: (payload.role as string) || 'user',
+          },
+          select: { id: true, email: true, name: true, role: true },
+        });
+      } catch (dbError) {
+        console.error('Erro ao sincronizar usuário Stack Auth com banco local:', dbError);
+        // Se falhar a criação, tenta usar os dados do payload
+        return {
+          authenticated: true,
+          user: {
+            id: userId,
+            email: payload.email,
+            name: payload.email.split('@')[0],
+            role: (payload.role as UserRole) || 'user',
+          },
+        };
+      }
+    }
+
+    if (!userData) {
       return {
         authenticated: false,
         error: 'Dados do usuário não encontrados',
@@ -240,6 +210,7 @@ export async function checkRolePermission(request: NextRequest): Promise<{
       user: {
         id: userData.id,
         email: userData.email,
+        name: userData.name || userData.email, // Fallback para email se nome não existir
         role: userData.role as UserRole,
       },
     };
@@ -256,6 +227,7 @@ export async function checkRolePermission(request: NextRequest): Promise<{
  * Normaliza o caminho da rota para comparação
  */
 function normalizeRoutePath(pathname: string): string {
+  if (!pathname) return '';
   // Remove query parameters
   const pathWithoutQuery = pathname.split('?')[0];
 
@@ -308,7 +280,7 @@ export function createRoleMiddleware(options?: {
         );
       }
 
-      const {user} = authResult;
+      const { user } = authResult;
 
       // Verifica roles permitidas (se especificadas)
       if (options?.allowedRoles && !options.allowedRoles.includes(user.role)) {
@@ -520,6 +492,7 @@ export function getPermissionDebugInfo(
     user: {
       id: user.id,
       email: user.email,
+      name: user.name,
       role: user.role,
       roleLevel: PermissionManager.getRoleLevel(user.role),
     },

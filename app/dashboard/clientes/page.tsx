@@ -82,8 +82,6 @@ import {
   type EnderecoCompleto,
   type TipoPessoa,
   type ViaCepResponse,
-  buscarDadosCNPJ,
-  buscarEnderecoPorCEP,
   determinarTipoPessoa,
   formatarCEP,
   formatarCpfCnpj,
@@ -184,7 +182,7 @@ export default function ClientesPage() {
       if (error) throw error;
       setClientes(data || []);
     } catch (err: any) {
-      setErrors([`Erro ao carregar clientes: ${  err.message}`]);
+      setErrors([`Erro ao carregar clientes: ${err.message}`]);
     } finally {
       setLoading(false);
     }
@@ -195,7 +193,14 @@ export default function ClientesPage() {
 
     setLoadingCep(true);
     try {
-      const endereco = await buscarEnderecoPorCEP(cep);
+      const response = await fetch(`/api/cep/${cep}`);
+
+      if (!response.ok) {
+        throw new Error('CEP não encontrado');
+      }
+
+      const endereco: ViaCepResponse = await response.json();
+
       if (endereco) {
         setFormData(prev => ({
           ...prev,
@@ -208,6 +213,8 @@ export default function ClientesPage() {
       }
     } catch (error) {
       console.error('Erro ao buscar CEP:', error);
+      setErrors(['Erro ao buscar CEP. Verifique o CEP e tente novamente.']);
+      setTimeout(() => setErrors([]), 3000);
     } finally {
       setLoadingCep(false);
     }
@@ -225,7 +232,14 @@ export default function ClientesPage() {
   const buscarCNPJ = async (cnpj: string) => {
     setLoadingCnpj(true);
     try {
-      const dadosCnpj = await buscarDadosCNPJ(cnpj);
+      const response = await fetch(`/api/cnpj/${cnpj}`);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || 'CNPJ não encontrado');
+      }
+
+      const dadosCnpj: CNPJResponse = await response.json();
 
       if (dadosCnpj && !dadosCnpj.erro && dadosCnpj.nome) {
         setFormData(prev => ({
@@ -257,7 +271,7 @@ export default function ClientesPage() {
       }
     } catch (error) {
       console.error('Erro ao buscar CNPJ:', error);
-      setErrors(['Erro ao consultar dados do CNPJ']);
+      setErrors([error instanceof Error ? error.message : 'Erro ao consultar dados do CNPJ']);
       setTimeout(() => setErrors([]), 3000);
     } finally {
       setLoadingCnpj(false);
@@ -375,7 +389,7 @@ export default function ClientesPage() {
       setShowModal(false);
       fetchClientes();
     } catch (err: any) {
-      setErrors([`Erro ao salvar cliente: ${  err.message}`]);
+      setErrors([`Erro ao salvar cliente: ${err.message}`]);
     }
   };
 
@@ -435,7 +449,7 @@ export default function ClientesPage() {
       setSuccess('Cliente excluído com sucesso!');
       fetchClientes();
     } catch (err: any) {
-      setErrors([`Erro ao excluir cliente: ${  err.message}`]);
+      setErrors([`Erro ao excluir cliente: ${err.message}`]);
     }
   };
 

@@ -26,6 +26,7 @@ model User {
   ordensServicoTecnico  OrdemServico[] @relation("OrdemServicoTecnico")
   ordensServicoCriadas  OrdemServico[] @relation("OrdemServicoCreatedBy")
   pagamentosCriados     Pagamento[]    @relation("PagamentoCreatedBy")
+  statusHistorico       StatusHistorico[]
 
   @@map("users")
 }
@@ -83,6 +84,7 @@ model OrdemServico {
   tecnico        User?       @relation("OrdemServicoTecnico", fields: [tecnicoId], references: [id])
   createdByUser  User?       @relation("OrdemServicoCreatedBy", fields: [createdBy], references: [id])
   pagamentos     Pagamento[]
+  statusHistorico StatusHistorico[]
 
   @@map("ordens_servico")
 }
@@ -107,6 +109,24 @@ model Pagamento {
   createdByUser         User?         @relation("PagamentoCreatedBy", fields: [createdBy], references: [id])
 
   @@map("pagamentos")
+}
+
+// 📝 Modelo de Histórico de Status
+model StatusHistorico {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ordemServicoId  String       @map("ordem_servico_id") @db.Uuid
+  statusAnterior  String       @map("status_anterior") @db.VarChar(50)
+  statusNovo      String       @map("status_novo") @db.VarChar(50)
+  motivo          String?      @db.Text
+  usuarioId       String?      @map("usuario_id") @db.Uuid
+  usuarioNome     String?      @map("usuario_nome") @db.VarChar(255)
+  dataMudanca     DateTime     @default(now()) @map("data_mudanca") @db.Timestamptz
+  
+  // Relacionamentos
+  ordemServico    OrdemServico @relation(fields: [ordemServicoId], references: [id], onDelete: Cascade)
+  usuario         User?        @relation(fields: [usuarioId], references: [id])
+
+  @@map("status_historico")
 }
 
 // 📊 Extensões do Supabase (Opcional)

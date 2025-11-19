@@ -1,4 +1,5 @@
 import { Socket, io } from 'socket.io-client';
+import { logger } from './logger-service';
 
 export interface OrderStatusUpdate {
   orderId: string;
@@ -51,7 +52,7 @@ class WebSocketService {
       this.setupEventListeners();
       this.socket.connect();
     } catch (error) {
-      console.error('Erro ao conectar WebSocket:', error);
+      logger.error('Erro ao conectar WebSocket:', error as Error);
       this.handleReconnect();
     }
   }
@@ -60,13 +61,13 @@ class WebSocketService {
     if (!this.socket) return;
 
     this.socket.on('connect', () => {
-      console.log('WebSocket conectado:', this.socket?.id);
+      logger.info('WebSocket conectado:', { socketId: this.socket?.id });
       this.isConnected = true;
       this.reconnectAttempts = 0;
     });
 
     this.socket.on('disconnect', reason => {
-      console.log('WebSocket desconectado:', reason);
+      logger.info('WebSocket desconectado:', { reason });
       this.isConnected = false;
 
       if (reason === 'io server disconnect') {
@@ -76,13 +77,13 @@ class WebSocketService {
     });
 
     this.socket.on('connect_error', error => {
-      console.error('Erro de conexão WebSocket:', error);
+      logger.error('Erro de conexão WebSocket:', error);
       this.isConnected = false;
       this.handleReconnect();
     });
 
     this.socket.on('reconnect', attemptNumber => {
-      console.log('WebSocket reconectado após', attemptNumber, 'tentativas');
+      logger.info('WebSocket reconectado', { attemptNumber });
       this.isConnected = true;
       this.reconnectAttempts = 0;
     });
@@ -91,7 +92,7 @@ class WebSocketService {
   private handleReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts || this.isReconnecting || !this.shouldConnect) {
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        console.warn('Máximo de tentativas de reconexão atingido. WebSocket desabilitado.');
+        logger.warn('Máximo de tentativas de reconexão atingido. WebSocket desabilitado.');
         this.shouldConnect = false;
       }
       return;
@@ -101,7 +102,7 @@ class WebSocketService {
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * this.reconnectAttempts;
 
-    console.log(
+    logger.info(
       `Tentando reconectar em ${delay}ms (tentativa ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
     );
 

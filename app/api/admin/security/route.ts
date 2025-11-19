@@ -5,6 +5,7 @@ import {
   getRecentSecurityEvents,
   getSecurityStats,
 } from '@/lib/middleware/security-audit';
+import { checkRolePermission } from '@/lib/auth/role-middleware';
 
 /**
  * 🔍 API de Monitoramento de Segurança - InterAlpha App
@@ -25,11 +26,11 @@ function getSecurityStatus(
 
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Verificar se o usuário é administrador
-    // const user = await getCurrentUser(request)
-    // if (!user || user.role !== 'ADMIN') {
-    //   return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
-    // }
+    // Verificar se o usuário é administrador
+    const auth = await checkRolePermission(request);
+    if (!auth.authenticated || !auth.user || auth.user.role !== 'admin') {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action') || 'stats';
@@ -158,7 +159,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // TODO: Verificar se o usuário é administrador
+    // Verificar se o usuário é administrador
+    const auth = await checkRolePermission(request);
+    if (!auth.authenticated || !auth.user || auth.user.role !== 'admin') {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    }
 
     const body = await request.json();
     const { action } = body;

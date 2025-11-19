@@ -1,4 +1,5 @@
 import { cnpj, cpf } from 'cpf-cnpj-validator';
+import { logger } from './services/logger-service';
 
 /**
  * Implementar debounce para evitar muitas chamadas de API
@@ -7,7 +8,7 @@ export const debounce = <T extends (...args: any[]) => any>(
   func: T,
   delay: number
 ): ((...args: Parameters<T>) => void) => {
-  let timeoutId: NodeJS.Timeout | null = null;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   return (...args: Parameters<T>) => {
     if (timeoutId) {
@@ -108,9 +109,9 @@ export const validarCpfCnpj = (
 
   if (tipo === 'fisica') {
     return validarCPF(documento);
-  } 
-    return validarCNPJ(documento);
-  
+  }
+  return validarCNPJ(documento);
+
 };
 
 // Formatação de documentos
@@ -139,9 +140,9 @@ export const formatarCpfCnpj = (
 
   if (tipo === 'fisica') {
     return formatarCPF(documento);
-  } 
-    return formatarCNPJ(documento);
-  
+  }
+  return formatarCNPJ(documento);
+
 };
 
 // Formatação de telefone
@@ -203,7 +204,7 @@ export const buscarEnderecoPorCEP = async (
 
     return data;
   } catch (error) {
-    console.error('Erro ao buscar CEP:', error);
+    logger.error('Erro ao buscar CEP:', error instanceof Error ? error : new Error(String(error)));
     return null;
   }
 };
@@ -229,7 +230,7 @@ export const buscarDadosCNPJ = async (
 
   // TENTATIVA 1: BrasilAPI
   try {
-    console.log('🔍 Tentando BrasilAPI...');
+    logger.info('🔍 Tentando BrasilAPI...');
     const response = await fetch(
       `https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`,
       { signal: AbortSignal.timeout(8000) }
@@ -237,7 +238,7 @@ export const buscarDadosCNPJ = async (
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ BrasilAPI respondeu com sucesso');
+      logger.info('✅ BrasilAPI respondeu com sucesso');
 
       return {
         cnpj: data.cnpj,
@@ -246,11 +247,11 @@ export const buscarDadosCNPJ = async (
         situacao: data.descricao_situacao_cadastral || 'Ativo',
         atividade_principal: data.cnae_fiscal
           ? [
-              {
-                code: data.cnae_fiscal.codigo,
-                text: data.cnae_fiscal.descricao,
-              },
-            ]
+            {
+              code: data.cnae_fiscal.codigo,
+              text: data.cnae_fiscal.descricao,
+            },
+          ]
           : [],
         endereco: {
           logradouro: data.logradouro || '',
@@ -270,15 +271,15 @@ export const buscarDadosCNPJ = async (
 
     // Se não for 404, logar o erro mas continuar para fallback
     if (response.status !== 404) {
-      console.warn(`⚠️ BrasilAPI retornou ${response.status}, tentando fallback...`);
+      logger.warn(`⚠️ BrasilAPI retornou ${response.status}, tentando fallback...`);
     }
   } catch (error) {
-    console.warn('⚠️ BrasilAPI falhou:', error instanceof Error ? error.message : 'Erro desconhecido');
+    logger.warn('⚠️ BrasilAPI falhou:', { error: error instanceof Error ? error.message : 'Erro desconhecido' });
   }
 
   // TENTATIVA 2: ReceitaWS (Fallback)
   try {
-    console.log('🔍 Tentando ReceitaWS (fallback)...');
+    logger.info('🔍 Tentando ReceitaWS (fallback)...');
     const response = await fetch(
       `https://www.receitaws.com.br/v1/cnpj/${cleanCnpj}`,
       { signal: AbortSignal.timeout(10000) }
@@ -322,7 +323,7 @@ export const buscarDadosCNPJ = async (
       };
     }
 
-    console.log('✅ ReceitaWS respondeu com sucesso');
+    logger.info('✅ ReceitaWS respondeu com sucesso');
 
     // Mapear dados da ReceitaWS para nossa interface
     return {
@@ -344,7 +345,7 @@ export const buscarDadosCNPJ = async (
       email: data.email || '',
     };
   } catch (error) {
-    console.error('❌ ReceitaWS também falhou:', error instanceof Error ? error.message : 'Erro desconhecido');
+    logger.error('❌ ReceitaWS também falhou:', error instanceof Error ? error : new Error(String(error)));
   }
 
   // Se ambas as APIs falharam
@@ -391,7 +392,7 @@ export const buscarDadosCPF = async (
   // Simulação: Adicionar delay para parecer uma busca real
   await new Promise(resolve => setTimeout(resolve, 500));
 
-  console.log('✅ CPF validado localmente');
+  logger.info('✅ CPF validado localmente');
 
   // Retornar validação bem-sucedida
   // Nota: Dados pessoais reais não estão disponíveis em APIs públicas gratuitas
@@ -425,18 +426,18 @@ export const getMascaraCpfCnpj = (valor: string): string => {
 
   if (cleanValue.length <= 11) {
     return '999.999.999-99'; // Máscara CPF
-  } 
-    return '99.999.999/9999-99'; // Máscara CNPJ
-  
+  }
+  return '99.999.999/9999-99'; // Máscara CNPJ
+
 };
 
 // Máscara baseada no tipo de documento especificado
 export const getMascaraPorTipo = (tipo: 'cpf' | 'cnpj'): string => {
   if (tipo === 'cpf') {
     return '999.999.999-99'; // Máscara CPF
-  } 
-    return '99.999.999/9999-99'; // Máscara CNPJ
-  
+  }
+  return '99.999.999/9999-99'; // Máscara CNPJ
+
 };
 
 // Limpar documento (remover formatação)
@@ -475,10 +476,10 @@ export const validarCamposObrigatorios = (dados: {
         erros.push('CPF inválido');
       }
     } else if (cleanDoc.length !== 14) {
-        erros.push('CNPJ deve ter exatamente 14 dígitos');
-      } else if (!validarCpfCnpj(dados.cpfCnpj, dados.tipoPessoa)) {
-        erros.push('CNPJ inválido');
-      }
+      erros.push('CNPJ deve ter exatamente 14 dígitos');
+    } else if (!validarCpfCnpj(dados.cpfCnpj, dados.tipoPessoa)) {
+      erros.push('CNPJ inválido');
+    }
   }
 
   return erros;

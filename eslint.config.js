@@ -117,9 +117,28 @@ module.exports = [
     },
   },
 
+  // Type definitions - relax unused vars
+  {
+    files: ['types/**/*.d.ts', '**/*.d.ts'],
+    rules: {
+      'no-unused-vars': 'off',
+    },
+  },
+
+  // Scripts - relaxed rules
+  {
+    files: ['scripts/**/*.js', 'scripts/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+      'no-magic-numbers': 'off',
+      'no-unused-vars': 'off',
+    },
+  },
+
   // Ignore patterns
   {
     ignores: [
+      '**/*.json',
       'node_modules/**',
       '.next/**',
       'out/**',
@@ -137,6 +156,7 @@ module.exports = [
       'migrations/**/*.sql',
       'supabase/migrations/**',
       '.swc/**',
+      '**/*.tsbuildinfo',
     ],
   },
 ];

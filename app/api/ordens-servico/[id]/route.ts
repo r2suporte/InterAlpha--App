@@ -8,6 +8,7 @@ import {
   StatusOrdemServico,
   TipoServico,
 } from '@/types/ordens-servico';
+import { checkRolePermission } from '@/lib/auth/role-middleware';
 
 // GET - Buscar ordem de serviço específica
 export async function GET(
@@ -125,6 +126,11 @@ export async function PUT(
   try {
     const { id: ordemId } = await params;
     const updateData: any = await request.json();
+
+    // Obter usuário autenticado para histórico
+    const auth = await checkRolePermission(request);
+    const userId = auth.user?.id || 'system';
+    const userName = auth.user?.name || 'Sistema';
 
     // Detectar ambiente de teste
     const isTestEnvironment =
@@ -326,8 +332,8 @@ export async function PUT(
         status_anterior: ordemExistente.status,
         status_novo: updateData.status,
         motivo: 'Atualização da ordem de serviço',
-        usuario_id: 'system', // TODO: Pegar do usuário logado
-        usuario_nome: 'Sistema', // TODO: Pegar do usuário logado
+        usuario_id: userId,
+        usuario_nome: userName,
         data_mudanca: new Date().toISOString(),
       });
     }
@@ -344,8 +350,8 @@ export async function PUT(
         motivo: updateData.tecnico_id
           ? `Técnico atribuído: ${updateData.tecnico_id}`
           : 'Técnico removido da ordem',
-        usuario_id: 'system', // TODO: Pegar do usuário logado
-        usuario_nome: 'Sistema', // TODO: Pegar do usuário logado
+        usuario_id: userId,
+        usuario_nome: userName,
         data_mudanca: new Date().toISOString(),
       });
     }
@@ -454,6 +460,12 @@ export async function DELETE(
 ) {
   try {
     const { id: ordemId } = await params;
+
+    // Obter usuário autenticado para histórico
+    const auth = await checkRolePermission(request);
+    const userId = auth.user?.id || 'system';
+    const userName = auth.user?.name || 'Sistema';
+
     const supabase = await createClient();
 
     // Detectar ambiente de teste
@@ -513,8 +525,8 @@ export async function DELETE(
       status_anterior: ordemExistente.status,
       status_novo: 'cancelada',
       motivo: 'Ordem de serviço cancelada',
-      usuario_id: 'system', // TODO: Pegar do usuário logado
-      usuario_nome: 'Sistema', // TODO: Pegar do usuário logado
+      usuario_id: userId,
+      usuario_nome: userName,
       data_mudanca: new Date().toISOString(),
     });
 

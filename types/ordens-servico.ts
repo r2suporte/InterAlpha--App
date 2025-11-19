@@ -1,4 +1,4 @@
-import { EquipamentoApple, HistoricoReparo } from './equipamentos';
+import { EquipamentoApple } from './equipamentos';
 import { FinanceiroOrdemServico, StatusFinanceiro } from './financeiro';
 
 // Interface do cliente (referência)
@@ -215,11 +215,11 @@ export interface AnexoOrdemServico {
   id: string;
   ordem_servico_id: string;
   tipo:
-    | 'foto_equipamento'
-    | 'foto_dano'
-    | 'documento'
-    | 'comprovante'
-    | 'laudo';
+  | 'foto_equipamento'
+  | 'foto_dano'
+  | 'documento'
+  | 'comprovante'
+  | 'laudo';
   nome_arquivo: string;
   url: string;
   descricao?: string;

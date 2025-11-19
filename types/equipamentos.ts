@@ -238,17 +238,20 @@ export const PROBLEMAS_COMUNS: Record<TipoEquipamento, string[]> = {
 
 // Função para validar serial number Apple
 export function validarSerialApple(serial: string): SerialValidation {
-  if (!serial || serial.length < 8) {
+  const MIN_LENGTH = 8;
+  const MAX_LENGTH = 12;
+
+  if (!serial || serial.length < MIN_LENGTH) {
     return {
       isValid: false,
-      message: 'Serial number deve ter pelo menos 8 caracteres',
+      message: `Serial number deve ter pelo menos ${MIN_LENGTH} caracteres`,
     };
   }
 
-  if (serial.length > 12) {
+  if (serial.length > MAX_LENGTH) {
     return {
       isValid: false,
-      message: 'Serial number não pode ter mais de 12 caracteres',
+      message: `Serial number não pode ter mais de ${MAX_LENGTH} caracteres`,
     };
   }
 
@@ -264,10 +267,15 @@ export function validarSerialApple(serial: string): SerialValidation {
   // Extrair informações do serial (simulação baseada em padrões Apple)
   let info: { modelo?: string; ano?: string; semana?: string } = {};
 
-  if (serial.length >= 10) {
+  const SERIAL_INFO_LENGTH = 10;
+  const YEAR_CHAR_INDEX = 3;
+  const WEEK_START_INDEX = 4;
+  const WEEK_END_INDEX = 6;
+
+  if (serial.length >= SERIAL_INFO_LENGTH) {
     // Para seriais de 10+ caracteres (formato mais recente)
-    const anoChar = serial.charAt(3);
-    const semanaChars = serial.substring(4, 6);
+    const anoChar = serial.charAt(YEAR_CHAR_INDEX);
+    const semanaChars = serial.substring(WEEK_START_INDEX, WEEK_END_INDEX);
 
     // Mapeamento simplificado de anos (baseado em padrões Apple)
     const anoMap: Record<string, string> = {
@@ -301,6 +309,7 @@ export function consultarGarantiaApple(serial: string): Promise<{
 }> {
   return new Promise(resolve => {
     // Simular delay de consulta
+    const SIMULATION_DELAY = 1500;
     setTimeout(() => {
       const validation = validarSerialApple(serial);
 
@@ -342,6 +351,6 @@ export function consultarGarantiaApple(serial: string): Promise<{
           modelo_detectado: 'iMac 24" M1 (2021)',
         });
       }
-    }, 1500); // Simular 1.5s de consulta
+    }, SIMULATION_DELAY); // Simular 1.5s de consulta
   });
 }

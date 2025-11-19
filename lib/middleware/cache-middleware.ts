@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { CACHE_TTL, cacheService } from '@/lib/services/cache-service';
+import { logger } from '@/lib/services/logger-service';
 
 interface CacheOptions {
   ttl?: number;
@@ -36,7 +37,7 @@ export function withCache(options: CacheOptions = {}) {
         // Tenta buscar do cache
         const cachedResponse = await cacheService.get<any>(fullCacheKey);
         if (cachedResponse) {
-          console.log(`🎯 Cache HIT: ${fullCacheKey}`);
+          logger.debug(`🎯 Cache HIT: ${fullCacheKey}`);
           return NextResponse.json(cachedResponse.data, {
             status: cachedResponse.status,
             headers: {
@@ -47,7 +48,7 @@ export function withCache(options: CacheOptions = {}) {
           });
         }
 
-        console.log(`❌ Cache MISS: ${fullCacheKey}`);
+        logger.debug(`❌ Cache MISS: ${fullCacheKey}`);
 
         // Executa o handler original
         const response = await handler(req, ...args);
@@ -65,7 +66,7 @@ export function withCache(options: CacheOptions = {}) {
 
           // Armazena no cache
           await cacheService.set(fullCacheKey, cacheData, ttl);
-          console.log(`💾 Cached: ${fullCacheKey} (TTL: ${ttl}s)`);
+          logger.debug(`💾 Cached: ${fullCacheKey} (TTL: ${ttl}s)`);
 
           // Adiciona headers de cache
           response.headers.set('X-Cache', 'MISS');
@@ -75,7 +76,7 @@ export function withCache(options: CacheOptions = {}) {
 
         return response;
       } catch (error) {
-        console.error('❌ Erro no middleware de cache:', error);
+        logger.error('❌ Erro no middleware de cache:', error as Error);
         // Em caso de erro, executa o handler sem cache
         return handler(req, ...args);
       }

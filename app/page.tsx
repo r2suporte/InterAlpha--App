@@ -104,7 +104,7 @@ export default function Home() {
 
               <div className="mt-auto space-y-4">
                 <Link
-                  href="/auth/login"
+                  href="/sign-in"
                   className="block w-full transform rounded-xl bg-gradient-to-r from-green-600 to-emerald-700 px-8 py-4 text-center text-lg font-semibold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:from-green-700 hover:to-emerald-800 hover:shadow-xl"
                 >
                   Acessar Sistema
