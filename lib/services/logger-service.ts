@@ -118,11 +118,11 @@ export class LoggerService {
     const errorWithCode = error as Error & { code?: string };
     const errorInfo = error
       ? {
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-          code: errorWithCode.code,
-        }
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        code: errorWithCode.code,
+      }
       : undefined;
 
     this.log('error', message, context, errorInfo, metadata);
@@ -140,11 +140,11 @@ export class LoggerService {
     const errorWithCode = error as Error & { code?: string };
     const errorInfo = error
       ? {
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-          code: errorWithCode.code,
-        }
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        code: errorWithCode.code,
+      }
       : undefined;
 
     this.log('fatal', message, context, errorInfo, metadata);
@@ -268,6 +268,8 @@ export class LoggerService {
    * 📁 Escrever logs em arquivo
    */
   private async writeToFile(logs: LogEntry[]): Promise<void> {
+    // File logging disabled for client compatibility
+    /*
     try {
       const fs = await import('fs/promises');
       const path = await import('path');
@@ -293,6 +295,7 @@ export class LoggerService {
     } catch (error) {
       console.error('Erro ao escrever logs em arquivo:', error);
     }
+    */
   }
 
   /**

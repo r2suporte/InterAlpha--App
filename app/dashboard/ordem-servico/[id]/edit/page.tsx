@@ -10,7 +10,7 @@ import { SiteHeader } from '@/components/site-header';
 import { BackButton } from '@/components/ui/back-button';
 import { PageLoading } from '@/components/ui/loading';
 import { useLoadingState } from '@/components/ui/loading-states';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { useToast } from '@/components/ui/toast-system';
 import { OrdemServico, OrdemServicoFormData } from '@/types/ordens-servico';
 
@@ -91,12 +91,12 @@ export default function EditOrdemServicoPage() {
     return (
       <SidebarProvider>
         <EnhancedSidebar />
-        <SidebarInset>
+        <div className="flex w-full flex-1 flex-col bg-background">
           <SiteHeader />
           <div className="flex flex-1 flex-col items-center justify-center">
             <PageLoading text="Carregando ordem de serviço..." />
           </div>
-        </SidebarInset>
+        </div>
       </SidebarProvider>
     );
   }
@@ -105,7 +105,7 @@ export default function EditOrdemServicoPage() {
     return (
       <SidebarProvider>
         <EnhancedSidebar />
-        <SidebarInset>
+        <div className="flex w-full flex-1 flex-col bg-background">
           <SiteHeader />
           <div className="flex flex-1 flex-col items-center justify-center">
             <h2 className="mb-2 text-xl font-semibold text-gray-900">
@@ -114,7 +114,7 @@ export default function EditOrdemServicoPage() {
             <p className="mb-4 text-gray-600">{error}</p>
             <BackButton href="/dashboard/ordens-servico" />
           </div>
-        </SidebarInset>
+        </div>
       </SidebarProvider>
     );
   }
@@ -122,7 +122,7 @@ export default function EditOrdemServicoPage() {
   return (
     <SidebarProvider>
       <EnhancedSidebar />
-      <SidebarInset>
+      <div className="flex w-full flex-1 flex-col bg-background">
         <SiteHeader />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-6 p-6">
@@ -147,7 +147,7 @@ export default function EditOrdemServicoPage() {
             </div>
           </div>
         </div>
-      </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

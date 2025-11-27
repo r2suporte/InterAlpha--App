@@ -49,7 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { StatusBadge } from '@/components/ui/status-badge';
 
 export default function RelatoriosPage() {
@@ -214,7 +214,7 @@ export default function RelatoriosPage() {
   return (
     <SidebarProvider>
       <EnhancedSidebar />
-      <SidebarInset>
+      <div className="flex w-full flex-1 flex-col bg-background">
         <SiteHeader />
         <ResponsiveContainer className="flex-1 space-y-6 p-4 pt-6 md:p-8">
           {/* Header */}
@@ -289,42 +289,52 @@ export default function RelatoriosPage() {
 
                     <div className="space-y-2">
                       <Label htmlFor="data-inicio">Data Início</Label>
-                      <Input
+                      <input
                         id="data-inicio"
                         type="date"
                         value={dataInicio}
                         onChange={e => setDataInicio(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        style={{ pointerEvents: 'auto', zIndex: 20, position: 'relative' }}
                       />
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="data-fim">Data Fim</Label>
-                      <Input
+                      <input
                         id="data-fim"
                         type="date"
                         value={dataFim}
                         onChange={e => setDataFim(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        style={{ pointerEvents: 'auto', zIndex: 20, position: 'relative' }}
                       />
                     </div>
                   </div>
 
                   <div className="flex gap-2">
-                    <Button
+                    <button
                       onClick={gerarRelatorio}
-                      className="flex-1"
+                      className="flex-1 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
                       disabled={gerandoRelatorio}
+                      type="button"
+                      style={{ pointerEvents: 'auto', zIndex: 20, position: 'relative' }}
                     >
                       <FileText className="mr-2 h-4 w-4" />
                       {gerandoRelatorio ? 'Gerando...' : 'Gerar Relatório'}
-                    </Button>
-                    <Button variant="outline" onClick={(e) => {
-                      e.preventDefault();
-                      console.log('🔵 Clique em Filtros Avançados');
-                      setFiltrosAvancadosOpen(true);
-                    }}>
+                    </button>
+                    <button
+                      onClick={() => {
+                        console.log('🔵 Clique em Filtros Avançados');
+                        setFiltrosAvancadosOpen(true);
+                      }}
+                      className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      type="button"
+                      style={{ pointerEvents: 'auto', zIndex: 20, position: 'relative' }}
+                    >
                       <Filter className="mr-2 h-4 w-4" />
                       Filtros Avançados
-                    </Button>
+                    </button>
 
                     <Dialog
                       open={filtrosAvancadosOpen}
@@ -461,14 +471,15 @@ export default function RelatoriosPage() {
                               size="sm"
                             />
                           </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
+                          <button
                             onClick={() => downloadRelatorio(relatorio.nome)}
                             disabled={gerandoRelatorio}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-transparent text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                            type="button"
+                            style={{ pointerEvents: 'auto', zIndex: 20, position: 'relative' }}
                           >
                             <Download className="h-4 w-4" />
-                          </Button>
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -508,39 +519,42 @@ export default function RelatoriosPage() {
                   <CardTitle>Ações Rápidas</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
+                  <button
                     onClick={() => gerarRelatorioRapido('Relatório Mensal')}
                     disabled={gerandoRelatorio}
+                    className="inline-flex w-full items-center justify-start rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                    type="button"
+                    style={{ pointerEvents: 'auto', zIndex: 20, position: 'relative' }}
                   >
                     <TrendingUp className="mr-2 h-4 w-4" />
                     Relatório Mensal
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
+                  </button>
+                  <button
                     onClick={() => gerarRelatorioRapido('Balanço Financeiro')}
                     disabled={gerandoRelatorio}
+                    className="inline-flex w-full items-center justify-start rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                    type="button"
+                    style={{ pointerEvents: 'auto', zIndex: 20, position: 'relative' }}
                   >
                     <DollarSign className="mr-2 h-4 w-4" />
                     Balanço Financeiro
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
+                  </button>
+                  <button
                     onClick={() => gerarRelatorioRapido('Top Clientes')}
                     disabled={gerandoRelatorio}
+                    className="inline-flex w-full items-center justify-start rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                    type="button"
+                    style={{ pointerEvents: 'auto', zIndex: 20, position: 'relative' }}
                   >
                     <Users className="mr-2 h-4 w-4" />
                     Top Clientes
-                  </Button>
+                  </button>
                 </CardContent>
               </Card>
             </div>
           </div>
         </ResponsiveContainer>
-      </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

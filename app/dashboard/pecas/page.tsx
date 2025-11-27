@@ -49,7 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useToast } from '@/components/ui/toast-system';
 import {
@@ -153,8 +153,8 @@ const mockFornecedores: Fornecedor[] = [
     email: 'joao@techparts.com.br',
     telefone: '(11) 99999-9999',
     ativo: true,
-    created_at: new Date(),
-    updated_at: new Date(),
+    created_at: new Date('2024-01-01'),
+    updated_at: new Date('2024-01-01'),
   },
   {
     id: '2',
@@ -164,8 +164,8 @@ const mockFornecedores: Fornecedor[] = [
     email: 'maria@appleparts.com.br',
     telefone: '(11) 88888-8888',
     ativo: true,
-    created_at: new Date(),
-    updated_at: new Date(),
+    created_at: new Date('2024-01-01'),
+    updated_at: new Date('2024-01-01'),
   },
 ];
 
@@ -232,16 +232,16 @@ export default function PecasPage() {
           prev.map(peca =>
             peca.id === pecaEditando.id
               ? {
-                  ...peca,
-                  ...data,
-                  preco_custo: parseFloat(data.preco_custo),
-                  preco_venda: parseFloat(data.preco_venda),
-                  margem_lucro: calcularMargemLucro(
-                    parseFloat(data.preco_custo),
-                    parseFloat(data.preco_venda)
-                  ),
-                  updated_at: new Date(),
-                }
+                ...peca,
+                ...data,
+                preco_custo: parseFloat(data.preco_custo),
+                preco_venda: parseFloat(data.preco_venda),
+                margem_lucro: calcularMargemLucro(
+                  parseFloat(data.preco_custo),
+                  parseFloat(data.preco_venda)
+                ),
+                updated_at: new Date(),
+              }
               : peca
           )
         );
@@ -309,7 +309,7 @@ export default function PecasPage() {
     return (
       <SidebarProvider>
         <EnhancedSidebar />
-        <SidebarInset>
+        <div className="flex w-full flex-1 flex-col bg-background">
           <SiteHeader />
           <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
             <PecaForm
@@ -323,7 +323,7 @@ export default function PecasPage() {
               isLoading={isLoading}
             />
           </ResponsiveContainer>
-        </SidebarInset>
+        </div>
       </SidebarProvider>
     );
   }
@@ -331,7 +331,7 @@ export default function PecasPage() {
   return (
     <SidebarProvider>
       <EnhancedSidebar />
-      <SidebarInset>
+      <div className="flex w-full flex-1 flex-col bg-background">
         <SiteHeader />
         <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
           {/* Cabeçalho */}
@@ -359,37 +359,20 @@ export default function PecasPage() {
               </div>
             </div>
 
-            <ShowHide hide={['sm']}>
-              <Button
-                onClick={(e) => {
-                  e.preventDefault();
-                  console.log('🔵 Clique em Nova Peça - Desktop');
-                  setMostrarFormulario(true);
-                  setPecaEditando(undefined);
-                }}
-                className="flex items-center gap-2"
-                type="button"
-              >
-                <Plus className="h-4 w-4" />
-                Nova Peça
-              </Button>
-            </ShowHide>
-
-            <ShowHide on={['sm']}>
-              <Button
-                onClick={(e) => {
-                  e.preventDefault();
-                  console.log('🔵 Clique em Nova Peça - Mobile');
-                  setMostrarFormulario(true);
-                  setPecaEditando(undefined);
-                }}
-                className="flex w-full items-center gap-2"
-                type="button"
-              >
-                <Plus className="h-4 w-4" />
-                Nova
-              </Button>
-            </ShowHide>
+            {/* Ações */}
+            <button
+              onClick={() => {
+                console.log('🔵 Clique em Nova Peça');
+                setMostrarFormulario(true);
+                setPecaEditando(undefined);
+              }}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              type="button"
+              style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
+            >
+              <Plus className="h-4 w-4" />
+              Nova Peça
+            </button>
           </ResponsiveStack>
 
           {/* Métricas */}
@@ -656,7 +639,7 @@ export default function PecasPage() {
             </CardContent>
           </Card>
         </ResponsiveContainer>
-      </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

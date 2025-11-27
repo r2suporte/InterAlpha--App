@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import {
   Activity,
@@ -9,10 +9,12 @@ import {
   CheckCircle,
   Clock,
   DollarSign,
+  Download,
   Package,
   PieChart,
+  Settings,
+  Share2,
   Target,
-  TrendingDown,
   TrendingUp,
   Users,
 } from 'lucide-react';
@@ -23,14 +25,6 @@ import { BackButton } from '@/components/ui/back-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import {
-  ResponsiveContainer,
-  ResponsiveStack,
-  ResponsiveText,
-  ShowHide,
-  useBreakpoint,
-} from '@/components/ui/responsive-utils';
 import {
   Select,
   SelectContent,
@@ -38,7 +32,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { MetricCard } from '@/components/dashboard/MetricCard';
 
 // Dados simulados para métricas
 const metricas = {
@@ -81,14 +78,14 @@ const metas = {
   margemLucro: 40,
 };
 
+// Dados de sparkline simulados
+const generateSparklineData = (base: number, variance: number = 10) => {
+  return Array.from({ length: 12 }, () => base + (Math.random() - 0.5) * variance);
+};
+
 export default function MetricasPage() {
   const [periodo, setPeriodo] = useState('mes');
   const [categoria, setCategoria] = useState('todas');
-  const { isMobile } = useBreakpoint();
-
-  const calcularProgresso = (atual: number, meta: number) => {
-    return Math.min((atual / meta) * 100, 100);
-  };
 
   const formatarMoeda = (valor: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -105,27 +102,31 @@ export default function MetricasPage() {
     <SidebarProvider>
       <div className="flex h-screen overflow-hidden">
         <EnhancedSidebar />
-        <SidebarInset className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-hidden">
           <SiteHeader />
 
-          <main className="flex-1 space-y-6 overflow-auto p-4 md:p-6">
-            {/* Cabeçalho */}
+          <main className="flex-1 space-y-6 overflow-auto p-4 md:p-6 lg:p-8">
+            {/* Header Aprimorado */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
                 <BackButton href="/dashboard" />
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
-                    Métricas de Performance
-                  </h1>
-                  <p className="mt-1 text-gray-600">
-                    Acompanhe indicadores de performance e KPIs do negócio
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-6 w-6 text-primary" />
+                    <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+                      Métricas de Performance
+                    </h1>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Acompanhe indicadores de performance e KPIs do negócio em tempo real
                   </p>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2 sm:flex-row">
+              {/* Quick Actions */}
+              <div className="flex flex-wrap gap-2">
                 <Select value={periodo} onValueChange={setPeriodo}>
-                  <SelectTrigger className="w-full sm:w-[140px]">
+                  <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="Período" />
                   </SelectTrigger>
                   <SelectContent>
@@ -137,501 +138,422 @@ export default function MetricasPage() {
                   </SelectContent>
                 </Select>
 
-                <Select value={categoria} onValueChange={setCategoria}>
-                  <SelectTrigger className="w-full sm:w-[140px]">
-                    <SelectValue placeholder="Categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas</SelectItem>
-                    <SelectItem value="performance">Performance</SelectItem>
-                    <SelectItem value="negocio">Negócio</SelectItem>
-                    <SelectItem value="operacional">Operacional</SelectItem>
-                    <SelectItem value="financeiro">Financeiro</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Button variant="outline" size="sm">
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Compartilhar
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Download className="mr-2 h-4 w-4" />
+                  Exportar
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 
-            {/* Métricas de Performance */}
-            {(categoria === 'todas' || categoria === 'performance') && (
-              <div className="space-y-4">
-                <h2 className="flex items-center gap-2 text-xl font-semibold text-gray-900">
-                  <Activity className="h-5 w-5" />
-                  Performance do Sistema
-                </h2>
+            <Separator />
 
-                <ResponsiveContainer>
-                  <ResponsiveStack>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Tempo de Resposta
-                        </CardTitle>
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {metricas.performance.tempoMedioResposta}s
-                        </div>
-                        <div className="mt-2 flex items-center gap-2">
-                          <Progress
-                            value={calcularProgresso(
-                              metas.tempoMedioResposta,
-                              metricas.performance.tempoMedioResposta
-                            )}
-                            className="flex-1"
-                          />
-                          <span className="text-sm text-gray-600">
-                            Meta: {metas.tempoMedioResposta}s
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
+            {/* Tabs para Categorias */}
+            <Tabs value={categoria} onValueChange={setCategoria} className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-5">
+                <TabsTrigger value="todas">Todas</TabsTrigger>
+                <TabsTrigger value="performance">Performance</TabsTrigger>
+                <TabsTrigger value="negocio">Negócio</TabsTrigger>
+                <TabsTrigger value="operacional">Operacional</TabsTrigger>
+                <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
+              </TabsList>
 
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Disponibilidade
-                        </CardTitle>
-                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {formatarPorcentagem(
-                            metricas.performance.disponibilidade
-                          )}
-                        </div>
-                        <div className="mt-2 flex items-center gap-2">
-                          <Progress
-                            value={calcularProgresso(
-                              metricas.performance.disponibilidade,
-                              metas.disponibilidade
-                            )}
-                            className="flex-1"
-                          />
-                          <span className="text-sm text-gray-600">
-                            Meta: {formatarPorcentagem(metas.disponibilidade)}
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Throughput
-                        </CardTitle>
-                        <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {metricas.performance.throughput}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          requisições/min
-                        </p>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Taxa de Erro
-                        </CardTitle>
-                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {formatarPorcentagem(metricas.performance.errorRate)}
-                        </div>
-                        <Badge
-                          variant={
-                            metricas.performance.errorRate < 1
-                              ? 'secondary'
-                              : 'destructive'
-                          }
-                        >
-                          {metricas.performance.errorRate < 1
-                            ? 'Excelente'
-                            : 'Atenção'}
-                        </Badge>
-                      </CardContent>
-                    </Card>
-                  </ResponsiveStack>
-                </ResponsiveContainer>
-              </div>
-            )}
-
-            {/* Métricas de Negócio */}
-            {(categoria === 'todas' || categoria === 'negocio') && (
-              <div className="space-y-4">
-                <h2 className="flex items-center gap-2 text-xl font-semibold text-gray-900">
-                  <Target className="h-5 w-5" />
-                  Indicadores de Negócio
-                </h2>
-
-                <ResponsiveContainer>
-                  <ResponsiveStack>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Total de Clientes
-                        </CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {metricas.negocio.totalClientes}
-                        </div>
-                        <div className="mt-1 flex items-center gap-1">
-                          <TrendingUp className="h-4 w-4 text-green-600" />
-                          <span className="font-medium text-green-600">
-                            +
-                            {formatarPorcentagem(
-                              metricas.negocio.crescimentoMensal
-                            )}
-                          </span>
-                          <span className="text-sm text-gray-600">
-                            este mês
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Faturamento Mensal
-                        </CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {formatarMoeda(metricas.negocio.faturamentoMes)}
-                        </div>
-                        <div className="mt-2 flex items-center gap-2">
-                          <Progress
-                            value={calcularProgresso(
-                              metricas.negocio.faturamentoMes,
-                              metas.faturamentoMensal
-                            )}
-                            className="flex-1"
-                          />
-                          <span className="text-sm text-gray-600">
-                            Meta: {formatarMoeda(metas.faturamentoMensal)}
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Ticket Médio
-                        </CardTitle>
-                        <PieChart className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {formatarMoeda(metricas.negocio.ticketMedio)}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          por ordem de serviço
-                        </p>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Satisfação do Cliente
-                        </CardTitle>
-                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {metricas.negocio.satisfacaoCliente}/5.0
-                        </div>
-                        <div className="mt-2 flex items-center gap-2">
-                          <Progress
-                            value={calcularProgresso(
-                              metricas.negocio.satisfacaoCliente,
-                              metas.satisfacaoCliente
-                            )}
-                            className="flex-1"
-                          />
-                          <span className="text-sm text-gray-600">
-                            Meta: {metas.satisfacaoCliente}/5.0
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </ResponsiveStack>
-                </ResponsiveContainer>
-              </div>
-            )}
-
-            {/* Métricas Operacionais */}
-            {(categoria === 'todas' || categoria === 'operacional') && (
-              <div className="space-y-4">
-                <h2 className="flex items-center gap-2 text-xl font-semibold text-gray-900">
-                  <Package className="h-5 w-5" />
-                  Indicadores Operacionais
-                </h2>
-
-                <ResponsiveContainer>
-                  <ResponsiveStack>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Peças em Estoque
-                        </CardTitle>
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {metricas.operacional.pecasEstoque}
-                        </div>
-                        <Badge
-                          variant={
-                            metricas.operacional.pecasBaixoEstoque > 10
-                              ? 'destructive'
-                              : 'secondary'
-                          }
-                        >
-                          {metricas.operacional.pecasBaixoEstoque} baixo estoque
-                        </Badge>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Ordens Abertas
-                        </CardTitle>
-                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {metricas.negocio.ordensAbertas}
-                        </div>
-                        <Badge
-                          variant={
-                            metricas.operacional.ordensVencidas > 0
-                              ? 'destructive'
-                              : 'secondary'
-                          }
-                        >
-                          {metricas.operacional.ordensVencidas} vencidas
-                        </Badge>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Técnicos Ativos
-                        </CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {metricas.operacional.tecnicosAtivos}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          em atividade hoje
-                        </p>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Utilização da Capacidade
-                        </CardTitle>
-                        <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {formatarPorcentagem(
-                            metricas.operacional.utilizacaoCapacidade
-                          )}
-                        </div>
-                        <Progress
-                          value={metricas.operacional.utilizacaoCapacidade}
-                          className="mt-2"
-                        />
-                      </CardContent>
-                    </Card>
-                  </ResponsiveStack>
-                </ResponsiveContainer>
-              </div>
-            )}
-
-            {/* Métricas Financeiras */}
-            {(categoria === 'todas' || categoria === 'financeiro') && (
-              <div className="space-y-4">
-                <h2 className="flex items-center gap-2 text-xl font-semibold text-gray-900">
-                  <DollarSign className="h-5 w-5" />
-                  Indicadores Financeiros
-                </h2>
-
-                <ResponsiveContainer>
-                  <ResponsiveStack>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Receita Total
-                        </CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {formatarMoeda(metricas.financeiro.receitaTotal)}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          este mês
-                        </p>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Margem de Lucro
-                        </CardTitle>
-                        <PieChart className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {formatarPorcentagem(metricas.financeiro.margemLucro)}
-                        </div>
-                        <div className="mt-2 flex items-center gap-2">
-                          <Progress
-                            value={calcularProgresso(
-                              metricas.financeiro.margemLucro,
-                              metas.margemLucro
-                            )}
-                            className="flex-1"
-                          />
-                          <span className="text-sm text-gray-600">
-                            Meta: {formatarPorcentagem(metas.margemLucro)}
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Contas a Receber
-                        </CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {formatarMoeda(metricas.financeiro.contasReceber)}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          pendentes
-                        </p>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Fluxo de Caixa
-                        </CardTitle>
-                        <Activity className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {formatarMoeda(
-                            metricas.financeiro.receitaTotal -
-                              metricas.financeiro.despesaTotal
-                          )}
-                        </div>
-                        <Badge
-                          variant={
-                            metricas.financeiro.fluxoCaixaPositivo
-                              ? 'secondary'
-                              : 'destructive'
-                          }
-                        >
-                          {metricas.financeiro.fluxoCaixaPositivo
-                            ? 'Positivo'
-                            : 'Negativo'}
-                        </Badge>
-                      </CardContent>
-                    </Card>
-                  </ResponsiveStack>
-                </ResponsiveContainer>
-              </div>
-            )}
-
-            {/* Resumo de Metas */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Progresso das Metas
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div>
-                    <div className="mb-1 flex justify-between text-sm">
-                      <span>Faturamento Mensal</span>
-                      <span>
-                        {formatarMoeda(metricas.negocio.faturamentoMes)} /{' '}
-                        {formatarMoeda(metas.faturamentoMensal)}
-                      </span>
-                    </div>
-                    <Progress
-                      value={calcularProgresso(
-                        metricas.negocio.faturamentoMes,
-                        metas.faturamentoMensal
-                      )}
-                    />
+              {/* Tab: Todas as Métricas */}
+              <TabsContent value="todas" className="space-y-6">
+                {/* Performance do Sistema */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-blue-600" />
+                    <h2 className="text-xl font-semibold">Performance do Sistema</h2>
                   </div>
-
-                  <div>
-                    <div className="mb-1 flex justify-between text-sm">
-                      <span>Satisfação do Cliente</span>
-                      <span>
-                        {metricas.negocio.satisfacaoCliente} /{' '}
-                        {metas.satisfacaoCliente}
-                      </span>
-                    </div>
-                    <Progress
-                      value={calcularProgresso(
-                        metricas.negocio.satisfacaoCliente,
-                        metas.satisfacaoCliente
-                      )}
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <MetricCard
+                      title="Tempo de Resposta"
+                      value={`${metricas.performance.tempoMedioResposta}s`}
+                      change={-8.5}
+                      target={metas.tempoMedioResposta}
+                      icon={<Clock className="h-4 w-4" />}
+                      trend="down"
+                      status="success"
+                      sparklineData={generateSparklineData(1.2, 0.3)}
+                      description="Tempo médio de resposta do sistema. Meta: < 1.0s"
                     />
-                  </div>
-
-                  <div>
-                    <div className="mb-1 flex justify-between text-sm">
-                      <span>Margem de Lucro</span>
-                      <span>
-                        {formatarPorcentagem(metricas.financeiro.margemLucro)} /{' '}
-                        {formatarPorcentagem(metas.margemLucro)}
-                      </span>
-                    </div>
-                    <Progress
-                      value={calcularProgresso(
-                        metricas.financeiro.margemLucro,
-                        metas.margemLucro
-                      )}
+                    <MetricCard
+                      title="Disponibilidade"
+                      value={formatarPorcentagem(metricas.performance.disponibilidade)}
+                      change={0.1}
+                      target={metas.disponibilidade}
+                      icon={<CheckCircle className="h-4 w-4" />}
+                      trend="up"
+                      status="success"
+                      sparklineData={generateSparklineData(99.8, 0.2)}
+                      description="Uptime do sistema nas últimas 24 horas"
+                    />
+                    <MetricCard
+                      title="Throughput"
+                      value={metricas.performance.throughput}
+                      unit="req/min"
+                      change={15.2}
+                      icon={<BarChart3 className="h-4 w-4" />}
+                      trend="up"
+                      status="success"
+                      sparklineData={generateSparklineData(1250, 150)}
+                      description="Requisições processadas por minuto"
+                    />
+                    <MetricCard
+                      title="Taxa de Erro"
+                      value={formatarPorcentagem(metricas.performance.errorRate)}
+                      change={-12.3}
+                      icon={<AlertTriangle className="h-4 w-4" />}
+                      trend="down"
+                      status="success"
+                      sparklineData={generateSparklineData(0.2, 0.1)}
+                      description="Percentual de requisições com erro"
                     />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* Indicadores de Negócio */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-green-600" />
+                    <h2 className="text-xl font-semibold">Indicadores de Negócio</h2>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <MetricCard
+                      title="Total de Clientes"
+                      value={metricas.negocio.totalClientes}
+                      change={metricas.negocio.crescimentoMensal}
+                      icon={<Users className="h-4 w-4" />}
+                      trend="up"
+                      status="success"
+                      sparklineData={generateSparklineData(1247, 50)}
+                      description="Clientes ativos na plataforma"
+                    />
+                    <MetricCard
+                      title="Faturamento Mensal"
+                      value={formatarMoeda(metricas.negocio.faturamentoMes)}
+                      change={8.3}
+                      target={metas.faturamentoMensal}
+                      icon={<DollarSign className="h-4 w-4" />}
+                      trend="up"
+                      status="warning"
+                      sparklineData={generateSparklineData(125000, 10000)}
+                      description="Faturamento do mês atual vs meta"
+                    />
+                    <MetricCard
+                      title="Ticket Médio"
+                      value={formatarMoeda(metricas.negocio.ticketMedio)}
+                      change={5.2}
+                      icon={<PieChart className="h-4 w-4" />}
+                      trend="up"
+                      status="success"
+                      sparklineData={generateSparklineData(850, 50)}
+                      description="Valor médio por ordem de serviço"
+                    />
+                    <MetricCard
+                      title="Satisfação do Cliente"
+                      value={`${metricas.negocio.satisfacaoCliente}/5.0`}
+                      change={2.1}
+                      target={metas.satisfacaoCliente}
+                      icon={<CheckCircle className="h-4 w-4" />}
+                      trend="up"
+                      status="success"
+                      sparklineData={generateSparklineData(4.7, 0.2)}
+                      description="Avaliação média dos clientes"
+                    />
+                  </div>
+                </div>
+
+                {/* Indicadores Operacionais */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-purple-600" />
+                    <h2 className="text-xl font-semibold">Indicadores Operacionais</h2>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <MetricCard
+                      title="Peças em Estoque"
+                      value={metricas.operacional.pecasEstoque}
+                      change={-3.2}
+                      icon={<Package className="h-4 w-4" />}
+                      trend="down"
+                      status={metricas.operacional.pecasBaixoEstoque > 10 ? 'warning' : 'success'}
+                      sparklineData={generateSparklineData(2340, 100)}
+                      description={`${metricas.operacional.pecasBaixoEstoque} itens com baixo estoque`}
+                    />
+                    <MetricCard
+                      title="Ordens Abertas"
+                      value={metricas.negocio.ordensAbertas}
+                      change={-15.5}
+                      icon={<AlertTriangle className="h-4 w-4" />}
+                      trend="down"
+                      status={metricas.operacional.ordensVencidas > 0 ? 'danger' : 'success'}
+                      sparklineData={generateSparklineData(23, 5)}
+                      description={`${metricas.operacional.ordensVencidas} ordens vencidas`}
+                    />
+                    <MetricCard
+                      title="Técnicos Ativos"
+                      value={metricas.operacional.tecnicosAtivos}
+                      change={0}
+                      icon={<Users className="h-4 w-4" />}
+                      trend="neutral"
+                      status="neutral"
+                      sparklineData={generateSparklineData(8, 1)}
+                      description="Técnicos em atividade hoje"
+                    />
+                    <MetricCard
+                      title="Utilização da Capacidade"
+                      value={formatarPorcentagem(metricas.operacional.utilizacaoCapacidade)}
+                      change={5.8}
+                      icon={<BarChart3 className="h-4 w-4" />}
+                      trend="up"
+                      status="success"
+                      sparklineData={generateSparklineData(78, 5)}
+                      description="Percentual de capacidade utilizada"
+                    />
+                  </div>
+                </div>
+
+                {/* Indicadores Financeiros */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-emerald-600" />
+                    <h2 className="text-xl font-semibold">Indicadores Financeiros</h2>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <MetricCard
+                      title="Receita Total"
+                      value={formatarMoeda(metricas.financeiro.receitaTotal)}
+                      change={12.5}
+                      icon={<TrendingUp className="h-4 w-4" />}
+                      trend="up"
+                      status="success"
+                      sparklineData={generateSparklineData(125000, 10000)}
+                      description="Receita total do mês"
+                    />
+                    <MetricCard
+                      title="Margem de Lucro"
+                      value={formatarPorcentagem(metricas.financeiro.margemLucro)}
+                      change={-2.4}
+                      target={metas.margemLucro}
+                      icon={<PieChart className="h-4 w-4" />}
+                      trend="down"
+                      status="warning"
+                      sparklineData={generateSparklineData(37.6, 2)}
+                      description="Margem de lucro líquido"
+                    />
+                    <MetricCard
+                      title="Contas a Receber"
+                      value={formatarMoeda(metricas.financeiro.contasReceber)}
+                      change={-8.2}
+                      icon={<DollarSign className="h-4 w-4" />}
+                      trend="down"
+                      status="success"
+                      sparklineData={generateSparklineData(45000, 5000)}
+                      description="Valores pendentes de recebimento"
+                    />
+                    <MetricCard
+                      title="Fluxo de Caixa"
+                      value={formatarMoeda(
+                        metricas.financeiro.receitaTotal - metricas.financeiro.despesaTotal
+                      )}
+                      change={18.5}
+                      icon={<Activity className="h-4 w-4" />}
+                      trend="up"
+                      status={metricas.financeiro.fluxoCaixaPositivo ? 'success' : 'danger'}
+                      sparklineData={generateSparklineData(47000, 8000)}
+                      description="Saldo de caixa do período"
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Tabs individuais para cada categoria */}
+              <TabsContent value="performance" className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <MetricCard
+                    title="Tempo de Resposta"
+                    value={`${metricas.performance.tempoMedioResposta}s`}
+                    change={-8.5}
+                    target={metas.tempoMedioResposta}
+                    icon={<Clock className="h-4 w-4" />}
+                    trend="down"
+                    status="success"
+                    sparklineData={generateSparklineData(1.2, 0.3)}
+                    description="Tempo médio de resposta do sistema"
+                  />
+                  <MetricCard
+                    title="Disponibilidade"
+                    value={formatarPorcentagem(metricas.performance.disponibilidade)}
+                    change={0.1}
+                    target={metas.disponibilidade}
+                    icon={<CheckCircle className="h-4 w-4" />}
+                    trend="up"
+                    status="success"
+                    sparklineData={generateSparklineData(99.8, 0.2)}
+                    description="Uptime do sistema"
+                  />
+                  <MetricCard
+                    title="Throughput"
+                    value={metricas.performance.throughput}
+                    unit="req/min"
+                    change={15.2}
+                    icon={<BarChart3 className="h-4 w-4" />}
+                    trend="up"
+                    status="success"
+                    sparklineData={generateSparklineData(1250, 150)}
+                    description="Requisições por minuto"
+                  />
+                  <MetricCard
+                    title="Taxa de Erro"
+                    value={formatarPorcentagem(metricas.performance.errorRate)}
+                    change={-12.3}
+                    icon={<AlertTriangle className="h-4 w-4" />}
+                    trend="down"
+                    status="success"
+                    sparklineData={generateSparklineData(0.2, 0.1)}
+                    description="Percentual de erros"
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="negocio" className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <MetricCard
+                    title="Total de Clientes"
+                    value={metricas.negocio.totalClientes}
+                    change={metricas.negocio.crescimentoMensal}
+                    icon={<Users className="h-4 w-4" />}
+                    trend="up"
+                    status="success"
+                    sparklineData={generateSparklineData(1247, 50)}
+                  />
+                  <MetricCard
+                    title="Faturamento Mensal"
+                    value={formatarMoeda(metricas.negocio.faturamentoMes)}
+                    change={8.3}
+                    target={metas.faturamentoMensal}
+                    icon={<DollarSign className="h-4 w-4" />}
+                    trend="up"
+                    status="warning"
+                    sparklineData={generateSparklineData(125000, 10000)}
+                  />
+                  <MetricCard
+                    title="Ticket Médio"
+                    value={formatarMoeda(metricas.negocio.ticketMedio)}
+                    change={5.2}
+                    icon={<PieChart className="h-4 w-4" />}
+                    trend="up"
+                    status="success"
+                    sparklineData={generateSparklineData(850, 50)}
+                  />
+                  <MetricCard
+                    title="Satisfação do Cliente"
+                    value={`${metricas.negocio.satisfacaoCliente}/5.0`}
+                    change={2.1}
+                    target={metas.satisfacaoCliente}
+                    icon={<CheckCircle className="h-4 w-4" />}
+                    trend="up"
+                    status="success"
+                    sparklineData={generateSparklineData(4.7, 0.2)}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="operacional" className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <MetricCard
+                    title="Peças em Estoque"
+                    value={metricas.operacional.pecasEstoque}
+                    change={-3.2}
+                    icon={<Package className="h-4 w-4" />}
+                    trend="down"
+                    status={metricas.operacional.pecasBaixoEstoque > 10 ? 'warning' : 'success'}
+                    sparklineData={generateSparklineData(2340, 100)}
+                  />
+                  <MetricCard
+                    title="Ordens Abertas"
+                    value={metricas.negocio.ordensAbertas}
+                    change={-15.5}
+                    icon={<AlertTriangle className="h-4 w-4" />}
+                    trend="down"
+                    status={metricas.operacional.ordensVencidas > 0 ? 'danger' : 'success'}
+                    sparklineData={generateSparklineData(23, 5)}
+                  />
+                  <MetricCard
+                    title="Técnicos Ativos"
+                    value={metricas.operacional.tecnicosAtivos}
+                    change={0}
+                    icon={<Users className="h-4 w-4" />}
+                    trend="neutral"
+                    status="neutral"
+                    sparklineData={generateSparklineData(8, 1)}
+                  />
+                  <MetricCard
+                    title="Utilização da Capacidade"
+                    value={formatarPorcentagem(metricas.operacional.utilizacaoCapacidade)}
+                    change={5.8}
+                    icon={<BarChart3 className="h-4 w-4" />}
+                    trend="up"
+                    status="success"
+                    sparklineData={generateSparklineData(78, 5)}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="financeiro" className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <MetricCard
+                    title="Receita Total"
+                    value={formatarMoeda(metricas.financeiro.receitaTotal)}
+                    change={12.5}
+                    icon={<TrendingUp className="h-4 w-4" />}
+                    trend="up"
+                    status="success"
+                    sparklineData={generateSparklineData(125000, 10000)}
+                  />
+                  <MetricCard
+                    title="Margem de Lucro"
+                    value={formatarPorcentagem(metricas.financeiro.margemLucro)}
+                    change={-2.4}
+                    target={metas.margemLucro}
+                    icon={<PieChart className="h-4 w-4" />}
+                    trend="down"
+                    status="warning"
+                    sparklineData={generateSparklineData(37.6, 2)}
+                  />
+                  <MetricCard
+                    title="Contas a Receber"
+                    value={formatarMoeda(metricas.financeiro.contasReceber)}
+                    change={-8.2}
+                    icon={<DollarSign className="h-4 w-4" />}
+                    trend="down"
+                    status="success"
+                    sparklineData={generateSparklineData(45000, 5000)}
+                  />
+                  <MetricCard
+                    title="Fluxo de Caixa"
+                    value={formatarMoeda(
+                      metricas.financeiro.receitaTotal - metricas.financeiro.despesaTotal
+                    )}
+                    change={18.5}
+                    icon={<Activity className="h-4 w-4" />}
+                    trend="up"
+                    status={metricas.financeiro.fluxoCaixaPositivo ? 'success' : 'danger'}
+                    sparklineData={generateSparklineData(47000, 8000)}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
           </main>
-        </SidebarInset>
+        </div>
       </div>
     </SidebarProvider>
   );

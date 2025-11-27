@@ -40,7 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function DashboardFinanceiroSkeleton() {
@@ -116,15 +116,19 @@ export default function FinanceiroPage() {
     <>
       <ShowHide on={['md', 'lg', 'xl']}>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={(e) => {
-            e.preventDefault();
-            console.log('🔵 Clique em Período');
-            setDialogPeriodo(true);
-          }}>
+          <button
+            onClick={() => {
+              console.log('🔵 Clique em Período');
+              setDialogPeriodo(true);
+            }}
+            className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            type="button"
+            style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
+          >
             <Calendar className="mr-2 h-4 w-4" />
             Período
-          </Button>
-          
+          </button>
+
           <Dialog open={dialogPeriodo} onOpenChange={setDialogPeriodo}>
             <DialogContent>
               <DialogHeader>
@@ -169,14 +173,18 @@ export default function FinanceiroPage() {
             </DialogContent>
           </Dialog>
 
-          <Button variant="outline" size="sm" onClick={(e) => {
-            e.preventDefault();
-            console.log('🔵 Clique em Filtros');
-            setDialogFiltros(true);
-          }}>
+          <button
+            onClick={() => {
+              console.log('🔵 Clique em Filtros');
+              setDialogFiltros(true);
+            }}
+            className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            type="button"
+            style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
+          >
             <Filter className="mr-2 h-4 w-4" />
             Filtros
-          </Button>
+          </button>
 
           <Dialog open={dialogFiltros} onOpenChange={setDialogFiltros}>
             <DialogContent>
@@ -259,10 +267,18 @@ export default function FinanceiroPage() {
             </DialogContent>
           </Dialog>
 
-          <Button variant="outline" size="sm" onClick={handleExportar}>
+          <button
+            onClick={() => {
+              console.log('🔵 Clique em Exportar');
+              handleExportar();
+            }}
+            className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            type="button"
+            style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
+          >
             <Download className="mr-2 h-4 w-4" />
             Exportar
-          </Button>
+          </button>
         </div>
       </ShowHide>
 
@@ -295,7 +311,7 @@ export default function FinanceiroPage() {
   return (
     <SidebarProvider>
       <EnhancedSidebar />
-      <SidebarInset>
+      <div className="flex w-full flex-1 flex-col bg-background">
         <SiteHeader />
         <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
           {/* Header */}
@@ -329,7 +345,7 @@ export default function FinanceiroPage() {
             </div>
           </Suspense>
         </ResponsiveContainer>
-      </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

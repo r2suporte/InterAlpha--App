@@ -10,7 +10,7 @@ import {
   ResponsiveText,
   useBreakpoint,
 } from '@/components/ui/responsive-utils';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, List } from 'lucide-react';
 import { useState } from 'react';
@@ -50,7 +50,7 @@ export default function OrdensServicoPage() {
   return (
     <SidebarProvider>
       <EnhancedSidebar />
-      <SidebarInset>
+      <div className="flex w-full flex-1 flex-col bg-background">
         <SiteHeader />
         <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
           <div className="mb-6 flex items-center justify-between gap-4">
@@ -100,7 +100,7 @@ export default function OrdensServicoPage() {
             />
           )}
         </ResponsiveContainer>
-      </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

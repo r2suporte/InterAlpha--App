@@ -1,10 +1,8 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface BackButtonProps {
   href?: string;
@@ -17,29 +15,30 @@ export function BackButton({ href, className, children, onClick }: BackButtonPro
   const router = useRouter();
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+    console.log('🔵 BackButton clicked - NATIVE BUTTON');
+
     if (onClick) {
+      console.log('🔵 Executing onClick prop');
       onClick();
     } else if (href) {
+      console.log(`🔵 Navigating to href: ${href}`);
       router.push(href);
     } else {
+      console.log('🔵 Executing router.back()');
       router.back();
     }
   };
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
+    <button
       onClick={handleClick}
-      className={`flex items-center gap-2 ${className || ''}`}
+      className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className || ''}`}
       type="button"
       aria-label="Voltar"
+      style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
     >
       <ArrowLeft className="h-4 w-4" />
       {children || 'Voltar'}
-    </Button>
+    </button>
   );
 }

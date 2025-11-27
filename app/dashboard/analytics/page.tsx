@@ -30,7 +30,7 @@ import {
   ShowHide,
   useBreakpoint,
 } from '@/components/ui/responsive-utils';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // 📊 Importar componentes analytics
@@ -55,9 +55,8 @@ interface ComparisonPeriod {
 }
 
 export default function AnalyticsPage() {
-  const router = useRouter();
   const { isMobile } = useBreakpoint();
-  
+
   // 📊 Estados para filtros e dados
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
   const [comparison, setComparison] = useState<ComparisonPeriod | null>(null);
@@ -88,7 +87,7 @@ export default function AnalyticsPage() {
   return (
     <SidebarProvider>
       <EnhancedSidebar />
-      <SidebarInset>
+      <div className="flex w-full flex-1 flex-col bg-background">
         <SiteHeader />
         <ResponsiveContainer className="flex min-h-screen flex-1 flex-col bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-950 dark:to-blue-950/30">
           <div className="@container/main flex flex-1 flex-col">
@@ -101,7 +100,7 @@ export default function AnalyticsPage() {
               >
                 <div className="flex items-center space-x-4">
                   <BackButton href="/dashboard" />
-                  
+
                   <div className="space-y-1">
                     <ResponsiveText
                       size={isMobile ? '2xl' : '3xl'}
@@ -133,6 +132,7 @@ export default function AnalyticsPage() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => console.log('🔵 Clique em Período (Analytics)')}
                       className="border-slate-200 dark:border-slate-700"
                     >
                       <Calendar className="mr-2 h-4 w-4" />
@@ -141,6 +141,7 @@ export default function AnalyticsPage() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => console.log('🔵 Clique em Configurações (Analytics)')}
                       className="border-slate-200 dark:border-slate-700"
                     >
                       <Settings className="mr-2 h-4 w-4" />
@@ -248,7 +249,7 @@ export default function AnalyticsPage() {
                           Dicas para Análise Eficaz
                         </h3>
                         <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
-                          Use os filtros avançados para segmentar seus dados e obter insights mais precisos. 
+                          Use os filtros avançados para segmentar seus dados e obter insights mais precisos.
                           Compare períodos diferentes para identificar tendências e padrões de performance.
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -270,7 +271,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </ResponsiveContainer>
-      </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

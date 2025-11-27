@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buscarDadosCNPJ } from '@/lib/validators';
+import { buscarCNPJService } from '@/lib/validators';
 
 export async function GET(
     request: NextRequest,
@@ -15,7 +15,7 @@ export async function GET(
             );
         }
 
-        const dados = await buscarDadosCNPJ(cnpj);
+        const dados = await buscarCNPJService(cnpj);
 
         if (!dados) {
             return NextResponse.json(

@@ -1,5 +1,5 @@
 import { cnpj, cpf } from 'cpf-cnpj-validator';
-import { logger } from './services/logger-service';
+// import { logger } from './services/logger-service';
 
 /**
  * Implementar debounce para evitar muitas chamadas de API
@@ -204,17 +204,16 @@ export const buscarEnderecoPorCEP = async (
 
     return data;
   } catch (error) {
-    logger.error('Erro ao buscar CEP:', error instanceof Error ? error : new Error(String(error)));
+    console.error('Erro ao buscar CEP:', error instanceof Error ? error : new Error(String(error)));
     return null;
   }
 };
 
 /**
- * Busca dados do CNPJ usando múltiplas APIs com fallback
- * 1. Tenta BrasilAPI primeiro (mais rápida)
- * 2. Se falhar, tenta ReceitaWS (backup confiável)
+ * Serviço interno de busca de CNPJ (Server-side ou via API Route)
+ * Tenta BrasilAPI primeiro, depois ReceitaWS
  */
-export const buscarDadosCNPJ = async (
+export const buscarCNPJService = async (
   cnpjValue: string
 ): Promise<CNPJResponse | null> => {
   const cleanCnpj = cnpjValue.replace(/\D/g, '');
@@ -230,7 +229,7 @@ export const buscarDadosCNPJ = async (
 
   // TENTATIVA 1: BrasilAPI
   try {
-    logger.info('🔍 Tentando BrasilAPI...');
+    console.info('🔍 Tentando BrasilAPI...');
     const response = await fetch(
       `https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`,
       { signal: AbortSignal.timeout(8000) }
@@ -238,7 +237,7 @@ export const buscarDadosCNPJ = async (
 
     if (response.ok) {
       const data = await response.json();
-      logger.info('✅ BrasilAPI respondeu com sucesso');
+      console.info('✅ BrasilAPI respondeu com sucesso');
 
       return {
         cnpj: data.cnpj,
@@ -271,15 +270,15 @@ export const buscarDadosCNPJ = async (
 
     // Se não for 404, logar o erro mas continuar para fallback
     if (response.status !== 404) {
-      logger.warn(`⚠️ BrasilAPI retornou ${response.status}, tentando fallback...`);
+      console.warn(`⚠️ BrasilAPI retornou ${response.status}, tentando fallback...`);
     }
   } catch (error) {
-    logger.warn('⚠️ BrasilAPI falhou:', { error: error instanceof Error ? error.message : 'Erro desconhecido' });
+    console.warn('⚠️ BrasilAPI falhou:', { error: error instanceof Error ? error.message : 'Erro desconhecido' });
   }
 
   // TENTATIVA 2: ReceitaWS (Fallback)
   try {
-    logger.info('🔍 Tentando ReceitaWS (fallback)...');
+    console.info('🔍 Tentando ReceitaWS (fallback)...');
     const response = await fetch(
       `https://www.receitaws.com.br/v1/cnpj/${cleanCnpj}`,
       { signal: AbortSignal.timeout(10000) }
@@ -323,7 +322,7 @@ export const buscarDadosCNPJ = async (
       };
     }
 
-    logger.info('✅ ReceitaWS respondeu com sucesso');
+    console.info('✅ ReceitaWS respondeu com sucesso');
 
     // Mapear dados da ReceitaWS para nossa interface
     return {
@@ -345,7 +344,7 @@ export const buscarDadosCNPJ = async (
       email: data.email || '',
     };
   } catch (error) {
-    logger.error('❌ ReceitaWS também falhou:', error instanceof Error ? error : new Error(String(error)));
+    console.error('❌ ReceitaWS também falhou:', error instanceof Error ? error : new Error(String(error)));
   }
 
   // Se ambas as APIs falharam
@@ -357,6 +356,60 @@ export const buscarDadosCNPJ = async (
     erro: true,
     message: 'Não foi possível consultar o CNPJ. Tente novamente em alguns instantes.',
   };
+};
+
+/**
+ * Busca dados do CNPJ (Função pública)
+ * - No cliente: Chama a API Route interna (/api/cnpj/...) para evitar CORS
+ * - No servidor: Chama diretamente o serviço (buscarCNPJService)
+ */
+export const buscarDadosCNPJ = async (
+  cnpjValue: string
+): Promise<CNPJResponse | null> => {
+  // Se estiver no servidor, chama o serviço diretamente
+  if (typeof window === 'undefined') {
+    return buscarCNPJService(cnpjValue);
+  }
+
+  // Se estiver no cliente, chama a API interna
+  try {
+    const cleanCnpj = cnpjValue.replace(/\D/g, '');
+    if (!cleanCnpj) return null;
+
+    const response = await fetch(`/api/cnpj/${cleanCnpj}`);
+
+    if (!response.ok) {
+      // Tenta ler a mensagem de erro da API
+      try {
+        const errorData = await response.json();
+        if (errorData && (errorData.erro || errorData.error)) {
+          return {
+            cnpj: cleanCnpj,
+            nome: '',
+            situacao: 'Erro',
+            atividade_principal: [],
+            erro: true,
+            message: errorData.message || errorData.error || 'Erro ao buscar CNPJ'
+          } as CNPJResponse;
+        }
+      } catch (e) {
+        // Ignora erro de parse
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Erro ao buscar CNPJ via API interna:', error);
+    return {
+      cnpj: cnpjValue,
+      nome: '',
+      situacao: 'Erro de conexão',
+      atividade_principal: [],
+      erro: true,
+      message: 'Não foi possível conectar ao serviço de consulta.'
+    };
+  }
 };
 
 /**
@@ -392,7 +445,7 @@ export const buscarDadosCPF = async (
   // Simulação: Adicionar delay para parecer uma busca real
   await new Promise(resolve => setTimeout(resolve, 500));
 
-  logger.info('✅ CPF validado localmente');
+  console.info('✅ CPF validado localmente');
 
   // Retornar validação bem-sucedida
   // Nota: Dados pessoais reais não estão disponíveis em APIs públicas gratuitas

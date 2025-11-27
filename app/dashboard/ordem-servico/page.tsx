@@ -9,7 +9,7 @@ import {
   ResponsiveText,
   useBreakpoint,
 } from '@/components/ui/responsive-utils';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 export default function ServiceOrderPage() {
   const { isMobile } = useBreakpoint();
@@ -17,7 +17,7 @@ export default function ServiceOrderPage() {
   return (
     <SidebarProvider>
       <EnhancedSidebar />
-      <SidebarInset>
+      <div className="flex w-full flex-1 flex-col bg-background">
         <SiteHeader />
         <ResponsiveContainer className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
@@ -48,7 +48,7 @@ export default function ServiceOrderPage() {
             </div>
           </div>
         </ResponsiveContainer>
-      </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

@@ -27,7 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageLoading } from '@/components/ui/loading';
 import { useLoadingState } from '@/components/ui/loading-states';
 import { Separator } from '@/components/ui/separator';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { useToast } from '@/components/ui/toast-system';
 import { formatarMoeda } from '@/types/financeiro';
 import { OrdemServico } from '@/types/ordens-servico';
@@ -115,12 +115,12 @@ export default function OrdemServicoDetalhePage() {
     return (
       <SidebarProvider>
         <EnhancedSidebar />
-        <SidebarInset>
+        <div className="flex w-full flex-1 flex-col bg-background">
           <SiteHeader />
           <div className="flex flex-1 flex-col items-center justify-center">
             <PageLoading text="Carregando ordem de serviço..." />
           </div>
-        </SidebarInset>
+        </div>
       </SidebarProvider>
     );
   }
@@ -129,7 +129,7 @@ export default function OrdemServicoDetalhePage() {
     return (
       <SidebarProvider>
         <EnhancedSidebar />
-        <SidebarInset>
+        <div className="flex w-full flex-1 flex-col bg-background">
           <SiteHeader />
           <div className="flex flex-1 flex-col items-center justify-center">
             <AlertCircle className="mb-4 h-12 w-12 text-red-500" />
@@ -139,7 +139,7 @@ export default function OrdemServicoDetalhePage() {
             <p className="mb-4 text-gray-600">{error}</p>
             <BackButton href="/dashboard/ordem-servico" />
           </div>
-        </SidebarInset>
+        </div>
       </SidebarProvider>
     );
   }
@@ -149,7 +149,7 @@ export default function OrdemServicoDetalhePage() {
   return (
     <SidebarProvider>
       <EnhancedSidebar />
-      <SidebarInset>
+      <div className="flex w-full flex-1 flex-col bg-background">
         <SiteHeader />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-6 p-6">
@@ -512,7 +512,7 @@ export default function OrdemServicoDetalhePage() {
             </div>
           </div>
         </div>
-      </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

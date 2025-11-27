@@ -1,5 +1,6 @@
 import {
   TipoPessoa,
+  buscarCNPJService,
   buscarDadosCNPJ,
   buscarEnderecoPorCEP,
   determinarTipoPessoa,
@@ -328,7 +329,7 @@ describe('Validators', () => {
     });
   });
 
-  describe('buscarDadosCNPJ', () => {
+  describe('buscarCNPJService', () => {
     const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
 
     it('busca dados do CNPJ com sucesso', async () => {
@@ -357,7 +358,7 @@ describe('Validators', () => {
         json: async () => mockResponse,
       } as Response);
 
-      const resultado = await buscarDadosCNPJ('11222333000181');
+      const resultado = await buscarCNPJService('11222333000181');
       expect(resultado).toEqual({
         cnpj: '11222333000181',
         nome: 'Empresa Teste LTDA',
@@ -384,12 +385,12 @@ describe('Validators', () => {
     });
 
     it('retorna null para CNPJ inválido', async () => {
-      const resultado = await buscarDadosCNPJ('123');
+      const resultado = await buscarCNPJService('123');
       expect(resultado).toBeNull();
     });
 
     it('retorna null para CNPJ com formato inválido', async () => {
-      const resultado = await buscarDadosCNPJ('12345678000100');
+      const resultado = await buscarCNPJService('12345678000100');
       expect(resultado).toBeNull();
     });
 
@@ -404,7 +405,7 @@ describe('Validators', () => {
         status: 404,
       } as Response);
 
-      const resultado = await buscarDadosCNPJ('11222333000181');
+      const resultado = await buscarCNPJService('11222333000181');
       expect(resultado).toEqual({
         cnpj: '11222333000181',
         nome: '',
@@ -426,7 +427,7 @@ describe('Validators', () => {
         status: 500,
       } as Response);
 
-      const resultado = await buscarDadosCNPJ('11222333000181');
+      const resultado = await buscarCNPJService('11222333000181');
       expect(resultado).toEqual({
         cnpj: '11222333000181',
         nome: '',
@@ -441,7 +442,7 @@ describe('Validators', () => {
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
-      const resultado = await buscarDadosCNPJ('11222333000181');
+      const resultado = await buscarCNPJService('11222333000181');
       expect(resultado).toEqual({
         cnpj: '11222333000181',
         nome: '',
@@ -453,3 +454,47 @@ describe('Validators', () => {
     });
   });
 });
+
+describe('buscarDadosCNPJ (Client Proxy)', () => {
+  const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+
+  it('chama API interna com sucesso', async () => {
+    const mockResponse = {
+      cnpj: '11222333000181',
+      nome: 'Empresa Teste',
+      situacao: 'ATIVA',
+      atividade_principal: [],
+      erro: false
+    };
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response);
+
+    const resultado = await buscarDadosCNPJ('11222333000181');
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/cnpj/11222333000181');
+    expect(resultado).toEqual(mockResponse);
+  });
+
+  it('trata erro da API interna', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: 'Erro interno' }),
+    } as Response);
+
+    const resultado = await buscarDadosCNPJ('11222333000181');
+
+    expect(resultado).toEqual({
+      cnpj: '11222333000181',
+      nome: '',
+      situacao: 'Erro',
+      atividade_principal: [],
+      erro: true,
+      message: 'Erro interno'
+    });
+  });
+});
+

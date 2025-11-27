@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 export default function CalculadoraPage() {
   const [valorCusto, setValorCusto] = useState('');
@@ -66,7 +66,7 @@ export default function CalculadoraPage() {
   return (
     <SidebarProvider>
       <EnhancedSidebar />
-      <SidebarInset>
+      <div className="flex w-full flex-1 flex-col bg-background">
         <SiteHeader />
         <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
           {/* Header */}
@@ -113,7 +113,7 @@ export default function CalculadoraPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="valor-custo">Valor de Custo (R$)</Label>
-                  <Input
+                  <input
                     id="valor-custo"
                     type="number"
                     step="0.01"
@@ -124,6 +124,8 @@ export default function CalculadoraPage() {
                       setValorCusto(e.target.value);
                     }}
                     onBlur={calcularValores}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
                   />
                 </div>
 
@@ -133,42 +135,57 @@ export default function CalculadoraPage() {
                       ? 'Margem de Lucro (%)'
                       : 'Markup (%)'}
                   </Label>
-                  <Input
+                  <input
                     id="margem-lucro"
                     type="number"
                     step="0.01"
                     placeholder="0.00"
                     value={margemLucro}
                     onChange={e => setMargemLucro(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="valor-venda">Valor de Venda (R$)</Label>
-                  <Input
+                  <input
                     id="valor-venda"
                     type="number"
                     step="0.01"
                     placeholder="0.00"
                     value={valorVenda}
                     onChange={e => setValorVenda(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
                   />
                 </div>
 
                 <div className="flex gap-2">
-                  <Button onClick={calcularValores} className="flex-1">
+                  <button
+                    onClick={calcularValores}
+                    className="flex-1 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    type="button"
+                    style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
+                  >
                     Calcular Preço
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     onClick={calcularMargem}
-                    variant="outline"
-                    className="flex-1"
+                    className="flex-1 inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    type="button"
+                    style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
                   >
                     Calcular Margem
-                  </Button>
-                  <Button onClick={limparCalculos} variant="outline">
+                  </button>
+                  <button
+                    onClick={limparCalculos}
+                    className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    type="button"
+                    style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
+                  >
                     Limpar
-                  </Button>
+                  </button>
                 </div>
               </CardContent>
             </Card>
@@ -226,8 +243,8 @@ export default function CalculadoraPage() {
                         R${' '}
                         {valorCusto && valorVenda
                           ? (
-                              parseFloat(valorVenda) - parseFloat(valorCusto)
-                            ).toFixed(2)
+                            parseFloat(valorVenda) - parseFloat(valorCusto)
+                          ).toFixed(2)
                           : '0,00'}
                       </span>
                     </div>
@@ -246,17 +263,18 @@ export default function CalculadoraPage() {
                 <CardContent>
                   <div className="grid grid-cols-2 gap-2">
                     {[20, 30, 40, 50, 60, 80, 100, 150].map(margem => (
-                      <Button
+                      <button
                         key={margem}
-                        variant="outline"
-                        size="sm"
                         onClick={() => {
                           setMargemLucro(margem.toString());
                           setTipoCalculo('margem');
                         }}
+                        className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        type="button"
+                        style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
                       >
                         {margem}%
-                      </Button>
+                      </button>
                     ))}
                   </div>
                 </CardContent>
@@ -287,7 +305,7 @@ export default function CalculadoraPage() {
             </div>
           </div>
         </ResponsiveContainer>
-      </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

@@ -42,7 +42,7 @@ import {
   ShowHide,
   useBreakpoint,
 } from '@/components/ui/responsive-utils';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { StatusBadge } from '@/components/ui/status-badge';
 
 import data from './data.json';
@@ -58,7 +58,7 @@ export default function Page() {
   return (
     <SidebarProvider>
       <EnhancedSidebar />
-      <SidebarInset>
+      <div className="flex w-full flex-1 flex-col bg-background">
         <SiteHeader />
         <ResponsiveContainer className="flex min-h-screen flex-1 flex-col bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-950 dark:to-blue-950/30">
           <div className="@container/main flex flex-1 flex-col">
@@ -89,6 +89,7 @@ export default function Page() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => console.log('🔵 Clique em Período')}
                       className="border-slate-200 dark:border-slate-700"
                     >
                       <Calendar className="mr-2 h-4 w-4" />
@@ -97,6 +98,7 @@ export default function Page() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => console.log('🔵 Clique em Filtros')}
                       className="border-slate-200 dark:border-slate-700"
                     >
                       <Filter className="mr-2 h-4 w-4" />
@@ -139,11 +141,11 @@ export default function Page() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => console.log('🔵 Clique em Período (Mobile)')}>
                           <Calendar className="mr-2 h-4 w-4" />
                           Período
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => console.log('🔵 Clique em Filtros (Mobile)')}>
                           <Filter className="mr-2 h-4 w-4" />
                           Filtros
                         </DropdownMenuItem>
@@ -310,7 +312,7 @@ export default function Page() {
             </div>
           </div>
         </ResponsiveContainer>
-      </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

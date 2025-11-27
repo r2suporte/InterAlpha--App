@@ -73,7 +73,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Textarea } from '@/components/ui/textarea';
 import { createClient } from '@/lib/supabase/client';
@@ -511,7 +511,7 @@ export default function ClientesPage() {
   return (
     <SidebarProvider>
       <EnhancedSidebar />
-      <SidebarInset>
+      <div className="flex w-full flex-1 flex-col bg-background">
         <SiteHeader />
         <ResponsiveContainer className="flex-1 space-y-4 p-4 pt-6 md:p-8">
           {/* Header Section */}
@@ -822,7 +822,7 @@ export default function ClientesPage() {
             )}
           </div>
         </ResponsiveContainer>
-      </SidebarInset>
+      </div>
 
       {/* Modal de Criação/Edição de Cliente */}
       <Dialog open={showModal} onOpenChange={setShowModal}>

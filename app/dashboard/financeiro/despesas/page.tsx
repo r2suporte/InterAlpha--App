@@ -59,7 +59,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 interface Despesa {
   id: string;
@@ -223,7 +223,7 @@ export default function DespesasPage() {
       fornecedor: d.fornecedor || '',
       data_vencimento: d.data_vencimento || '',
     }));
-    
+
     const blob = new Blob([JSON.stringify(dados, null, 2)], {
       type: 'application/json',
     });
@@ -267,7 +267,7 @@ export default function DespesasPage() {
   return (
     <SidebarProvider>
       <EnhancedSidebar />
-      <SidebarInset>
+      <div className="flex w-full flex-1 flex-col bg-background">
         <SiteHeader />
         <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
           {/* Header */}
@@ -355,15 +355,19 @@ export default function DespesasPage() {
                   </CardDescription>
                 </div>
                 <div className="flex flex-col space-y-2 md:flex-row md:space-x-2 md:space-y-0">
-                  <Button onClick={(e) => {
-                    e.preventDefault();
-                    console.log('🔵 Clique em Nova Despesa');
-                    setDialogAberto(true);
-                  }}>
+                  <button
+                    onClick={() => {
+                      console.log('🔵 Clique em Nova Despesa');
+                      setDialogAberto(true);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    type="button"
+                    style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
+                  >
                     <Plus className="mr-2 h-4 w-4" />
                     Nova Despesa
-                  </Button>
-                  
+                  </button>
+
                   <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
                     <DialogContent>
                       <DialogHeader>
@@ -481,14 +485,18 @@ export default function DespesasPage() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                  <Button variant="outline" onClick={(e) => {
-                    e.preventDefault();
-                    console.log('🔵 Clique em Exportar Despesas');
-                    handleExportarDespesas();
-                  }}>
+                  <button
+                    onClick={() => {
+                      console.log('🔵 Clique em Exportar Despesas');
+                      handleExportarDespesas();
+                    }}
+                    className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    type="button"
+                    style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
+                  >
                     <Download className="mr-2 h-4 w-4" />
                     Exportar
-                  </Button>
+                  </button>
                 </div>
               </div>
             </CardHeader>
@@ -616,7 +624,7 @@ export default function DespesasPage() {
             </CardContent>
           </Card>
         </ResponsiveContainer>
-      </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

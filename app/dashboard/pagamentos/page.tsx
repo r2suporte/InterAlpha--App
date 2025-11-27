@@ -59,7 +59,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function PagamentosPage() {
@@ -208,7 +208,7 @@ export default function PagamentosPage() {
   return (
     <SidebarProvider>
       <EnhancedSidebar />
-      <SidebarInset>
+      <div className="flex w-full flex-1 flex-col bg-background">
         <SiteHeader />
         <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
           <BackButton href="/dashboard" />
@@ -234,32 +234,33 @@ export default function PagamentosPage() {
             </div>
 
             <ShowHide hide={['sm']}>
-              <Button
-                onClick={(e) => {
-                  e.preventDefault();
+              <button
+                onClick={() => {
                   console.log('🔵 Clique em Novo Pagamento - Desktop');
                   setDialogNovoPagamento(true);
                 }}
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 type="button"
+                style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Novo Pagamento
-              </Button>
+              </button>
             </ShowHide>
 
             <ShowHide on={['sm']}>
-              <Button
-                onClick={(e) => {
-                  e.preventDefault();
+              <button
+                onClick={() => {
                   console.log('🔵 Clique em Novo Pagamento - Mobile');
                   setDialogNovoPagamento(true);
                 }}
-                className="w-full"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 type="button"
+                style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Novo
-              </Button>
+              </button>
             </ShowHide>
 
           </ResponsiveStack>
@@ -568,7 +569,7 @@ export default function PagamentosPage() {
             </CardContent>
           </Card>
         </ResponsiveContainer>
-      </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }
