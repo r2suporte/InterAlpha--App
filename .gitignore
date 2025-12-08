@@ -36,10 +36,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Supabase
-.branches
-.temp
-
 # IDE
 .vscode/
 .idea/
@@ -65,3 +61,23 @@ temp/
 # OS generated files
 Thumbs.db
 ehthumbs.db
+
+# Temporary documentation (análises, status, summaries)
+ANALISE_*.md
+STATUS_*.md
+SUMMARY_*.md
+TASK_*.md
+TESTE_*.md
+RELATORIO_*.md
+RESUMO_*.md
+FASE_*.md
+DIAGNOSTICO_*.md
+
+# Backup files
+backups/
+*.backup
+*.bak
+
+# Debug and test HTML files
+debug-*.html
+test-*.html
