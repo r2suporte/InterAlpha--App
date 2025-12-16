@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client';
+import prisma from '@/lib/prisma';
 
 import { ApplicationMetricsService } from './application-metrics';
 
@@ -64,7 +64,6 @@ interface AppMetricRow {
 }
 
 export class AlertService {
-  private supabase = createClient();
   private metricsService = new ApplicationMetricsService();
   private alertCheckInterval: ReturnType<typeof setInterval> | null = null;
   private lastAlertCheck: Map<string, Date> = new Map();
@@ -333,10 +332,10 @@ export class AlertService {
       .lte('timestamp', endTime.toISOString())
       .eq('category', 'performance');
 
-  if (!data || data.length === 0) return 0;
+    if (!data || data.length === 0) return 0;
 
-  const totalRequests = data.length;
-  const errorRequests = data.filter((m: AppMetricRow) => !m.success).length;
+    const totalRequests = data.length;
+    const errorRequests = data.filter((m: AppMetricRow) => !m.success).length;
 
     return (errorRequests / totalRequests) * 100;
   }
@@ -353,10 +352,10 @@ export class AlertService {
       .eq('category', 'performance')
       .not('duration', 'is', null);
 
-  if (!data || data.length === 0) return 0;
+    if (!data || data.length === 0) return 0;
 
-  const totalDuration = data.reduce((sum: number, m: AppMetricRow) => sum + (m.duration || 0), 0);
-  return totalDuration / data.length;
+    const totalDuration = data.reduce((sum: number, m: AppMetricRow) => sum + (m.duration || 0), 0);
+    return totalDuration / data.length;
   }
 
   private async calculateSuccessRate(
@@ -370,12 +369,12 @@ export class AlertService {
       .lte('timestamp', endTime.toISOString())
       .eq('category', 'performance');
 
-  if (!data || data.length === 0) return 100;
+    if (!data || data.length === 0) return 100;
 
-  const totalRequests = data.length;
-  const successRequests = data.filter((m: AppMetricRow) => m.success).length;
+    const totalRequests = data.length;
+    const successRequests = data.filter((m: AppMetricRow) => m.success).length;
 
-  return (successRequests / totalRequests) * 100;
+    return (successRequests / totalRequests) * 100;
   }
 
   private async countDatabaseErrors(
@@ -390,7 +389,7 @@ export class AlertService {
       .eq('category', 'error')
       .ilike('operation', '%database%');
 
-  return data?.length || 0;
+    return data?.length || 0;
   }
 
   private async getMemoryUsage(): Promise<number> {
@@ -406,10 +405,10 @@ export class AlertService {
       .single();
 
     if (data?.metadata?.memory_usage_percent) {
-        const mem = (data.metadata as Record<string, unknown>).memory_usage_percent;
-        if (typeof mem === 'number') return mem;
-        if (typeof mem === 'string') return Number(mem) || 0;
-        return 0;
+      const mem = (data.metadata as Record<string, unknown>).memory_usage_percent;
+      if (typeof mem === 'number') return mem;
+      if (typeof mem === 'string') return Number(mem) || 0;
+      return 0;
     }
 
     return 0;
@@ -585,8 +584,8 @@ export class AlertService {
     try {
       const { data: alerts } = await this.supabase.from('alerts').select('*');
 
-  const activeAlerts: Alert[] = (alerts?.filter((a: Alert) => a.status === 'active') as Alert[]) || [];
-  const criticalAlerts: Alert[] = activeAlerts.filter((a: Alert) => a.severity === 'critical');
+      const activeAlerts: Alert[] = (alerts?.filter((a: Alert) => a.status === 'active') as Alert[]) || [];
+      const criticalAlerts: Alert[] = activeAlerts.filter((a: Alert) => a.severity === 'critical');
 
       const alertsBySeverity =
         alerts?.reduce(
@@ -618,7 +617,7 @@ export class AlertService {
       const resolutionTimeAvg =
         resolutionTimes.length > 0
           ? resolutionTimes.reduce((sum: number, time: number) => sum + time, 0) /
-            resolutionTimes.length
+          resolutionTimes.length
           : 0;
 
       return {

@@ -1,6 +1,6 @@
 // 📱 SMS Service - Twilio Integration
 // Serviço para envio de SMS via Twilio com backup e fallback
-import { createClient } from '@/lib/supabase/client';
+import prisma from '@/lib/prisma';
 
 import { metricsService } from './metrics-service';
 
@@ -47,7 +47,6 @@ interface Cliente {
 // 🏗️ Classe Principal do Serviço SMS
 export class SMSService {
   private config: TwilioConfig;
-  private supabase = createClient();
 
   constructor() {
     this.config = {
@@ -172,9 +171,9 @@ export class SMSService {
           messageId: result.sid,
           provider: 'twilio',
         };
-      } 
-        throw new Error(result.message || 'Erro na API do Twilio');
-      
+      }
+      throw new Error(result.message || 'Erro na API do Twilio');
+
     } catch (error) {
       console.error('❌ Erro na API do Twilio:', error);
       throw error;
@@ -255,6 +254,9 @@ export class SMSService {
   }
 
   // 📊 Registro de Comunicação no Banco
+  // Note: This method is commented out as the comunicacoes_cliente table
+  // may not exist in the current Prisma schema. Uncomment and adjust
+  // when the table is added to the schema.
   private async logCommunication(data: {
     cliente_telefone: string;
     tipo: 'sms';
@@ -264,21 +266,19 @@ export class SMSService {
     message_id?: string;
   }): Promise<void> {
     try {
-      const { error } = await this.supabase
-        .from('comunicacoes_cliente')
-        .insert({
-          cliente_telefone: data.cliente_telefone,
-          tipo: data.tipo,
-          conteudo: data.conteudo,
-          status: data.status,
-          provider: data.provider,
-          message_id: data.message_id,
-          data_envio: new Date().toISOString(),
-        });
-
-      if (error) {
-        console.error('❌ Erro ao registrar comunicação:', error);
-      }
+      // TODO: Add comunicacoes_cliente table to Prisma schema
+      // await prisma.comunicacoesCliente.create({
+      //   data: {
+      //     clienteTelefone: data.cliente_telefone,
+      //     tipo: data.tipo,
+      //     conteudo: data.conteudo,
+      //     status: data.status,
+      //     provider: data.provider,
+      //     messageId: data.message_id,
+      //     dataEnvio: new Date(),
+      //   },
+      // });
+      console.log('📱 SMS log:', data);
     } catch (error) {
       console.error('❌ Erro ao salvar log de comunicação:', error);
     }
@@ -314,12 +314,12 @@ export class SMSService {
               success: true,
               message: 'Conexão com Twilio estabelecida com sucesso',
             };
-          } 
-            return {
-              success: false,
-              message: 'Falha na autenticação com Twilio',
-            };
-          
+          }
+          return {
+            success: false,
+            message: 'Falha na autenticação com Twilio',
+          };
+
         } catch (error) {
           return {
             success: false,

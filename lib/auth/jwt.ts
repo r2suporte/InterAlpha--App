@@ -46,31 +46,24 @@ export async function signJWT(
   });
 }
 
-import { stackServerApp } from '@/stack/server';
-
 /**
- * Verifica e decodifica um token JWT usando Stack Auth SDK
+ * Verifica e decodifica um token JWT
  */
 export async function verifyJWT(token: string): Promise<JWTPayload> {
-  try {
-    // O SDK do Stack Auth gerencia a validação do token automaticamente
-    // quando usamos getUser() no contexto do Next.js
-    const user = await stackServerApp.getUser();
-
-    if (!user) {
-      throw new Error('Usuário não autenticado');
-    }
-
-    return {
-      userId: user.id,
-      email: user.primaryEmail || '',
-      role: (user.clientMetadata?.role as UserRole) || 'user', // Assumindo que role está no metadata
-      tipo: 'admin', // Default para usuários do Stack
-    };
-  } catch (error) {
-    console.error('Erro na verificação do token Stack Auth:', error);
-    throw new Error('Token inválido ou expirado');
-  }
+  return new Promise((resolve, reject) => {
+    jwt.verify(
+      token,
+      JWT_SECRET,
+      { algorithms: ['HS256'] } as jwt.VerifyOptions,
+      (error: jwt.VerifyErrors | null, decoded?: string | jwt.JwtPayload | object) => {
+        if (error || !decoded) {
+          reject(new Error('Token inválido ou expirado'));
+        } else {
+          resolve(decoded as JWTPayload);
+        }
+      }
+    );
+  });
 }
 
 /**

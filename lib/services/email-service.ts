@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 
 import { metricsService } from './metrics-service';
 
@@ -42,7 +42,7 @@ class EmailService {
   private initializeTransporter() {
     const config: EmailConfig = {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587', 10),
+      port: parseInt(process.env.SMTP_PORT || '587', 10),
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: process.env.SMTP_USER || '',
@@ -104,8 +104,8 @@ class EmailService {
           html: emailHtml,
         };
 
-  // Adicionar PDF como anexo se disponível
-  if (pdfBuffer) {
+        // Adicionar PDF como anexo se disponível
+        if (pdfBuffer) {
           mailOptions.attachments = [
             {
               filename: `OS_${ordemServico.numero_os}.pdf`,
@@ -273,22 +273,20 @@ class EmailService {
                     <th>Data de Início:</th>
                     <td>${formatDate(ordemServico.data_inicio)}</td>
                 </tr>
-                ${
-                  ordemServico.equipamento
-                    ? `
+                ${ordemServico.equipamento
+        ? `
                 <tr>
                     <th>Equipamento:</th>
                     <td>${ordemServico.equipamento.marca} ${ordemServico.equipamento.modelo}${ordemServico.equipamento.numero_serie ? ` (S/N: ${ordemServico.equipamento.numero_serie})` : ''}</td>
                 </tr>
                 `
-                    : ''
-                }
+        : ''
+      }
             </table>
         </div>
 
-        ${
-          loginCredentials
-            ? `
+        ${loginCredentials
+        ? `
         <div class="credentials-box">
             <h3>🔐 Acesso ao Portal do Cliente</h3>
             <p>Suas credenciais de acesso ao portal foram criadas:</p>
@@ -309,8 +307,8 @@ class EmailService {
             </a>
         </div>
         `
-            : ''
-        }
+        : ''
+      }
 
         <div class="info-box">
             <h3>📱 Próximos Passos</h3>
@@ -335,6 +333,9 @@ class EmailService {
     `;
   }
 
+  // Note: This method is commented out as the comunicacoes_cliente table
+  // may not exist in the current Prisma schema. Uncomment and adjust
+  // when the table is added to the schema.
   private async registrarComunicacao(dados: {
     cliente_portal_id: string;
     ordem_servico_id: string;
@@ -346,23 +347,21 @@ class EmailService {
     erro?: string;
   }) {
     try {
-      const supabase = await createClient();
-
-      const { error } = await supabase.from('comunicacoes_cliente').insert({
-        cliente_portal_id: dados.cliente_portal_id,
-        ordem_servico_id: dados.ordem_servico_id,
-        tipo: dados.tipo,
-        conteudo: dados.conteudo,
-        destinatario: dados.destinatario,
-        status: dados.status,
-        message_id: dados.message_id,
-        erro: dados.erro,
-        enviado_em: new Date().toISOString(),
-      });
-
-      if (error) {
-        console.error('Erro ao registrar comunicação:', error);
-      }
+      // TODO: Add comunicacoes_cliente table to Prisma schema
+      // await prisma.comunicacoesCliente.create({
+      //   data: {
+      //     clientePortalId: dados.cliente_portal_id,
+      //     ordemServicoId: dados.ordem_servico_id,
+      //     tipo: dados.tipo,
+      //     conteudo: dados.conteudo,
+      //     destinatario: dados.destinatario,
+      //     status: dados.status,
+      //     messageId: dados.message_id,
+      //     erro: dados.erro,
+      //     enviadoEm: new Date(),
+      //   },
+      // });
+      console.log('📧 Email log:', dados);
     } catch (error) {
       console.error('Erro ao registrar comunicação:', error);
     }

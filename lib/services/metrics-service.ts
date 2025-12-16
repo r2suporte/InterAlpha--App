@@ -1,6 +1,6 @@
 // 📊 Metrics Service - Sistema de Monitoramento de Performance
 // Coleta e analisa métricas dos serviços de comunicação
-import { createClient } from '@/lib/supabase/client';
+import prisma from '@/lib/prisma';
 
 interface MetricData {
   service: 'email' | 'sms' | 'whatsapp' | 'communication';
@@ -53,7 +53,6 @@ interface ServiceHealth {
 }
 
 export class MetricsService {
-  private supabase = createClient();
   private metrics: MetricData[] = [];
   private readonly MAX_MEMORY_METRICS = 1000;
 
@@ -68,6 +67,7 @@ export class MetricsService {
   }
 
   // 📈 Registrar Métrica
+  // Note: Database persistence commented out pending communication_metrics table in Prisma schema
   async recordMetric(data: Omit<MetricData, 'timestamp'>): Promise<void> {
     const metric: MetricData = {
       ...data,
@@ -77,20 +77,25 @@ export class MetricsService {
     // Adicionar à memória para análise rápida
     this.metrics.push(metric);
 
+    // TODO: Add communication_metrics table to Prisma schema
     // Persistir no banco de dados
-    try {
-      await this.supabase.from('communication_metrics').insert({
-        service: metric.service,
-        operation: metric.operation,
-        duration_ms: metric.duration,
-        success: metric.success,
-        error_message: metric.error,
-        metadata: metric.metadata,
-        created_at: metric.timestamp.toISOString(),
-      });
-    } catch (error) {
-      console.error('Erro ao salvar métrica:', error);
-    }
+    // try {
+    //   await prisma.communicationMetrics.create({
+    //     data: {
+    //       service: metric.service,
+    //       operation: metric.operation,
+    //       durationMs: metric.duration,
+    //       success: metric.success,
+    //       errorMessage: metric.error,
+    //       metadata: metric.metadata,
+    //       createdAt: metric.timestamp,
+    //     },
+    //   });
+    // } catch (error) {
+    //   console.error('Erro ao salvar métrica:', error);
+    // }
+
+    console.log('📊 Metric recorded:', { service: metric.service, operation: metric.operation, duration: metric.duration, success: metric.success });
 
     // Limpar memória se necessário
     if (this.metrics.length > this.MAX_MEMORY_METRICS) {
@@ -131,6 +136,7 @@ export class MetricsService {
   }
 
   // 📊 Obter Estatísticas de Performance
+  // Note: Using in-memory metrics until communication_metrics table is added to Prisma schema
   async getPerformanceStats(
     service?: string,
     timeRange: '1h' | '24h' | '7d' = '24h'
@@ -144,95 +150,71 @@ export class MetricsService {
 
     const since = new Date(now.getTime() - timeRangeMs[timeRange]);
 
-    try {
-      let query = this.supabase
-        .from('communication_metrics')
-        .select('*')
-        .gte('created_at', since.toISOString());
+    // Filter in-memory metrics
+    let filteredMetrics = this.metrics.filter(m => m.timestamp >= since);
 
-      if (service) {
-        query = query.eq('service', service);
-      }
-
-      const { data: metrics, error } = await query;
-
-      if (error) throw error;
-
-      // Agrupar por serviço e operação
-      const grouped = (
-        metrics?.reduce(
-          (
-            acc: Record<string, { service: string; operation: string; metrics: DBMetricRow[] }>,
-            metric: DBMetricRow
-          ) => {
-            const key = `${metric.service}-${metric.operation}`;
-            if (!acc[key]) {
-              acc[key] = {
-                service: metric.service,
-                operation: metric.operation,
-                metrics: [],
-              };
-            }
-            acc[key].metrics.push(metric);
-            return acc;
-          },
-          {} as Record<string, { service: string; operation: string; metrics: DBMetricRow[] }>
-        ) ?? {}
-      ) as Record<string, { service: string; operation: string; metrics: DBMetricRow[] }>;
-
-      // Calcular estatísticas
-      return Object.values(grouped).map((group: { service: string; operation: string; metrics: DBMetricRow[] }) => {
-        const {metrics} = group;
-        const totalRequests = metrics.length;
-        const successCount = metrics.filter((m) => m.success).length;
-        const durations = metrics
-          .map((m) => m.duration_ms)
-          .sort((a: number, b: number) => a - b);
-
-        // Métricas da última hora
-        const lastHourMetrics = metrics.filter((m: DBMetricRow) =>
-          new Date(m.created_at) > new Date(now.getTime() - 60 * 60 * 1000)
-        );
-
-        // Métricas do último dia
-        const lastDayMetrics = metrics.filter((m: DBMetricRow) =>
-          new Date(m.created_at) >
-          new Date(now.getTime() - 24 * 60 * 60 * 1000)
-        );
-
-        const averageResponseTime = durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
-        const p95ResponseTime = durations.length > 0 ? durations[Math.floor(durations.length * 0.95)] : 0;
-
-        const lastHourErrors = lastHourMetrics.filter((m) => !m.success).length;
-        const lastHourAvg = lastHourMetrics.length > 0 ? lastHourMetrics.reduce((sum, m) => sum + m.duration_ms, 0) / lastHourMetrics.length : 0;
-
-        const lastDayErrors = lastDayMetrics.filter((m) => !m.success).length;
-        const lastDayAvg = lastDayMetrics.length > 0 ? lastDayMetrics.reduce((sum, m) => sum + m.duration_ms, 0) / lastDayMetrics.length : 0;
-
-        return {
-          service: group.service,
-          operation: group.operation,
-          totalRequests,
-          successRate: totalRequests > 0 ? (successCount / totalRequests) * 100 : 0,
-          averageResponseTime,
-          p95ResponseTime,
-          errorCount: totalRequests - successCount,
-          lastHour: {
-            requests: lastHourMetrics.length,
-            errors: lastHourErrors,
-            avgResponseTime: lastHourAvg,
-          },
-          lastDay: {
-            requests: lastDayMetrics.length,
-            errors: lastDayErrors,
-            avgResponseTime: lastDayAvg,
-          },
-        };
-      });
-    } catch (error) {
-      console.error('Erro ao obter estatísticas:', error);
-      return [];
+    if (service) {
+      filteredMetrics = filteredMetrics.filter(m => m.service === service);
     }
+
+    // Group by service and operation
+    const grouped = filteredMetrics.reduce((acc, metric) => {
+      const key = `${metric.service}-${metric.operation}`;
+      if (!acc[key]) {
+        acc[key] = {
+          service: metric.service,
+          operation: metric.operation,
+          metrics: [],
+        };
+      }
+      acc[key].metrics.push(metric);
+      return acc;
+    }, {} as Record<string, { service: string; operation: string; metrics: MetricData[] }>);
+
+    // Calculate statistics
+    return Object.values(grouped).map((group) => {
+      const { metrics } = group;
+      const totalRequests = metrics.length;
+      const successCount = metrics.filter((m) => m.success).length;
+      const durations = metrics.map((m) => m.duration).sort((a, b) => a - b);
+
+      const lastHourMetrics = metrics.filter((m) =>
+        m.timestamp > new Date(now.getTime() - 60 * 60 * 1000)
+      );
+
+      const lastDayMetrics = metrics.filter((m) =>
+        m.timestamp > new Date(now.getTime() - 24 * 60 * 60 * 1000)
+      );
+
+      const averageResponseTime = durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
+      const p95ResponseTime = durations.length > 0 ? durations[Math.floor(durations.length * 0.95)] : 0;
+
+      const lastHourErrors = lastHourMetrics.filter((m) => !m.success).length;
+      const lastHourAvg = lastHourMetrics.length > 0 ? lastHourMetrics.reduce((sum, m) => sum + m.duration, 0) / lastHourMetrics.length : 0;
+
+      const lastDayErrors = lastDayMetrics.filter((m) => !m.success).length;
+      const lastDayAvg = lastDayMetrics.length > 0 ? lastDayMetrics.reduce((sum, m) => sum + m.duration, 0) / lastDayMetrics.length : 0;
+
+      return {
+        service: group.service,
+        operation: group.operation,
+        totalRequests,
+        successRate: totalRequests > 0 ? (successCount / totalRequests) * 100 : 0,
+        averageResponseTime,
+        p95ResponseTime,
+        errorCount: totalRequests - successCount,
+        lastHour: {
+          requests: lastHourMetrics.length,
+          errors: lastHourErrors,
+          avgResponseTime: lastHourAvg,
+        },
+        lastDay: {
+          requests: lastDayMetrics.length,
+          errors: lastDayErrors,
+          avgResponseTime: lastDayAvg,
+        },
+      };
+    });
   }
 
   // 🏥 Verificar Saúde dos Serviços

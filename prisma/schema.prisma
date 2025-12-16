@@ -11,122 +11,243 @@ datasource db {
 
 // 👤 Modelo de Usuário (integrado com Supabase Auth)
 model User {
-  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email         String         @unique @db.VarChar(255)
-  name          String         @db.VarChar(255)
-  role          String?        @default("user") @db.VarChar(50)
-  phone         String?        @db.VarChar(20)
-  avatarUrl     String?        @map("avatar_url") @db.Text
-  isActive      Boolean?       @default(true) @map("is_active")
-  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt     DateTime       @default(now()) @map("updated_at") @db.Timestamptz
-  
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique @db.VarChar(255)
+  name      String   @db.VarChar(255)
+  role      String?  @default("user") @db.VarChar(50)
+  phone     String?  @db.VarChar(20)
+  avatarUrl String?  @map("avatar_url") @db.Text
+  isActive  Boolean? @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
   // Relacionamentos
-  clientesCriados       Cliente[]      @relation("ClienteCreatedBy")
-  ordensServicoTecnico  OrdemServico[] @relation("OrdemServicoTecnico")
-  ordensServicoCriadas  OrdemServico[] @relation("OrdemServicoCreatedBy")
-  pagamentosCriados     Pagamento[]    @relation("PagamentoCreatedBy")
-  statusHistorico       StatusHistorico[]
+  clientesCriados      Cliente[]         @relation("ClienteCreatedBy")
+  ordensServicoTecnico OrdemServico[]    @relation("OrdemServicoTecnico")
+  ordensServicoCriadas OrdemServico[]    @relation("OrdemServicoCreatedBy")
+  pagamentosCriados    Pagamento[]       @relation("PagamentoCreatedBy")
+  statusHistorico      StatusHistorico[]
 
   @@map("users")
 }
 
 // 🏢 Modelo de Cliente
 model Cliente {
-  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nome        String         @db.VarChar(255)
-  email       String?        @db.VarChar(255)
-  email2      String?        @db.VarChar(255)
-  email3      String?        @db.VarChar(255)
-  telefone    String?        @db.VarChar(20)
-  endereco    String?        @db.Text
-  cidade      String?        @db.VarChar(100)
-  estado      String?        @db.VarChar(2)
-  cep         String?        @db.VarChar(10)
-  cpfCnpj     String?        @map("cpf_cnpj") @db.VarChar(20)
-  tipoPessoa  String?        @default("fisica") @map("tipo_pessoa") @db.VarChar(10)
-  observacoes String?        @db.Text
-  isActive    Boolean?       @default(true) @map("is_active")
-  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime       @default(now()) @map("updated_at") @db.Timestamptz
-  createdBy   String?        @map("created_by") @db.Uuid
-  
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome        String   @db.VarChar(255)
+  email       String?  @db.VarChar(255)
+  email2      String?  @db.VarChar(255)
+  email3      String?  @db.VarChar(255)
+  telefone    String?  @db.VarChar(20)
+  endereco    String?  @db.Text
+  cidade      String?  @db.VarChar(100)
+  estado      String?  @db.VarChar(2)
+  cep         String?  @db.VarChar(10)
+  cpfCnpj     String?  @map("cpf_cnpj") @db.VarChar(20)
+  tipoPessoa  String?  @default("fisica") @map("tipo_pessoa") @db.VarChar(10)
+  observacoes String?  @db.Text
+  isActive    Boolean? @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
+  createdBy   String?  @map("created_by") @db.Uuid
+
   // Relacionamentos
   ordensServico OrdemServico[]
-  createdByUser User?         @relation("ClienteCreatedBy", fields: [createdBy], references: [id])
+  createdByUser User?          @relation("ClienteCreatedBy", fields: [createdBy], references: [id])
 
   @@map("clientes")
 }
 
 // 🔧 Modelo de Ordem de Serviço
 model OrdemServico {
-  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  numeroOs       String      @unique @map("numero_os") @db.VarChar(20)
-  clienteId      String      @map("cliente_id") @db.Uuid
-  titulo         String      @db.VarChar(255)
-  descricao      String?     @db.Text
-  status         String      @default("aberta") @db.VarChar(20) // aberta, em_andamento, aguardando_peca, concluida, cancelada
-  prioridade     String      @default("media") @db.VarChar(10)  // baixa, media, alta, urgente
-  tecnicoId      String?     @map("tecnico_id") @db.Uuid
-  valorServico   Decimal?    @default(0) @map("valor_servico") @db.Decimal(10,2)
-  valorPecas     Decimal?    @default(0) @map("valor_pecas") @db.Decimal(10,2)
-  valorTotal     Decimal?    @map("valor_total") @db.Decimal(10,2)
-  dataAbertura   DateTime    @default(now()) @map("data_abertura") @db.Timestamptz
-  dataInicio     DateTime?   @map("data_inicio") @db.Timestamptz
-  dataConclusao  DateTime?   @map("data_conclusao") @db.Timestamptz
-  observacoes    String?     @db.Text
-  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt      DateTime    @default(now()) @map("updated_at") @db.Timestamptz
-  createdBy      String?     @map("created_by") @db.Uuid
-  
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  numeroOs      String    @unique @map("numero_os") @db.VarChar(20)
+  clienteId     String    @map("cliente_id") @db.Uuid
+  titulo        String    @db.VarChar(255)
+  descricao     String?   @db.Text
+  status        String    @default("aberta") @db.VarChar(20) // aberta, em_andamento, aguardando_peca, concluida, cancelada
+  prioridade    String    @default("media") @db.VarChar(10) // baixa, media, alta, urgente
+  tecnicoId     String?   @map("tecnico_id") @db.Uuid
+  valorServico  Decimal?  @default(0) @map("valor_servico") @db.Decimal(10, 2)
+  valorPecas    Decimal?  @default(0) @map("valor_pecas") @db.Decimal(10, 2)
+  valorTotal    Decimal?  @map("valor_total") @db.Decimal(10, 2)
+  dataAbertura  DateTime  @default(now()) @map("data_abertura") @db.Timestamptz
+  dataInicio    DateTime? @map("data_inicio") @db.Timestamptz
+  dataConclusao DateTime? @map("data_conclusao") @db.Timestamptz
+  observacoes   String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  createdBy     String?   @map("created_by") @db.Uuid
+
   // Relacionamentos
-  cliente        Cliente     @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  tecnico        User?       @relation("OrdemServicoTecnico", fields: [tecnicoId], references: [id])
-  createdByUser  User?       @relation("OrdemServicoCreatedBy", fields: [createdBy], references: [id])
-  pagamentos     Pagamento[]
+  cliente         Cliente              @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  tecnico         User?                @relation("OrdemServicoTecnico", fields: [tecnicoId], references: [id])
+  createdByUser   User?                @relation("OrdemServicoCreatedBy", fields: [createdBy], references: [id])
+  pagamentos      Pagamento[]
   statusHistorico StatusHistorico[]
+  comunicacoes    ComunicacaoCliente[]
 
   @@map("ordens_servico")
 }
 
 // 💳 Modelo de Pagamento
 model Pagamento {
-  id                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ordemServicoId        String        @map("ordem_servico_id") @db.Uuid
-  valor                 Decimal       @db.Decimal(10,2)
-  metodoPagamento       String?       @default("dinheiro") @map("metodo_pagamento") @db.VarChar(20)
-  status                String?       @default("pendente") @db.VarChar(20) // pendente, processando, aprovado, rejeitado, cancelado
-  dataPagamento         DateTime?     @map("data_pagamento") @db.Timestamptz
-  dataVencimento        DateTime?     @map("data_vencimento") @db.Timestamptz
-  observacoes           String?       @db.Text
-  stripePaymentIntentId String?       @map("stripe_payment_intent_id") @db.VarChar(255)
-  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt             DateTime      @default(now()) @map("updated_at") @db.Timestamptz
-  createdBy             String?       @map("created_by") @db.Uuid
-  
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ordemServicoId        String    @map("ordem_servico_id") @db.Uuid
+  valor                 Decimal   @db.Decimal(10, 2)
+  metodoPagamento       String?   @default("dinheiro") @map("metodo_pagamento") @db.VarChar(20)
+  status                String?   @default("pendente") @db.VarChar(20) // pendente, processando, aprovado, rejeitado, cancelado
+  dataPagamento         DateTime? @map("data_pagamento") @db.Timestamptz
+  dataVencimento        DateTime? @map("data_vencimento") @db.Timestamptz
+  observacoes           String?   @db.Text
+  stripePaymentIntentId String?   @map("stripe_payment_intent_id") @db.VarChar(255)
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  createdBy             String?   @map("created_by") @db.Uuid
+
   // Relacionamentos
-  ordemServico          OrdemServico  @relation(fields: [ordemServicoId], references: [id])
-  createdByUser         User?         @relation("PagamentoCreatedBy", fields: [createdBy], references: [id])
+  ordemServico  OrdemServico @relation(fields: [ordemServicoId], references: [id])
+  createdByUser User?        @relation("PagamentoCreatedBy", fields: [createdBy], references: [id])
 
   @@map("pagamentos")
 }
 
 // 📝 Modelo de Histórico de Status
 model StatusHistorico {
-  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ordemServicoId  String       @map("ordem_servico_id") @db.Uuid
-  statusAnterior  String       @map("status_anterior") @db.VarChar(50)
-  statusNovo      String       @map("status_novo") @db.VarChar(50)
-  motivo          String?      @db.Text
-  usuarioId       String?      @map("usuario_id") @db.Uuid
-  usuarioNome     String?      @map("usuario_nome") @db.VarChar(255)
-  dataMudanca     DateTime     @default(now()) @map("data_mudanca") @db.Timestamptz
-  
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ordemServicoId String   @map("ordem_servico_id") @db.Uuid
+  statusAnterior String   @map("status_anterior") @db.VarChar(50)
+  statusNovo     String   @map("status_novo") @db.VarChar(50)
+  motivo         String?  @db.Text
+  usuarioId      String?  @map("usuario_id") @db.Uuid
+  usuarioNome    String?  @map("usuario_nome") @db.VarChar(255)
+  dataMudanca    DateTime @default(now()) @map("data_mudanca") @db.Timestamptz
+
   // Relacionamentos
-  ordemServico    OrdemServico @relation(fields: [ordemServicoId], references: [id], onDelete: Cascade)
-  usuario         User?        @relation(fields: [usuarioId], references: [id])
+  ordemServico OrdemServico @relation(fields: [ordemServicoId], references: [id], onDelete: Cascade)
+  usuario      User?        @relation(fields: [usuarioId], references: [id])
 
   @@map("status_historico")
+}
+
+// 📧 Modelo de Comunicações com Clientes
+model ComunicacaoCliente {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clientePortalId String?   @map("cliente_portal_id") @db.Uuid
+  ordemServicoId  String?   @map("ordem_servico_id") @db.Uuid
+  clienteTelefone String?   @map("cliente_telefone") @db.VarChar(20)
+  tipo            String    @db.VarChar(20) // 'email', 'sms', 'whatsapp'
+  conteudo        String    @db.Text
+  destinatario    String    @db.VarChar(255)
+  status          String    @db.VarChar(20) // 'enviado', 'erro', 'pendente'
+  provider        String?   @db.VarChar(50) // 'twilio', 'nodemailer', 'whatsapp'
+  messageId       String?   @map("message_id") @db.VarChar(255)
+  erro            String?   @db.Text
+  dataEnvio       DateTime  @default(now()) @map("data_envio") @db.Timestamptz
+  enviadoEm       DateTime? @map("enviado_em") @db.Timestamptz
+
+  // Relacionamentos
+  ordemServico OrdemServico? @relation(fields: [ordemServicoId], references: [id])
+
+  @@index([ordemServicoId])
+  @@index([tipo, status])
+  @@map("comunicacoes_cliente")
+}
+
+// 📊 Modelo de Métricas de Comunicação
+model CommunicationMetric {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  service      String   @db.VarChar(50) // 'email', 'sms', 'whatsapp', 'communication'
+  operation    String   @db.VarChar(100)
+  durationMs   Int      @map("duration_ms")
+  success      Boolean  @default(true)
+  errorMessage String?  @map("error_message") @db.Text
+  metadata     Json?
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([service, createdAt])
+  @@index([operation, createdAt])
+  @@map("communication_metrics")
+}
+
+// 📈 Modelo de Métricas da Aplicação
+model ApplicationMetric {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  metricName String   @map("metric_name") @db.VarChar(100)
+  category   String   @db.VarChar(50) // 'performance', 'error', 'system'
+  operation  String?  @db.VarChar(100)
+  value      Float?
+  duration   Int?
+  success    Boolean? @default(true)
+  metadata   Json?
+  timestamp  DateTime @default(now()) @db.Timestamptz
+
+  @@index([metricName, timestamp])
+  @@index([category, timestamp])
+  @@map("application_metrics")
+}
+
+// 🚨 Modelo de Regras de Alerta
+model AlertRule {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String   @unique @db.VarChar(255)
+  description     String   @db.Text
+  metric          String   @db.VarChar(100)
+  condition       String   @db.VarChar(20) // 'greater_than', 'less_than', 'equals', 'not_equals'
+  threshold       Float
+  severity        String   @db.VarChar(20) // 'low', 'medium', 'high', 'critical'
+  enabled         Boolean  @default(true)
+  cooldownMinutes Int      @default(15) @map("cooldown_minutes")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relacionamentos
+  alerts Alert[]
+
+  @@map("alert_rules")
+}
+
+// 🔔 Modelo de Alertas
+model Alert {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ruleId         String    @map("rule_id") @db.Uuid
+  ruleName       String    @map("rule_name") @db.VarChar(255)
+  metric         String    @db.VarChar(100)
+  currentValue   Float     @map("current_value")
+  threshold      Float
+  severity       String    @db.VarChar(20)
+  message        String    @db.Text
+  status         String    @default("active") @db.VarChar(20) // 'active', 'resolved', 'acknowledged'
+  triggeredAt    DateTime  @default(now()) @map("triggered_at") @db.Timestamptz
+  resolvedAt     DateTime? @map("resolved_at") @db.Timestamptz
+  acknowledgedAt DateTime? @map("acknowledged_at") @db.Timestamptz
+  acknowledgedBy String?   @map("acknowledged_by") @db.VarChar(255)
+
+  // Relacionamentos
+  rule          AlertRule           @relation(fields: [ruleId], references: [id])
+  notifications AlertNotification[]
+
+  @@index([status, triggeredAt])
+  @@index([ruleId])
+  @@map("alerts")
+}
+
+// 📬 Modelo de Notificações de Alerta
+model AlertNotification {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  alertId      String    @map("alert_id") @db.Uuid
+  channel      String    @db.VarChar(20) // 'email', 'sms', 'webhook', 'in_app'
+  recipient    String    @db.VarChar(255)
+  status       String    @default("pending") @db.VarChar(20) // 'pending', 'sent', 'failed'
+  sentAt       DateTime? @map("sent_at") @db.Timestamptz
+  errorMessage String?   @map("error_message") @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relacionamentos
+  alert Alert @relation(fields: [alertId], references: [id])
+
+  @@index([alertId])
+  @@map("alert_notifications")
 }
 
 // 📊 Extensões do Supabase (Opcional)

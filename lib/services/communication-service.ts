@@ -1,6 +1,6 @@
 // 🚀 Communication Service - Sistema Inteligente de Comunicação
 // Gerencia automaticamente a escolha entre WhatsApp, SMS e Email
-import { createClient } from '@/lib/supabase/client';
+import prisma from '@/lib/prisma';
 
 import EmailService from './email-service';
 import { metricsService } from './metrics-service';
@@ -54,7 +54,6 @@ export class CommunicationService {
   private whatsappService: WhatsAppService;
   private smsService: SMSService;
   private emailService: EmailService;
-  private supabase = createClient();
 
   constructor() {
     this.whatsappService = new WhatsAppService();
@@ -209,7 +208,7 @@ export class CommunicationService {
     primaryChannel: 'whatsapp' | 'sms' | 'email',
     cliente: Cliente
   ): ('whatsapp' | 'sms' | 'email')[] {
-  const channels: ('whatsapp' | 'sms' | 'email')[] = [];
+    const channels: ('whatsapp' | 'sms' | 'email')[] = [];
 
     // Verificar disponibilidade de contatos
     const hasWhatsApp = !!(cliente.celular || cliente.telefone);
@@ -217,7 +216,7 @@ export class CommunicationService {
     const hasEmail = !!cliente.email;
 
     // Definir ordem de fallback baseada no canal principal
-  switch (primaryChannel) {
+    switch (primaryChannel) {
       case 'whatsapp':
         if (hasSMS) channels.push('sms');
         if (hasEmail) channels.push('email');
@@ -234,7 +233,7 @@ export class CommunicationService {
         break;
     }
 
-  return channels;
+    return channels;
   }
 
   // 📤 Envio para Canal Específico

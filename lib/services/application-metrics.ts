@@ -1,6 +1,6 @@
 // 📊 Application Metrics Service - Monitoramento Abrangente da Aplicação
 // Coleta métricas de performance, uso, erros e recursos do sistema
-import { createClient } from '@/lib/supabase/client';
+import prisma from '@/lib/prisma';
 
 // 📈 Tipos de Métricas
 export interface ApplicationMetric {
@@ -17,21 +17,21 @@ export interface ApplicationMetric {
 export interface PerformanceMetric extends ApplicationMetric {
   category: 'performance';
   name:
-    | 'page_load_time'
-    | 'api_response_time'
-    | 'database_query_time'
-    | 'render_time'
-    | 'bundle_size';
+  | 'page_load_time'
+  | 'api_response_time'
+  | 'database_query_time'
+  | 'render_time'
+  | 'bundle_size';
 }
 
 export interface UsageMetric extends ApplicationMetric {
   category: 'usage';
   name:
-    | 'page_views'
-    | 'user_sessions'
-    | 'feature_usage'
-    | 'api_calls'
-    | 'concurrent_users';
+  | 'page_views'
+  | 'user_sessions'
+  | 'feature_usage'
+  | 'api_calls'
+  | 'concurrent_users';
 }
 
 export interface ErrorMetric extends ApplicationMetric {
@@ -74,7 +74,6 @@ export interface MetricAlert {
 }
 
 export class ApplicationMetricsService {
-  private supabase = createClient();
   private metricsBuffer: ApplicationMetric[] = [];
   private readonly BUFFER_SIZE = 100;
   private readonly FLUSH_INTERVAL = 30000; // 30 segundos
