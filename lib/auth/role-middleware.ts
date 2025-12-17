@@ -198,7 +198,7 @@ export async function checkRolePermission(request: NextRequest): Promise<{
     }
 
     // Valida se a role é válida
-    if (!PermissionManager.isValidRole(userData.role)) {
+    if (!PermissionManager.isValidRole(userData.role || 'user')) {
       return {
         authenticated: false,
         error: 'Role do usuário inválida',

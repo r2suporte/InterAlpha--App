@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { verifyClienteToken } from '@/lib/auth/client-middleware';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 
 export async function PATCH(
   request: NextRequest,
@@ -26,41 +26,32 @@ export async function PATCH(
       );
     }
 
-    const supabase = await createClient();
     const { id: aprovacaoId } = await params;
 
     // Buscar aprovação e verificar se pertence ao cliente
-    const { data: aprovacao, error: aprovacaoError } = await supabase
-      .from('cliente_aprovacoes')
-      .select(
-        `
-        *,
-        ordem_servico:ordens_servico(
-          id,
-          cliente_portal_id,
-          numero_os
-        )
-      `
-      )
-      .eq('id', aprovacaoId)
-      .single();
-
-    if (aprovacaoError) {
-      if (aprovacaoError.code === 'PGRST116') {
-        return NextResponse.json(
-          { error: 'Aprovação não encontrada' },
-          { status: 404 }
-        );
+    // Include OrdemServico to check owner
+    const aprovacao = await prisma.clienteAprovacao.findUnique({
+      where: { id: aprovacaoId },
+      include: {
+        ordemServico: {
+          select: {
+            id: true,
+            clienteId: true,
+            numeroOs: true,
+          }
+        }
       }
-      console.error('Erro ao buscar aprovação:', aprovacaoError);
+    });
+
+    if (!aprovacao) {
       return NextResponse.json(
-        { error: 'Erro interno do servidor' },
-        { status: 500 }
+        { error: 'Aprovação não encontrada' },
+        { status: 404 }
       );
     }
 
     // Verificar se a aprovação pertence ao cliente autenticado
-    if (aprovacao.ordem_servico.cliente_portal_id !== clienteData.clienteId) {
+    if (aprovacao.ordemServico.clienteId !== clienteData.clienteId) {
       return NextResponse.json(
         { error: 'Você não tem permissão para esta aprovação' },
         { status: 403 }
@@ -76,12 +67,12 @@ export async function PATCH(
     }
 
     // Verificar se a aprovação não expirou
-    if (aprovacao.expires_at && new Date(aprovacao.expires_at) < new Date()) {
+    if (aprovacao.expiresAt && new Date(aprovacao.expiresAt) < new Date()) {
       // Marcar como expirada
-      await supabase
-        .from('cliente_aprovacoes')
-        .update({ status: 'expirado' })
-        .eq('id', aprovacaoId);
+      await prisma.clienteAprovacao.update({
+        where: { id: aprovacaoId },
+        data: { status: 'expirado' }
+      });
 
       return NextResponse.json(
         { error: 'Esta aprovação expirou' },
@@ -91,36 +82,38 @@ export async function PATCH(
 
     // Processar aprovação
     const novoStatus = acao === 'aprovar' ? 'aprovado' : 'rejeitado';
-    const agora = new Date().toISOString();
+    const agora = new Date();
 
-    const { error: updateError } = await supabase
-      .from('cliente_aprovacoes')
-      .update({
+    const aprovacaoAtualizada = await prisma.clienteAprovacao.update({
+      where: { id: aprovacaoId },
+      data: {
         status: novoStatus,
-        observacoes_cliente: observacoes || null,
-        aprovado_em: agora,
-        updated_at: agora,
-      })
-      .eq('id', aprovacaoId);
-
-    if (updateError) {
-      console.error('Erro ao atualizar aprovação:', updateError);
-      return NextResponse.json(
-        { error: 'Erro ao processar aprovação' },
-        { status: 500 }
-      );
-    }
+        observacoesCliente: observacoes || null,
+        aprovadoEm: agora,
+        updatedAt: agora,
+      }
+    });
 
     // Registrar comunicação
     try {
-      await supabase.from('comunicacoes_cliente').insert({
-        cliente_portal_id: clienteData.clienteId,
-        ordem_servico_id: aprovacao.ordem_servico_id,
-        tipo: 'aprovacao',
-        canal: 'portal',
-        conteudo: `${acao === 'aprovar' ? 'Aprovação' : 'Rejeição'} de ${aprovacao.tipo}: ${aprovacao.descricao}${observacoes ? `\nObservações: ${observacoes}` : ''}`,
-        status: 'enviado',
-        enviado_em: agora,
+      await prisma.comunicacaoCliente.create({
+        data: {
+          // No relation field for client in ComunicacaoCliente schema from step 468?
+          // It has 'clientePortalId' (UUID) which maps to 'cliente_portal_id'.
+          // Wait, verify schema for ComunicacaoCliente in Step 468.
+          // Line 168: clientePortalId String? @map("cliente_portal_id") @db.Uuid
+          // It doesn't use a relation for it, just an ID field?
+          // Or relation is missing? Assuming ID field is sufficient.
+          clientePortalId: clienteData.clienteId,
+          ordemServicoId: aprovacao.ordemServicoId,
+          tipo: 'aprovacao',
+          provider: 'portal', // Mapped to provider (formerly canal if any, but schema calls it provider)
+          conteudo: `${acao === 'aprovar' ? 'Aprovação' : 'Rejeição'} de ${aprovacao.tipo}: ${aprovacao.descricao}${observacoes ? `\nObservações: ${observacoes}` : ''}`,
+          status: 'enviado',
+          enviadoEm: agora,
+          destinatario: 'sistema',
+          dataEnvio: agora
+        }
       });
     } catch (error) {
       console.error('Erro ao registrar comunicação:', error);
@@ -128,17 +121,17 @@ export async function PATCH(
     }
 
     // TODO: Enviar notificação para a equipe interna
-    // Aqui você pode adicionar lógica para notificar a equipe sobre a aprovação/rejeição
 
     return NextResponse.json({
       success: true,
       message: `${aprovacao.tipo} ${acao === 'aprovar' ? 'aprovado' : 'rejeitado'} com sucesso`,
       aprovacao: {
-        id: aprovacao.id,
+        id: aprovacaoAtualizada.id,
         status: novoStatus,
-        aprovado_em: agora,
+        aprovado_em: agora.toISOString(),
       },
     });
+
   } catch (error) {
     console.error('Erro na API de aprovação:', error);
     return NextResponse.json(

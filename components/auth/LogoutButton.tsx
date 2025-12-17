@@ -1,31 +1,20 @@
 'use client';
 
+import { useClerk } from '@clerk/nextjs';
 import { useState } from 'react';
-
 import { useRouter } from 'next/navigation';
-
-import { createClient } from '@/lib/supabase/client';
 
 export default function LogoutButton() {
   const [loading, setLoading] = useState(false);
+  const { signOut } = useClerk();
   const router = useRouter();
-  const supabase = createClient();
 
   const handleLogout = async () => {
     setLoading(true);
-
     try {
-      const { error } = await supabase.auth.signOut();
-
-      if (error) {
-        console.error('Erro ao fazer logout:', error);
-        return;
-      }
-
-      router.push('/auth/login');
+      await signOut(() => router.push('/sign-in'));
     } catch (err) {
       console.error('Erro inesperado:', err);
-    } finally {
       setLoading(false);
     }
   };

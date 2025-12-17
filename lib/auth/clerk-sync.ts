@@ -1,5 +1,5 @@
 import { currentUser } from '@clerk/nextjs/server';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 /**
  * Synchronizes the current Clerk user with the local database

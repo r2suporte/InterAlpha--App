@@ -3,18 +3,17 @@
 import React, { useEffect, useState } from 'react';
 
 import {
-  AlertCircle,
   Calculator,
   Package,
   Plus,
   Search,
-  Trash2,
 } from 'lucide-react';
 
 import { formatarMoeda } from '../types/financeiro';
 import { PecaUtilizada } from '../types/ordens-servico';
 import { calcularMargemLucro } from '@/lib/utils/pricing';
 import { Peca } from '../types/pecas';
+import { PecaItem } from './PecaItem';
 
 interface PecasOrdemServicoProps {
   ordemServicoId: string;
@@ -23,10 +22,7 @@ interface PecasOrdemServicoProps {
   readonly?: boolean;
 }
 
-interface PecaSelecionada extends PecaUtilizada {
-  peca?: Peca;
-  margem_lucro?: number;
-}
+/* Removed unused PecaSelecionada interface */
 
 export default function PecasOrdemServico({
   ordemServicoId,
@@ -35,9 +31,7 @@ export default function PecasOrdemServico({
   readonly = false,
 }: PecasOrdemServicoProps) {
   const [pecasDisponiveis, setPecasDisponiveis] = useState<Peca[]>([]);
-  const [pecasSelecionadas, setPecasSelecionadas] = useState<PecaSelecionada[]>(
-    []
-  );
+  /* Removed duplicate state */
   const [busca, setBusca] = useState('');
   const [mostrarBusca, setMostrarBusca] = useState(false);
 
@@ -109,8 +103,8 @@ export default function PecasOrdemServico({
   }, []);
 
   // Converter peças utilizadas para formato com dados completos
-  useEffect(() => {
-    const pecasComDados = pecasUtilizadas.map(pecaUtilizada => {
+  const pecasSelecionadas = React.useMemo(() => {
+    return pecasUtilizadas.map(pecaUtilizada => {
       const pecaCompleta = pecasDisponiveis.find(
         p => p.id === pecaUtilizada.id
       );
@@ -127,16 +121,15 @@ export default function PecasOrdemServico({
         margem_lucro: margem,
       };
     });
-    setPecasSelecionadas(pecasComDados);
   }, [pecasUtilizadas, pecasDisponiveis]);
 
-  const pecasFiltradas = pecasDisponiveis.filter(
+  const pecasFiltradas = React.useMemo(() => pecasDisponiveis.filter(
     peca =>
       peca.nome.toLowerCase().includes(busca.toLowerCase()) ||
       peca.part_number.toLowerCase().includes(busca.toLowerCase())
-  );
+  ), [pecasDisponiveis, busca]);
 
-  const adicionarPeca = (peca: Peca) => {
+  const adicionarPeca = React.useCallback((peca: Peca) => {
     const novaPecaUtilizada: PecaUtilizada = {
       id: `temp-${Date.now()}`,
       ordem_servico_id: ordemServicoId,
@@ -156,14 +149,14 @@ export default function PecasOrdemServico({
     onPecasChange(novasPecas);
     setMostrarBusca(false);
     setBusca('');
-  };
+  }, [pecasUtilizadas, ordemServicoId, onPecasChange]);
 
-  const removerPeca = (index: number) => {
+  const removerPeca = React.useCallback((index: number) => {
     const novasPecas = pecasUtilizadas.filter((_, i) => i !== index);
     onPecasChange(novasPecas);
-  };
+  }, [pecasUtilizadas, onPecasChange]);
 
-  const atualizarQuantidade = (index: number, quantidade: number) => {
+  const atualizarQuantidade = React.useCallback((index: number, quantidade: number) => {
     if (quantidade <= 0) return;
 
     const novasPecas = [...pecasUtilizadas];
@@ -173,9 +166,9 @@ export default function PecasOrdemServico({
       valor_total: quantidade * novasPecas[index].valor_unitario,
     };
     onPecasChange(novasPecas);
-  };
+  }, [pecasUtilizadas, onPecasChange]);
 
-  const atualizarPreco = (index: number, preco: number) => {
+  const atualizarPreco = React.useCallback((index: number, preco: number) => {
     if (preco < 0) return;
 
     const novasPecas = [...pecasUtilizadas];
@@ -185,20 +178,38 @@ export default function PecasOrdemServico({
       valor_total: preco * novasPecas[index].quantidade,
     };
     onPecasChange(novasPecas);
-  };
+  }, [pecasUtilizadas, onPecasChange]);
 
-  const calcularTotalPecas = () => {
+  const atualizarCodigoApple = React.useCallback((index: number, codigo: string) => {
+    const novasPecas = [...pecasUtilizadas];
+    novasPecas[index] = {
+      ...novasPecas[index],
+      codigo_apple: codigo,
+    };
+    onPecasChange(novasPecas);
+  }, [pecasUtilizadas, onPecasChange]);
+
+  const atualizarTipoPeca = React.useCallback((index: number, tipo: string) => {
+    const novasPecas = [...pecasUtilizadas];
+    novasPecas[index] = {
+      ...novasPecas[index],
+      tipo_peca: tipo as any,
+    };
+    onPecasChange(novasPecas);
+  }, [pecasUtilizadas, onPecasChange]);
+
+  const totalPecas = React.useMemo(() => {
     return pecasUtilizadas.reduce((total, peca) => total + peca.valor_total, 0);
-  };
+  }, [pecasUtilizadas]);
 
-  const calcularMargemMedia = () => {
+  const margemMedia = React.useMemo(() => {
     if (pecasSelecionadas.length === 0) return 0;
     const margemTotal = pecasSelecionadas.reduce(
       (total, peca) => total + (peca.margem_lucro || 0),
       0
     );
     return margemTotal / pecasSelecionadas.length;
-  };
+  }, [pecasSelecionadas]);
 
   return (
     <div className="space-y-6">
@@ -275,159 +286,17 @@ export default function PecasOrdemServico({
       {/* Lista de peças selecionadas */}
       <div className="space-y-3">
         {pecasSelecionadas.map((peca, index) => (
-          <div
+          <PecaItem
             key={index}
-            className="rounded-lg border border-gray-200 bg-white p-4"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="mb-2 flex items-center gap-3">
-                  <h4 className="font-medium text-gray-900">{peca.nome}</h4>
-                  {peca.codigo_peca && (
-                    <span className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600">
-                      {peca.codigo_peca}
-                    </span>
-                  )}
-                  {peca.codigo_apple && (
-                    <span className="rounded bg-blue-100 px-2 py-1 text-xs text-blue-700">
-                      Apple: {peca.codigo_apple}
-                    </span>
-                  )}
-                  {peca.tipo_peca && (
-                    <span className="rounded bg-green-100 px-2 py-1 text-xs text-green-700">
-                      {peca.tipo_peca}
-                    </span>
-                  )}
-                </div>
-
-                {/* Campos específicos da Apple */}
-                <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">
-                      Código Apple
-                    </label>
-                    <input
-                      type="text"
-                      value={peca.codigo_apple || ''}
-                      onChange={e => {
-                        const novasPecas = [...pecasUtilizadas];
-                        novasPecas[index] = {
-                          ...novasPecas[index],
-                          codigo_apple: e.target.value,
-                        };
-                        onPecasChange(novasPecas);
-                      }}
-                      disabled={readonly}
-                      placeholder="Ex: 661-12345"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">
-                      Tipo de Peça
-                    </label>
-                    <select
-                      value={peca.tipo_peca || ''}
-                      onChange={e => {
-                        const novasPecas = [...pecasUtilizadas];
-                        novasPecas[index] = {
-                          ...novasPecas[index],
-                          tipo_peca: e.target.value as any,
-                        };
-                        onPecasChange(novasPecas);
-                      }}
-                      disabled={readonly}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                    >
-                      <option value="">Selecione o tipo</option>
-                      <option value="original_apple">Original Apple</option>
-                      <option value="compativel">Compatível</option>
-                      <option value="recondicionada">Recondicionada</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">
-                      Quantidade
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={peca.quantidade}
-                      onChange={e =>
-                        atualizarQuantidade(
-                          index,
-                          Number.parseInt(e.target.value, 10) || 1
-                        )
-                      }
-                      disabled={readonly}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">
-                      Preço Unitário
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={peca.valor_unitario}
-                      onChange={e =>
-                        atualizarPreco(index, parseFloat(e.target.value) || 0)
-                      }
-                      disabled={readonly}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">
-                      Total
-                    </label>
-                    <div className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2">
-                      {formatarMoeda(peca.valor_total)}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">
-                      Margem
-                    </label>
-                    <div className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2">
-                      {peca.margem_lucro
-                        ? `${peca.margem_lucro.toFixed(1)}%`
-                        : 'N/A'}
-                    </div>
-                  </div>
-                </div>
-
-                {peca.peca &&
-                  peca.quantidade > peca.peca.quantidade_estoque && (
-                    <div className="mt-2 flex items-center gap-2 text-orange-600">
-                      <AlertCircle className="h-4 w-4" />
-                      <span className="text-sm">
-                        Quantidade solicitada ({peca.quantidade}) excede estoque
-                        disponível ({peca.peca.quantidade_estoque})
-                      </span>
-                    </div>
-                  )}
-              </div>
-
-              {!readonly && (
-                <button
-                  onClick={() => removerPeca(index)}
-                  className="ml-4 rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          </div>
+            peca={peca}
+            index={index}
+            readonly={readonly}
+            onRemove={removerPeca}
+            onUpdateQuantidade={atualizarQuantidade}
+            onUpdatePreco={atualizarPreco}
+            onUpdateCodigoApple={atualizarCodigoApple}
+            onUpdateTipoPeca={atualizarTipoPeca}
+          />
         ))}
 
         {pecasSelecionadas.length === 0 && (
@@ -435,7 +304,7 @@ export default function PecasOrdemServico({
             <Package className="mx-auto mb-3 h-12 w-12 text-gray-300" />
             <p>Nenhuma peça adicionada</p>
             {!readonly && (
-              <p className="text-sm">Clique em "Adicionar Peça" para começar</p>
+              <p className="text-sm">Clique em &quot;Adicionar Peça&quot; para começar</p>
             )}
           </div>
         )}
@@ -453,13 +322,13 @@ export default function PecasOrdemServico({
             <div>
               <p className="text-sm text-blue-700">Total em Peças</p>
               <p className="text-lg font-bold text-blue-900">
-                {formatarMoeda(calcularTotalPecas())}
+                {formatarMoeda(totalPecas)}
               </p>
             </div>
             <div>
               <p className="text-sm text-blue-700">Margem Média</p>
               <p className="text-lg font-bold text-blue-900">
-                {calcularMargemMedia().toFixed(1)}%
+                {margemMedia.toFixed(1)}%
               </p>
             </div>
             <div>

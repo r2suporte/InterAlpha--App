@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { smsService } from '@/lib/services/sms-service';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 import {
   OrdemServicoFormData,
   PrioridadeOrdemServico,
@@ -16,7 +16,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
     const { id: ordemId } = await params;
 
     // Detectar ambiente de teste
@@ -26,6 +25,7 @@ export async function GET(
 
     if (isTestEnvironment) {
       // Simular dados para ambiente de teste
+      // ... (Keep existing mock structure for consistency)
       const mockOrder = {
         id: ordemId,
         numero_ordem: 'ORD-TEST-001',
@@ -77,37 +77,77 @@ export async function GET(
       });
     }
 
-    const { data: ordem, error } = await supabase
-      .from('ordens_servico')
-      .select(
-        `
-        *,
-        cliente:clientes(id, nome, email, telefone, endereco, numero_cliente, created_at),
-        cliente_portal:clientes_portal(id, nome, email, telefone, created_at),
-        equipamento:equipamentos(*),
-        tecnico:users(id, name, email)
-      `
-      )
-      .eq('id', ordemId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return NextResponse.json(
-          { error: 'Ordem de serviço não encontrada' },
-          { status: 404 }
-        );
+    const ordem = await prisma.ordemServico.findUnique({
+      where: { id: ordemId },
+      include: {
+        cliente: true,
+        // equipamento: true, // Uncomment if relation exists
+        // tecnico: true // Uncomment if relation exists
       }
-      console.error('Erro ao buscar ordem de serviço:', error);
+    });
+
+    if (!ordem) {
       return NextResponse.json(
-        { error: 'Erro ao buscar ordem de serviço' },
-        { status: 500 }
+        { error: 'Ordem de serviço não encontrada' },
+        { status: 404 }
       );
     }
 
+    // Map to snake_case
+    const mappedOrder = {
+      id: ordem.id,
+      numero_os: ordem.numeroOs,
+      titulo: ordem.titulo,
+      descricao: ordem.descricao,
+      status: ordem.status,
+      prioridade: ordem.prioridade,
+      tipo_servico: ordem.tipoDispositivo,
+
+      valor_servico: Number(ordem.valorServico),
+      valor_pecas: Number(ordem.valorPecas),
+      valor_total: Number(ordem.valorTotal),
+
+      data_abertura: ordem.dataAbertura,
+      data_inicio: ordem.dataInicio,
+      data_conclusao: ordem.dataConclusao,
+      data_previsao_conclusao: (ordem as any).dataPrevisaoConclusao,
+
+      created_at: ordem.createdAt,
+      updated_at: ordem.updatedAt,
+
+      cliente_id: ordem.clienteId,
+      tecnico_id: ordem.tecnicoId,
+      equipamento_id: null, // As per schema discussion
+
+      problema_reportado: ordem.defeitoRelatado,
+      descricao_defeito: ordem.defeitoRelatado,
+      estado_equipamento: (ordem as any).estadoEquipamento, // if exists
+      diagnostico_inicial: (ordem as any).diagnosticoTecnico,
+      analise_tecnica: (ordem as any).laudoTecnico,
+
+      observacoes_cliente: (ordem as any).observacoesCliente,
+      observacoes_tecnico: (ordem as any).observacoesTecnico,
+
+      cliente: ordem.cliente ? {
+        id: ordem.cliente.id,
+        nome: ordem.cliente.nome,
+        email: ordem.cliente.email,
+        telefone: ordem.cliente.telefone,
+        endereco: ordem.cliente.endereco,
+        numero_cliente: (ordem.cliente as any).numeroCliente,
+        created_at: (ordem.cliente as any).createdAt
+      } : null,
+
+      equipamento: (ordem as any).equipamento || {
+        marca: ordem.tipoDispositivo,
+        modelo: ordem.modeloDispositivo,
+        numero_serie: ordem.numeroSerie
+      }
+    };
+
     return NextResponse.json({
       success: true,
-      data: ordem,
+      data: mappedOrder,
     });
   } catch (error) {
     console.error('Erro na busca da ordem:', error);
@@ -138,6 +178,7 @@ export async function PUT(
       ordemId.startsWith('00000000-0000-0000-0000-');
 
     if (isTestEnvironment) {
+      // ... Keep Mock Logic
       // Mapear campos do teste para formato interno
       const tipoServicoMap: Record<string, string> = {
         'Troca de peça': 'reparo',
@@ -200,224 +241,128 @@ export async function PUT(
       });
     }
 
-    const supabase = await createClient();
-
     // Verificar se a ordem existe
-    const { data: ordemExistente, error: errorBusca } = await supabase
-      .from('ordens_servico')
-      .select('id, status, tecnico_id')
-      .eq('id', ordemId)
-      .single();
+    const ordemExistente = await prisma.ordemServico.findUnique({
+      where: { id: ordemId }
+    });
 
-    if (errorBusca) {
-      if (errorBusca.code === 'PGRST116') {
-        return NextResponse.json(
-          { error: 'Ordem de serviço não encontrada' },
-          { status: 404 }
-        );
-      }
-      console.error('Erro ao buscar ordem existente:', errorBusca);
+    if (!ordemExistente) {
       return NextResponse.json(
-        { error: 'Erro ao verificar ordem de serviço' },
-        { status: 500 }
+        { error: 'Ordem de serviço não encontrada' },
+        { status: 404 }
       );
     }
 
     // Preparar dados para atualização
     const dadosAtualizacao: any = {};
 
-    // Campos que podem ser atualizados
-    if (updateData.titulo !== undefined)
-      dadosAtualizacao.titulo = updateData.titulo;
-    if (updateData.descricao !== undefined)
-      dadosAtualizacao.descricao = updateData.descricao;
-    if (updateData.problema_reportado !== undefined)
-      dadosAtualizacao.problema_reportado = updateData.problema_reportado;
-    if (updateData.descricao_defeito !== undefined)
-      dadosAtualizacao.descricao_defeito = updateData.descricao_defeito;
-    if (updateData.estado_equipamento !== undefined)
-      dadosAtualizacao.estado_equipamento = updateData.estado_equipamento;
-    if (updateData.diagnostico_inicial !== undefined)
-      dadosAtualizacao.diagnostico_inicial = updateData.diagnostico_inicial;
-    if (updateData.analise_tecnica !== undefined)
-      dadosAtualizacao.analise_tecnica = updateData.analise_tecnica;
-    if (updateData.observacoes_tecnico !== undefined)
-      dadosAtualizacao.observacoes_tecnico = updateData.observacoes_tecnico;
-    if (updateData.observacoes_cliente !== undefined)
-      dadosAtualizacao.observacoes_cliente = updateData.observacoes_cliente;
-    if (updateData.status !== undefined)
-      dadosAtualizacao.status = updateData.status as StatusOrdemServico;
-    if (updateData.prioridade !== undefined)
-      dadosAtualizacao.prioridade =
-        updateData.prioridade as PrioridadeOrdemServico;
-    if (updateData.tipo_servico !== undefined)
-      dadosAtualizacao.tipo_servico = updateData.tipo_servico as TipoServico;
-    if (updateData.tecnico_id !== undefined)
-      dadosAtualizacao.tecnico_id = updateData.tecnico_id;
+    if (updateData.titulo !== undefined) dadosAtualizacao.titulo = updateData.titulo;
+    if (updateData.descricao !== undefined) dadosAtualizacao.descricao = updateData.descricao;
+    // Map snake_case to Prisma fields
+    if (updateData.problema_reportado !== undefined) dadosAtualizacao.defeitoRelatado = updateData.problema_reportado;
+    if (updateData.diagnostico_inicial !== undefined) dadosAtualizacao.diagnosticoTecnico = updateData.diagnostico_inicial;
+    if (updateData.analise_tecnica !== undefined) dadosAtualizacao.laudoTecnico = updateData.analise_tecnica;
+    if (updateData.observacoes_cliente !== undefined) dadosAtualizacao.observacoesCliente = updateData.observacoes_cliente;
+    if (updateData.observacoes_tecnico !== undefined) dadosAtualizacao.observacoesTecnico = updateData.observacoes_tecnico;
+
+    if (updateData.status !== undefined) dadosAtualizacao.status = updateData.status as StatusOrdemServico;
+    if (updateData.prioridade !== undefined) dadosAtualizacao.prioridade = updateData.prioridade as PrioridadeOrdemServico;
+    if (updateData.tipo_servico !== undefined) dadosAtualizacao.tipoDispositivo = updateData.tipo_servico;
+    // Assuming 'tipoDispositivo' acts as type of service/device or we need a real mapping.
+    // Given previous GET/POST, sticking with `tipoDispositivo` for consistency.
+
+    if (updateData.tecnico_id !== undefined) dadosAtualizacao.tecnicoId = updateData.tecnico_id;
+
     if (updateData.data_inicio !== undefined) {
-      dadosAtualizacao.data_inicio = updateData.data_inicio
-        ? new Date(updateData.data_inicio).toISOString()
-        : null;
+      dadosAtualizacao.dataInicio = updateData.data_inicio ? new Date(updateData.data_inicio) : null;
     }
     if (updateData.data_previsao_conclusao !== undefined) {
-      dadosAtualizacao.data_previsao_conclusao =
-        updateData.data_previsao_conclusao
-          ? new Date(updateData.data_previsao_conclusao).toISOString()
-          : null;
+      dadosAtualizacao.dataPrevisaoConclusao = updateData.data_previsao_conclusao ? new Date(updateData.data_previsao_conclusao) : null;
     }
 
-    // Campos de valor
-    if (updateData.valor_servico !== undefined) {
-      dadosAtualizacao.valor_servico =
-        parseFloat(updateData.valor_servico) || 0;
-    }
-    if (updateData.valor_pecas !== undefined) {
-      dadosAtualizacao.valor_pecas = parseFloat(updateData.valor_pecas) || 0;
-    }
+    // Values
+    if (updateData.valor_servico !== undefined) dadosAtualizacao.valorServico = parseFloat(updateData.valor_servico) || 0;
+    if (updateData.valor_pecas !== undefined) dadosAtualizacao.valorPecas = parseFloat(updateData.valor_pecas) || 0;
 
-    // Recalcular valor total se algum valor foi alterado
-    if (
-      updateData.valor_servico !== undefined ||
-      updateData.valor_pecas !== undefined
-    ) {
-      const valorServico = dadosAtualizacao.valor_servico ?? 0;
-      const valorPecas = dadosAtualizacao.valor_pecas ?? 0;
-      dadosAtualizacao.valor_total = valorServico + valorPecas;
+    // Total calc
+    if (updateData.valor_servico !== undefined || updateData.valor_pecas !== undefined) {
+      const vs = dadosAtualizacao.valorServico ? Number(dadosAtualizacao.valorServico) : Number(ordemExistente.valorServico ?? 0);
+      const vp = dadosAtualizacao.valorPecas ? Number(dadosAtualizacao.valorPecas) : Number(ordemExistente.valorPecas ?? 0);
+      dadosAtualizacao.valorTotal = vs + vp;
     }
 
-    // Campos de garantia
-    if (updateData.garantia_servico_dias !== undefined) {
-      dadosAtualizacao.garantia_servico_dias =
-        parseInt(updateData.garantia_servico_dias) || 90;
-    }
-    if (updateData.garantia_pecas_dias !== undefined) {
-      dadosAtualizacao.garantia_pecas_dias =
-        parseInt(updateData.garantia_pecas_dias) || 90;
-    }
+    // Execute update
+    const ordemAtualizada = await prisma.ordemServico.update({
+      where: { id: ordemId },
+      data: dadosAtualizacao,
+      include: {
+        cliente: true,
+        // equipamento: true
+      }
+    });
 
-    // Atualizar timestamp de modificação
-    dadosAtualizacao.updated_at = new Date().toISOString();
-
-    // Executar atualização
-    const { data: ordemAtualizada, error: errorAtualizacao } = await supabase
-      .from('ordens_servico')
-      .update(dadosAtualizacao)
-      .eq('id', ordemId)
-      .select(
-        `
-        *,
-        cliente:clientes(id, nome, email, telefone, endereco, numero_cliente, created_at),
-        cliente_portal:clientes_portal(id, nome, email, telefone, created_at),
-        equipamento:equipamentos(*),
-        tecnico:users(id, name, email)
-      `
-      )
-      .single();
-
-    if (errorAtualizacao) {
-      console.error('Erro ao atualizar ordem de serviço:', errorAtualizacao);
-      return NextResponse.json(
-        {
-          error: 'Erro ao atualizar ordem de serviço',
-          details: errorAtualizacao.message,
-        },
-        { status: 500 }
-      );
-    }
-
-    // Criar histórico se o status foi alterado
+    // History Logic
     if (updateData.status && updateData.status !== ordemExistente.status) {
-      await supabase.from('status_historico').insert({
-        ordem_servico_id: ordemId,
-        status_anterior: ordemExistente.status,
-        status_novo: updateData.status,
-        motivo: 'Atualização da ordem de serviço',
-        usuario_id: userId,
-        usuario_nome: userName,
-        data_mudanca: new Date().toISOString(),
+      await prisma.statusHistorico.create({
+        data: {
+          ordemServicoId: ordemId,
+          statusAnterior: ordemExistente.status,
+          statusNovo: updateData.status,
+          motivo: 'Atualização da ordem de serviço',
+          usuarioId: userId,
+          usuarioNome: userName
+        }
       });
     }
 
-    // Criar histórico se o técnico foi alterado
-    if (
-      updateData.tecnico_id !== undefined &&
-      updateData.tecnico_id !== ordemExistente.tecnico_id
-    ) {
-      await supabase.from('status_historico').insert({
-        ordem_servico_id: ordemId,
-        status_anterior: ordemExistente.status,
-        status_novo: ordemExistente.status,
-        motivo: updateData.tecnico_id
-          ? `Técnico atribuído: ${updateData.tecnico_id}`
-          : 'Técnico removido da ordem',
-        usuario_id: userId,
-        usuario_nome: userName,
-        data_mudanca: new Date().toISOString(),
+    if (updateData.tecnico_id !== undefined && updateData.tecnico_id !== ordemExistente.tecnicoId) {
+      await prisma.statusHistorico.create({
+        data: {
+          ordemServicoId: ordemId,
+          statusAnterior: ordemExistente.status,
+          statusNovo: ordemExistente.status,
+          motivo: updateData.tecnico_id ? `Técnico atribuído: ${updateData.tecnico_id}` : 'Técnico removido',
+          usuarioId: userId,
+          usuarioNome: userName
+        }
       });
     }
 
-    // Enviar SMS de notificação se houve mudança significativa (apenas se não for ambiente de teste)
-    if (
-      !isTestEnvironment &&
-      ((updateData.status !== undefined &&
-        updateData.status !== ordemExistente.status) ||
-        (updateData.tecnico_id !== undefined &&
-          updateData.tecnico_id !== ordemExistente.tecnico_id))
-    ) {
+    // Notifications (SMS)
+    if (!isTestEnvironment &&
+      ((updateData.status !== undefined && updateData.status !== ordemExistente.status) ||
+        (updateData.tecnico_id !== undefined && updateData.tecnico_id !== ordemExistente.tecnicoId))) {
+
       try {
-        // Buscar dados completos da ordem e cliente para o SMS
-        const { data: ordemCompleta } = await supabase
-          .from('ordens_servico')
-          .select(
-            `
-            *,
-            cliente:clientes(id, nome, email, telefone)
-          `
-          )
-          .eq('id', ordemId)
-          .single();
-
-        if (ordemCompleta?.cliente) {
+        if (ordemAtualizada.cliente) {
           const ordemParaSMS = {
-            id: ordemCompleta.id,
-            numero_ordem: ordemCompleta.numero_os,
-            cliente_id: ordemCompleta.cliente_id,
-            status: ordemCompleta.status,
-            descricao_problema:
-              ordemCompleta.descricao || ordemCompleta.problema_reportado || '',
-            valor_total:
-              (ordemCompleta.valor_servico || 0) +
-              (ordemCompleta.valor_pecas || 0),
-            data_criacao: ordemCompleta.created_at,
-            tecnico_responsavel: ordemCompleta.tecnico_id,
+            id: ordemAtualizada.id,
+            numero_ordem: ordemAtualizada.numeroOs,
+            cliente_id: ordemAtualizada.clienteId,
+            status: ordemAtualizada.status,
+            descricao_problema: ordemAtualizada.descricao || ordemAtualizada.defeitoRelatado || '',
+            valor_total: Number(ordemAtualizada.valorServico || 0) + Number(ordemAtualizada.valorPecas || 0),
+            data_criacao: ordemAtualizada.createdAt.toISOString(),
+            tecnico_responsavel: ordemAtualizada.tecnicoId || undefined // Explicit undefined if null
           };
 
           const clienteParaSMS = {
-            id: ordemCompleta.cliente.id,
-            nome: ordemCompleta.cliente.nome,
-            telefone: ordemCompleta.cliente.telefone,
-            celular: ordemCompleta.cliente.telefone,
-            email: ordemCompleta.cliente.email,
+            id: ordemAtualizada.cliente.id,
+            nome: ordemAtualizada.cliente.nome,
+            telefone: ordemAtualizada.cliente.telefone || undefined,
+            celular: ordemAtualizada.cliente.telefone || undefined, // map
+            email: ordemAtualizada.cliente.email || undefined
           };
 
-          const tipoSMS =
-            ordemCompleta.status === 'concluida' ? 'conclusao' : 'atualizacao';
-          await smsService.sendOrdemServicoSMS(
-            ordemParaSMS,
-            clienteParaSMS,
-            tipoSMS
-          );
-          console.log(
-            `SMS de ${tipoSMS} enviado para ordem ${ordemCompleta.numero_os}`
-          );
+          const tipoSMS = ordemAtualizada.status === 'concluida' ? 'conclusao' : 'atualizacao';
+          await smsService.sendOrdemServicoSMS(ordemParaSMS, clienteParaSMS, tipoSMS);
         }
       } catch (smsError) {
-        console.error('Erro ao enviar SMS de atualização:', smsError);
-        // Não falhar a atualização por causa do SMS
+        console.error('Erro ao enviar SMS:', smsError);
       }
     }
 
-    // Mapear campos de volta para o formato esperado pelo teste
+    // Map response for compatibility
     const prioridadeReverseMap: Record<string, string> = {
       baixa: 'Baixa',
       media: 'Média',
@@ -432,18 +377,20 @@ export async function PUT(
       diagnostico: 'Diagnóstico',
     };
 
-    // Retornar dados no formato esperado pelo teste
-    return NextResponse.json({
+    const responseData = {
       ...ordemAtualizada,
-      tipoServico:
-        tipoServicoReverseMap[ordemAtualizada.tipo_servico] ||
-        ordemAtualizada.tipo_servico,
-      prioridade:
-        prioridadeReverseMap[ordemAtualizada.prioridade] ||
-        ordemAtualizada.prioridade,
+      // Map back any camelCase to snake_case if test/frontend expects specific fields on ROOT object?
+      // But usually frontend uses mapped properties from GET.
+      // The PUT response is used to update local state.
+      // Existing code returned mixed case + flattened.
+      tipoServico: tipoServicoReverseMap[(ordemAtualizada as any).tipoDispositivo] || (ordemAtualizada as any).tipoDispositivo,
+      prioridade: prioridadeReverseMap[ordemAtualizada.prioridade] || ordemAtualizada.prioridade,
       success: true,
       message: 'Ordem de serviço atualizada com sucesso',
-    });
+    };
+
+    return NextResponse.json(responseData);
+
   } catch (error) {
     console.error('Erro na atualização da ordem:', error);
     return NextResponse.json(
@@ -461,19 +408,16 @@ export async function DELETE(
   try {
     const { id: ordemId } = await params;
 
-    // Obter usuário autenticado para histórico
+    // Obter usuário autenticado
     const auth = await checkRolePermission(request);
     const userId = auth.user?.id || 'system';
     const userName = auth.user?.name || 'Sistema';
-
-    const supabase = await createClient();
 
     // Detectar ambiente de teste
     const isTestEnvironment =
       process.env.NODE_ENV === 'test' ||
       ordemId.startsWith('00000000-0000-0000-0000-');
 
-    // Simular exclusão em ambiente de teste
     if (isTestEnvironment) {
       return NextResponse.json({
         success: true,
@@ -481,106 +425,65 @@ export async function DELETE(
       });
     }
 
-    // Verificar se a ordem existe
-    const { data: ordemExistente, error: errorBusca } = await supabase
-      .from('ordens_servico')
-      .select('id, status')
-      .eq('id', ordemId)
-      .single();
-
-    if (errorBusca) {
-      if (errorBusca.code === 'PGRST116') {
-        return NextResponse.json(
-          { error: 'Ordem de serviço não encontrada' },
-          { status: 404 }
-        );
-      }
-      console.error('Erro ao buscar ordem existente:', errorBusca);
-      return NextResponse.json(
-        { error: 'Erro ao verificar ordem de serviço' },
-        { status: 500 }
-      );
-    }
-
-    // Soft delete - marcar como cancelada
-    const { error: errorDelete } = await supabase
-      .from('ordens_servico')
-      .update({
-        status: 'cancelada' as StatusOrdemServico,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', ordemId);
-
-    if (errorDelete) {
-      console.error('Erro ao excluir ordem de serviço:', errorDelete);
-      return NextResponse.json(
-        { error: 'Erro ao excluir ordem de serviço' },
-        { status: 500 }
-      );
-    }
-
-    // Criar histórico de cancelamento
-    await supabase.from('status_historico').insert({
-      ordem_servico_id: ordemId,
-      status_anterior: ordemExistente.status,
-      status_novo: 'cancelada',
-      motivo: 'Ordem de serviço cancelada',
-      usuario_id: userId,
-      usuario_nome: userName,
-      data_mudanca: new Date().toISOString(),
+    const ordemExistente = await prisma.ordemServico.findUnique({
+      where: { id: ordemId }
     });
 
-    // Enviar SMS de notificação de cancelamento (apenas se não for ambiente de teste)
-    if (!isTestEnvironment) {
-      try {
-        // Buscar dados completos da ordem e cliente para o SMS
-        const { data: ordemCompleta } = await supabase
-          .from('ordens_servico')
-          .select(
-            `
-            *,
-            cliente:clientes(id, nome, email, telefone)
-          `
-          )
-          .eq('id', ordemId)
-          .single();
+    if (!ordemExistente) {
+      return NextResponse.json(
+        { error: 'Ordem de serviço não encontrada' },
+        { status: 404 }
+      );
+    }
 
-        if (ordemCompleta?.cliente) {
-          const ordemParaSMS = {
-            id: ordemCompleta.id,
-            numero_ordem: ordemCompleta.numero_os,
-            cliente_id: ordemCompleta.cliente_id,
-            status: 'cancelada' as StatusOrdemServico,
-            descricao_problema:
-              ordemCompleta.descricao || ordemCompleta.problema_reportado || '',
-            valor_total:
-              (ordemCompleta.valor_servico || 0) +
-              (ordemCompleta.valor_pecas || 0),
-            data_criacao: ordemCompleta.created_at,
-            tecnico_responsavel: ordemCompleta.tecnico_id,
-          };
+    // Soft delete
+    const ordemAtualizada = await prisma.ordemServico.update({
+      where: { id: ordemId },
+      data: {
+        status: 'cancelada' as StatusOrdemServico,
+        // updatedAt updates automatically usually
+      },
+      include: { cliente: true }
+    });
 
-          const clienteParaSMS = {
-            id: ordemCompleta.cliente.id,
-            nome: ordemCompleta.cliente.nome,
-            telefone: ordemCompleta.cliente.telefone,
-            celular: ordemCompleta.cliente.telefone,
-            email: ordemCompleta.cliente.email,
-          };
-
-          await smsService.sendOrdemServicoSMS(
-            ordemParaSMS,
-            clienteParaSMS,
-            'atualizacao'
-          );
-          console.log(
-            `SMS de cancelamento enviado para ordem ${ordemCompleta.numero_os}`
-          );
-        }
-      } catch (smsError) {
-        console.error('Erro ao enviar SMS de cancelamento:', smsError);
-        // Não falhar o cancelamento por causa do SMS
+    // History
+    await prisma.statusHistorico.create({
+      data: {
+        ordemServicoId: ordemId,
+        statusAnterior: ordemExistente.status,
+        statusNovo: 'cancelada',
+        motivo: 'Ordem de serviço cancelada',
+        usuarioId: userId,
+        usuarioNome: userName,
       }
+    });
+
+    // SMS
+    try {
+      if (ordemAtualizada.cliente) {
+        const ordemParaSMS = {
+          id: ordemAtualizada.id,
+          numero_ordem: ordemAtualizada.numeroOs,
+          cliente_id: ordemAtualizada.clienteId,
+          status: 'cancelada' as StatusOrdemServico,
+          descricao_problema: ordemAtualizada.descricao || ordemAtualizada.defeitoRelatado || '',
+          valor_total: Number(ordemAtualizada.valorServico || 0) + Number(ordemAtualizada.valorPecas || 0),
+          data_criacao: ordemAtualizada.createdAt.toISOString(),
+          tecnico_responsavel: ordemAtualizada.tecnicoId || undefined // Explicit undefined if null
+        };
+
+        const clienteParaSMS = {
+          id: ordemAtualizada.cliente.id,
+          nome: ordemAtualizada.cliente.nome,
+          telefone: ordemAtualizada.cliente.telefone,
+          celular: ordemAtualizada.cliente.telefone,
+          email: ordemAtualizada.cliente.email
+        };
+
+        await smsService.sendOrdemServicoSMS(ordemParaSMS, clienteParaSMS, 'atualizacao');
+      }
+    } catch (e) {
+      console.error('Erro SMS cancelamento', e);
     }
 
     return NextResponse.json({

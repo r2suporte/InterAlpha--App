@@ -3,10 +3,10 @@ import { buscarDadosCPF } from '@/lib/validators';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { cpf: string } }
+    { params }: { params: Promise<{ cpf: string }> }
 ) {
     try {
-        const { cpf } = params;
+        const { cpf } = await params;
 
         if (!cpf) {
             return NextResponse.json(

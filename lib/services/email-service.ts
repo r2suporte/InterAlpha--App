@@ -347,21 +347,20 @@ class EmailService {
     erro?: string;
   }) {
     try {
-      // TODO: Add comunicacoes_cliente table to Prisma schema
-      // await prisma.comunicacoesCliente.create({
-      //   data: {
-      //     clientePortalId: dados.cliente_portal_id,
-      //     ordemServicoId: dados.ordem_servico_id,
-      //     tipo: dados.tipo,
-      //     conteudo: dados.conteudo,
-      //     destinatario: dados.destinatario,
-      //     status: dados.status,
-      //     messageId: dados.message_id,
-      //     erro: dados.erro,
-      //     enviadoEm: new Date(),
-      //   },
-      // });
-      console.log('📧 Email log:', dados);
+      await prisma.comunicacaoCliente.create({
+        data: {
+          // Assuming these fields exist in schema or mapping to closest equivalents
+          clientePortalId: dados.cliente_portal_id,
+          ordemServicoId: dados.ordem_servico_id,
+          tipo: dados.tipo,
+          conteudo: dados.conteudo,
+          destinatario: dados.destinatario,
+          status: dados.status,
+          messageId: dados.message_id,
+          // erro: dados.erro, // Check if 'erro' column exists, otherwise might go in metadata or metadata json
+        },
+      });
+      // console.log('📧 Email log:', dados);
     } catch (error) {
       console.error('Erro ao registrar comunicação:', error);
     }

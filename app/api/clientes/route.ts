@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { optimizedQuery } from '@/lib/database/query-optimizer';
 import { withUserCache } from '@/lib/middleware/cache-middleware';
 import {
   ApiLogger,
@@ -11,54 +10,85 @@ import {
   withAuthenticatedApiMetrics,
 } from '@/lib/middleware/metrics-middleware';
 import { CACHE_TTL } from '@/lib/services/cache-service';
-import { createClient } from '@/lib/supabase/server';
-import { Cliente } from '@/types/ordens-servico';
+import prisma from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 // GET - Listar clientes (com cache)
 async function getClientes(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const { searchParams } = new URL(request.url);
 
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
-    const sortField = searchParams.get('sortField') || 'created_at';
+    const sortField = searchParams.get('sortField') || 'createdAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
-    // Usar query otimizada
-    const result = await optimizedQuery(supabase, 'clientes', {
-      select:
-        'id, nome, email, telefone, cpf_cnpj, endereco, created_at, updated_at',
-      pagination: {
-        page,
-        limit,
-        maxLimit: 50, // Limitar para evitar queries muito grandes
-      },
-      search: search
-        ? {
-            query: search,
-            fields: ['nome', 'email', 'cpf_cnpj'],
-            operator: 'ilike',
-          }
-        : undefined,
-      sort: {
-        field: sortField,
-        ascending: sortOrder === 'asc',
-      },
-    });
+    const safeLimit = Math.min(limit, 50);
+    const skip = (page - 1) * safeLimit;
 
-    if (result.error) {
-      console.error('Erro ao buscar clientes:', result.error);
-      return NextResponse.json(
-        { error: 'Erro interno do servidor' },
-        { status: 500 }
-      );
-    }
+    // Construir filtro de busca
+    const where: Prisma.ClienteWhereInput = search
+      ? {
+        OR: [
+          { nome: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { cpfCnpj: { contains: search, mode: 'insensitive' } },
+          { numeroCliente: { contains: search, mode: 'insensitive' } },
+        ],
+      }
+      : {};
+
+    // Mapear campos de ordenação (snake_case -> camelCase)
+    const orderByMap: Record<string, string> = {
+      created_at: 'createdAt',
+      updated_at: 'updatedAt',
+      nome: 'nome',
+      email: 'email',
+    };
+
+    const mappedSortField = orderByMap[sortField] || sortField;
+
+    const [clientes, total] = await Promise.all([
+      prisma.cliente.findMany({
+        where,
+        take: safeLimit,
+        skip,
+        orderBy: {
+          [mappedSortField]: sortOrder === 'asc' ? 'asc' : 'desc',
+        },
+        select: {
+          id: true,
+          nome: true,
+          email: true,
+          telefone: true,
+          cpfCnpj: true,
+          endereco: true,
+          createdAt: true,
+          updatedAt: true,
+          numeroCliente: true,
+        },
+      }),
+      prisma.cliente.count({ where }),
+    ]);
+
+    // Mapear retorno para manter compatibilidade com frontend (snake_case)
+    const clientesMapped = clientes.map(c => ({
+      ...c,
+      cpf_cnpj: c.cpfCnpj,
+      numero_cliente: c.numeroCliente,
+      created_at: c.createdAt,
+      updated_at: c.updatedAt,
+    }));
 
     return NextResponse.json({
-      clientes: result.data,
-      pagination: result.pagination,
+      clientes: clientesMapped,
+      pagination: {
+        page,
+        limit: safeLimit,
+        total,
+        totalPages: Math.ceil(total / safeLimit),
+      },
     });
   } catch (error) {
     console.error('Erro ao buscar clientes:', error);
@@ -93,8 +123,8 @@ async function createCliente(request: NextRequest) {
     }
 
     // Validação de CPF/CNPJ se fornecido
-    if (cpf_cnpj) {
-      const cpfCnpjLimpo = cpf_cnpj.replace(/\D/g, '');
+    const cpfCnpjLimpo = cpf_cnpj ? cpf_cnpj.replace(/\D/g, '') : null;
+    if (cpf_cnpj && cpfCnpjLimpo) {
       if (cpfCnpjLimpo.length !== 11 && cpfCnpjLimpo.length !== 14) {
         return NextResponse.json(
           { error: 'CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos' },
@@ -103,22 +133,10 @@ async function createCliente(request: NextRequest) {
       }
     }
 
-    const supabase = await createClient();
-
-    // Verificar se já existe cliente com o mesmo email
-    const { data: clienteExistente, error: errorBusca } = await supabase
-      .from('clientes')
-      .select('*')
-      .eq('email', email)
-      .single();
-
-    if (errorBusca && errorBusca.code !== 'PGRST116') {
-      console.error('Erro ao buscar cliente:', errorBusca);
-      return NextResponse.json(
-        { error: 'Erro interno do servidor' },
-        { status: 500 }
-      );
-    }
+    // Verificar email
+    const clienteExistente = await prisma.cliente.findUnique({
+      where: { email },
+    });
 
     if (clienteExistente) {
       return NextResponse.json(
@@ -127,24 +145,11 @@ async function createCliente(request: NextRequest) {
       );
     }
 
-    // Verificar se já existe cliente com o mesmo CPF/CNPJ (se fornecido)
-    if (cpf_cnpj) {
-      const { data: clienteCpfCnpj, error: errorBuscaCpfCnpj } = await supabase
-        .from('clientes')
-        .select('*')
-        .eq('cpf_cnpj', cpf_cnpj)
-        .single();
-
-      if (errorBuscaCpfCnpj && errorBuscaCpfCnpj.code !== 'PGRST116') {
-        console.error(
-          'Erro ao buscar cliente por CPF/CNPJ:',
-          errorBuscaCpfCnpj
-        );
-        return NextResponse.json(
-          { error: 'Erro interno do servidor' },
-          { status: 500 }
-        );
-      }
+    // Verificar CPF/CNPJ
+    if (cpfCnpjLimpo) {
+      const clienteCpfCnpj = await prisma.cliente.findFirst({
+        where: { cpfCnpj: cpfCnpjLimpo },
+      });
 
       if (clienteCpfCnpj) {
         return NextResponse.json(
@@ -154,57 +159,57 @@ async function createCliente(request: NextRequest) {
       }
     }
 
-    // Gerar numero_cliente manualmente (solução temporária)
+    // Gerar numero_cliente
     const currentYear = new Date().getFullYear();
-    const { data: lastCliente } = await supabase
-      .from('clientes')
-      .select('numero_cliente')
-      .like('numero_cliente', `CL${currentYear}%`)
-      .order('numero_cliente', { ascending: false })
-      .limit(1)
-      .single();
+    const lastCliente = await prisma.cliente.findFirst({
+      where: {
+        numeroCliente: {
+          startsWith: `CL${currentYear}`,
+        },
+      },
+      orderBy: {
+        numeroCliente: 'desc',
+      },
+    });
 
     let nextNumber = 1;
-    if (lastCliente?.numero_cliente) {
-      const lastNumber = parseInt(lastCliente.numero_cliente.substring(6));
+    if (lastCliente?.numeroCliente) {
+      const lastNumber = parseInt(lastCliente.numeroCliente.substring(6));
       nextNumber = lastNumber + 1;
     }
 
     const numeroCliente = `CL${currentYear}${nextNumber.toString().padStart(6, '0')}`;
 
-    // Preparar dados para inserção
-    const clienteData = {
-      nome: nome.trim(),
-      email: email.toLowerCase().trim(),
-      telefone: telefone?.trim() || null,
-      cpf_cnpj: cpf_cnpj?.replace(/\D/g, '') || null,
-      endereco: endereco?.trim() || null,
-      cidade: cidade?.trim() || null,
-      estado: estado?.trim() || null,
-      cep: cep?.replace(/\D/g, '') || null,
-      numero_cliente: numeroCliente,
+    // Criar cliente
+    const novoCliente = await prisma.cliente.create({
+      data: {
+        nome: nome.trim(),
+        email: email.toLowerCase().trim(),
+        telefone: telefone?.trim() || null,
+        cpfCnpj: cpfCnpjLimpo || null,
+        endereco: endereco?.trim() || null,
+        cidade: cidade?.trim() || null,
+        estado: estado?.trim() || null,
+        cep: cep?.replace(/\D/g, '') || null,
+        numeroCliente,
+      },
+    });
+
+    // Map response to snake_case for compatibility if needed, though pure Prisma return is usually fine
+    // But frontend expects numero_cliente
+    const responseData = {
+      ...novoCliente,
+      numero_cliente: novoCliente.numeroCliente,
+      cpf_cnpj: novoCliente.cpfCnpj,
+      created_at: novoCliente.createdAt,
+      updated_at: novoCliente.updatedAt,
     };
-
-    // Inserir novo cliente
-    const { data: novoCliente, error: errorCriacao } = await supabase
-      .from('clientes')
-      .insert(clienteData)
-      .select()
-      .single();
-
-    if (errorCriacao) {
-      console.error('Erro ao criar cliente:', errorCriacao);
-      return NextResponse.json(
-        { error: 'Erro ao criar cliente' },
-        { status: 500 }
-      );
-    }
 
     return NextResponse.json(
       {
         success: true,
         message: 'Cliente criado com sucesso',
-        data: novoCliente,
+        data: responseData,
       },
       { status: 201 }
     );
@@ -232,7 +237,6 @@ async function updateCliente(request: NextRequest) {
       cep,
     } = await request.json();
 
-    // Validação dos campos obrigatórios
     if (!id || !nome || !email) {
       return NextResponse.json(
         { error: 'ID, nome e email são obrigatórios' },
@@ -240,47 +244,24 @@ async function updateCliente(request: NextRequest) {
       );
     }
 
-    // Validação de formato de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: 'Formato de email inválido' },
-        { status: 400 }
-      );
-    }
+    const clienteExistente = await prisma.cliente.findUnique({
+      where: { id },
+    });
 
-    const supabase = await createClient();
-
-    // Verificar se o cliente existe
-    const { data: clienteExistente, error: errorBusca } = await supabase
-      .from('clientes')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (errorBusca) {
-      console.error('Erro ao buscar cliente:', errorBusca);
+    if (!clienteExistente) {
       return NextResponse.json(
         { error: 'Cliente não encontrado' },
         { status: 404 }
       );
     }
 
-    // Verificar se email já está em uso por outro cliente
-    const { data: clienteEmail, error: errorBuscaEmail } = await supabase
-      .from('clientes')
-      .select('*')
-      .eq('email', email)
-      .neq('id', id)
-      .single();
-
-    if (errorBuscaEmail && errorBuscaEmail.code !== 'PGRST116') {
-      console.error('Erro ao buscar cliente por email:', errorBuscaEmail);
-      return NextResponse.json(
-        { error: 'Erro interno do servidor' },
-        { status: 500 }
-      );
-    }
+    // Verificar email duplicado (outro ID)
+    const clienteEmail = await prisma.cliente.findFirst({
+      where: {
+        email: email,
+        id: { not: id },
+      },
+    });
 
     if (clienteEmail) {
       return NextResponse.json(
@@ -289,39 +270,32 @@ async function updateCliente(request: NextRequest) {
       );
     }
 
-    // Preparar dados para atualização
-    const clienteData = {
-      nome: nome.trim(),
-      email: email.toLowerCase().trim(),
-      telefone: telefone?.trim() || null,
-      cpf_cnpj: cpf_cnpj?.replace(/\D/g, '') || null,
-      endereco: endereco?.trim() || null,
-      cidade: cidade?.trim() || null,
-      estado: estado?.trim() || null,
-      cep: cep?.replace(/\D/g, '') || null,
-      updated_at: new Date().toISOString(),
+    const clienteAtualizado = await prisma.cliente.update({
+      where: { id },
+      data: {
+        nome: nome.trim(),
+        email: email.toLowerCase().trim(),
+        telefone: telefone?.trim() || null,
+        cpfCnpj: cpf_cnpj ? cpf_cnpj.replace(/\D/g, '') : null,
+        endereco: endereco?.trim() || null,
+        cidade: cidade?.trim() || null,
+        estado: estado?.trim() || null,
+        cep: cep?.replace(/\D/g, '') || null,
+      },
+    });
+
+    const responseData = {
+      ...clienteAtualizado,
+      numero_cliente: clienteAtualizado.numeroCliente,
+      cpf_cnpj: clienteAtualizado.cpfCnpj,
+      created_at: clienteAtualizado.createdAt,
+      updated_at: clienteAtualizado.updatedAt,
     };
-
-    // Atualizar cliente
-    const { data: clienteAtualizado, error: errorAtualizacao } = await supabase
-      .from('clientes')
-      .update(clienteData)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (errorAtualizacao) {
-      console.error('Erro ao atualizar cliente:', errorAtualizacao);
-      return NextResponse.json(
-        { error: 'Erro ao atualizar cliente' },
-        { status: 500 }
-      );
-    }
 
     return NextResponse.json({
       success: true,
       message: 'Cliente atualizado com sucesso',
-      data: clienteAtualizado,
+      data: responseData,
     });
   } catch (error) {
     console.error('Erro na atualização do cliente:', error);

@@ -1,46 +1,33 @@
 import prisma from '@/lib/prisma';
-
 import { ApplicationMetricsService } from './application-metrics';
 
-export interface AlertRule {
-  id: string;
-  name: string;
-  description: string;
-  metric: string;
-  condition: 'greater_than' | 'less_than' | 'equals' | 'not_equals';
-  threshold: number;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  enabled: boolean;
-  cooldown_minutes: number;
+import {
+  AlertRule as PrismaAlertRule,
+  Alert as PrismaAlert,
+  AlertNotification as PrismaAlertNotification
+} from '@prisma/client';
+
+export type AlertRule = Omit<PrismaAlertRule, 'createdAt' | 'updatedAt'> & {
   created_at?: string;
   updated_at?: string;
-}
+  condition: 'greater_than' | 'less_than' | 'equals' | 'not_equals';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+};
 
-export interface Alert {
-  id: string;
+export type Alert = Omit<PrismaAlert, 'triggeredAt' | 'resolvedAt' | 'acknowledgedAt' | 'acknowledgedBy'> & {
   rule_id: string;
   rule_name: string;
-  metric: string;
   current_value: number;
-  threshold: number;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  message: string;
-  status: 'active' | 'resolved' | 'acknowledged';
   triggered_at: string;
   resolved_at?: string;
   acknowledged_at?: string;
   acknowledged_by?: string;
-}
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  status: 'active' | 'resolved' | 'acknowledged';
+};
 
-export interface AlertNotification {
-  id: string;
-  alert_id: string;
-  channel: 'email' | 'sms' | 'webhook' | 'in_app';
-  recipient: string;
-  status: 'pending' | 'sent' | 'failed';
-  sent_at?: string;
-  error_message?: string;
-}
+export type AlertNotification = PrismaAlertNotification;
+
 
 export interface AlertStats {
   total_alerts: number;
@@ -49,18 +36,6 @@ export interface AlertStats {
   alerts_by_severity: Record<string, number>;
   alerts_by_metric: Record<string, number>;
   resolution_time_avg: number;
-}
-
-// Tipo para linhas da tabela application_metrics
-// contém campos usados nos cálculos de alerta
-interface AppMetricRow {
-  id?: string;
-  success?: boolean;
-  duration?: number | null;
-  metadata?: Record<string, unknown> | null;
-  timestamp?: string;
-  metric_name?: string;
-  category?: string;
 }
 
 export class AlertService {
@@ -79,7 +54,7 @@ export class AlertService {
         threshold: 5,
         severity: 'high',
         enabled: true,
-        cooldown_minutes: 15,
+        cooldownMinutes: 15,
       },
       {
         name: 'Critical Error Rate',
@@ -89,7 +64,7 @@ export class AlertService {
         threshold: 10,
         severity: 'critical',
         enabled: true,
-        cooldown_minutes: 5,
+        cooldownMinutes: 5,
       },
       {
         name: 'High Response Time',
@@ -99,7 +74,7 @@ export class AlertService {
         threshold: 2000,
         severity: 'medium',
         enabled: true,
-        cooldown_minutes: 10,
+        cooldownMinutes: 10,
       },
       {
         name: 'Critical Response Time',
@@ -109,7 +84,7 @@ export class AlertService {
         threshold: 5000,
         severity: 'critical',
         enabled: true,
-        cooldown_minutes: 5,
+        cooldownMinutes: 5,
       },
       {
         name: 'Low Success Rate',
@@ -119,7 +94,7 @@ export class AlertService {
         threshold: 95,
         severity: 'high',
         enabled: true,
-        cooldown_minutes: 15,
+        cooldownMinutes: 15,
       },
       {
         name: 'Database Connection Issues',
@@ -129,7 +104,7 @@ export class AlertService {
         threshold: 0,
         severity: 'critical',
         enabled: true,
-        cooldown_minutes: 5,
+        cooldownMinutes: 5,
       },
       {
         name: 'High Memory Usage',
@@ -139,7 +114,7 @@ export class AlertService {
         threshold: 80,
         severity: 'medium',
         enabled: true,
-        cooldown_minutes: 30,
+        cooldownMinutes: 30,
       },
       {
         name: 'Critical Memory Usage',
@@ -149,23 +124,29 @@ export class AlertService {
         threshold: 90,
         severity: 'critical',
         enabled: true,
-        cooldown_minutes: 10,
+        cooldownMinutes: 10,
       },
     ];
 
   async initializeDefaultRules(): Promise<void> {
     try {
       for (const rule of this.defaultRules) {
-        const { data: existing } = await this.supabase
-          .from('alert_rules')
-          .select('id')
-          .eq('name', rule.name)
-          .single();
+        const existing = await prisma.alertRule.findUnique({
+          where: { name: rule.name },
+        });
 
         if (!existing) {
-          await this.supabase.from('alert_rules').insert({
-            ...rule,
-            id: crypto.randomUUID(),
+          await prisma.alertRule.create({
+            data: {
+              name: rule.name,
+              description: rule.description,
+              metric: rule.metric,
+              condition: rule.condition,
+              threshold: rule.threshold,
+              severity: rule.severity,
+              enabled: rule.enabled,
+              cooldownMinutes: rule.cooldownMinutes,
+            },
           });
         }
       }
@@ -178,17 +159,19 @@ export class AlertService {
     rule: Omit<AlertRule, 'id' | 'created_at' | 'updated_at'>
   ): Promise<AlertRule | null> {
     try {
-      const { data, error } = await this.supabase
-        .from('alert_rules')
-        .insert({
-          ...rule,
-          id: crypto.randomUUID(),
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const data = await prisma.alertRule.create({
+        data: {
+          name: rule.name,
+          description: rule.description,
+          metric: rule.metric,
+          condition: rule.condition,
+          threshold: rule.threshold,
+          severity: rule.severity,
+          enabled: rule.enabled,
+          cooldownMinutes: rule.cooldownMinutes,
+        },
+      });
+      return this.mapToAlertRule(data);
     } catch (error) {
       console.error('Erro ao criar regra de alerta:', error);
       return null;
@@ -200,15 +183,20 @@ export class AlertService {
     updates: Partial<AlertRule>
   ): Promise<AlertRule | null> {
     try {
-      const { data, error } = await this.supabase
-        .from('alert_rules')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const data = await prisma.alertRule.update({
+        where: { id },
+        data: {
+          name: updates.name,
+          description: updates.description,
+          metric: updates.metric,
+          condition: updates.condition,
+          threshold: updates.threshold,
+          severity: updates.severity,
+          enabled: updates.enabled,
+          cooldownMinutes: updates.cooldownMinutes,
+        },
+      });
+      return this.mapToAlertRule(data);
     } catch (error) {
       console.error('Erro ao atualizar regra de alerta:', error);
       return null;
@@ -217,12 +205,10 @@ export class AlertService {
 
   async deleteRule(id: string): Promise<boolean> {
     try {
-      const { error } = await this.supabase
-        .from('alert_rules')
-        .delete()
-        .eq('id', id);
-
-      return !error;
+      await prisma.alertRule.delete({
+        where: { id },
+      });
+      return true;
     } catch (error) {
       console.error('Erro ao deletar regra de alerta:', error);
       return false;
@@ -231,17 +217,25 @@ export class AlertService {
 
   async getRules(): Promise<AlertRule[]> {
     try {
-      const { data, error } = await this.supabase
-        .from('alert_rules')
-        .select('*')
-        .order('severity', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
+      const data = await prisma.alertRule.findMany({
+        orderBy: { severity: 'desc' },
+      });
+      return data.map(this.mapToAlertRule);
     } catch (error) {
       console.error('Erro ao buscar regras de alerta:', error);
       return [];
     }
+  }
+
+  private mapToAlertRule(data: PrismaAlertRule): AlertRule {
+    return {
+      ...data,
+      condition: data.condition as AlertRule['condition'],
+      severity: data.severity as AlertRule['severity'],
+      created_at: data.createdAt.toISOString(),
+      updated_at: data.updatedAt.toISOString(),
+      cooldownMinutes: data.cooldownMinutes,
+    };
   }
 
   async checkAlerts(): Promise<Alert[]> {
@@ -259,7 +253,7 @@ export class AlertService {
         if (lastCheck) {
           const minutesSinceLastCheck =
             (now.getTime() - lastCheck.getTime()) / (1000 * 60);
-          if (minutesSinceLastCheck < rule.cooldown_minutes) {
+          if (minutesSinceLastCheck < rule.cooldownMinutes) {
             continue;
           }
         }
@@ -271,12 +265,12 @@ export class AlertService {
           this.evaluateCondition(currentValue, rule.condition, rule.threshold)
         ) {
           // Verificar se já existe um alerta ativo para esta regra
-          const { data: existingAlert } = await this.supabase
-            .from('alerts')
-            .select('id')
-            .eq('rule_id', rule.id)
-            .eq('status', 'active')
-            .single();
+          const existingAlert = await prisma.alert.findFirst({
+            where: {
+              ruleId: rule.id,
+              status: 'active',
+            }
+          });
 
           if (!existingAlert) {
             const alert = await this.createAlert(rule, currentValue);
@@ -325,17 +319,21 @@ export class AlertService {
     startTime: Date,
     endTime: Date
   ): Promise<number> {
-    const { data } = await this.supabase
-      .from('application_metrics')
-      .select('success')
-      .gte('timestamp', startTime.toISOString())
-      .lte('timestamp', endTime.toISOString())
-      .eq('category', 'performance');
+    const data = await prisma.applicationMetric.findMany({
+      where: {
+        timestamp: {
+          gte: startTime,
+          lte: endTime,
+        },
+        category: 'performance',
+      },
+      select: { success: true },
+    });
 
     if (!data || data.length === 0) return 0;
 
     const totalRequests = data.length;
-    const errorRequests = data.filter((m: AppMetricRow) => !m.success).length;
+    const errorRequests = data.filter((m) => !m.success).length;
 
     return (errorRequests / totalRequests) * 100;
   }
@@ -344,17 +342,21 @@ export class AlertService {
     startTime: Date,
     endTime: Date
   ): Promise<number> {
-    const { data } = await this.supabase
-      .from('application_metrics')
-      .select('duration')
-      .gte('timestamp', startTime.toISOString())
-      .lte('timestamp', endTime.toISOString())
-      .eq('category', 'performance')
-      .not('duration', 'is', null);
+    const data = await prisma.applicationMetric.findMany({
+      where: {
+        timestamp: {
+          gte: startTime,
+          lte: endTime,
+        },
+        category: 'performance',
+        duration: { not: null },
+      },
+      select: { duration: true },
+    });
 
     if (!data || data.length === 0) return 0;
 
-    const totalDuration = data.reduce((sum: number, m: AppMetricRow) => sum + (m.duration || 0), 0);
+    const totalDuration = data.reduce((sum, m) => sum + (m.duration || 0), 0);
     return totalDuration / data.length;
   }
 
@@ -362,17 +364,21 @@ export class AlertService {
     startTime: Date,
     endTime: Date
   ): Promise<number> {
-    const { data } = await this.supabase
-      .from('application_metrics')
-      .select('success')
-      .gte('timestamp', startTime.toISOString())
-      .lte('timestamp', endTime.toISOString())
-      .eq('category', 'performance');
+    const data = await prisma.applicationMetric.findMany({
+      where: {
+        timestamp: {
+          gte: startTime,
+          lte: endTime,
+        },
+        category: 'performance',
+      },
+      select: { success: true },
+    });
 
     if (!data || data.length === 0) return 100;
 
     const totalRequests = data.length;
-    const successRequests = data.filter((m: AppMetricRow) => m.success).length;
+    const successRequests = data.filter((m) => m.success).length;
 
     return (successRequests / totalRequests) * 100;
   }
@@ -381,36 +387,40 @@ export class AlertService {
     startTime: Date,
     endTime: Date
   ): Promise<number> {
-    const { data } = await this.supabase
-      .from('application_metrics')
-      .select('id')
-      .gte('timestamp', startTime.toISOString())
-      .lte('timestamp', endTime.toISOString())
-      .eq('category', 'error')
-      .ilike('operation', '%database%');
+    const count = await prisma.applicationMetric.count({
+      where: {
+        timestamp: {
+          gte: startTime,
+          lte: endTime,
+        },
+        category: 'error',
+        operation: {
+          contains: 'database',
+          mode: 'insensitive',
+        }
+      }
+    });
 
-    return data?.length || 0;
+    return count;
   }
 
   private async getMemoryUsage(): Promise<number> {
     // Em um ambiente real, isso viria de métricas do sistema
     // Por enquanto, retornamos um valor simulado baseado em métricas recentes
-    const { data } = await this.supabase
-      .from('application_metrics')
-      .select('metadata')
-      .eq('category', 'system')
-      .eq('metric_name', 'memory_usage')
-      .order('timestamp', { ascending: false })
-      .limit(1)
-      .single();
+    const data = await prisma.applicationMetric.findFirst({
+      where: {
+        category: 'system',
+        metricName: 'memory_usage',
+      },
+      orderBy: { timestamp: 'desc' },
+      select: { metadata: true }
+    });
 
-    if (data?.metadata?.memory_usage_percent) {
+    if (data?.metadata && typeof data.metadata === 'object' && !Array.isArray(data.metadata)) {
       const mem = (data.metadata as Record<string, unknown>).memory_usage_percent;
       if (typeof mem === 'number') return mem;
       if (typeof mem === 'string') return Number(mem) || 0;
-      return 0;
     }
-
     return 0;
   }
 
@@ -419,15 +429,17 @@ export class AlertService {
     startTime: Date,
     endTime: Date
   ): Promise<number> {
-    const { data } = await this.supabase
-      .from('application_metrics')
-      .select('value')
-      .eq('metric_name', metric)
-      .gte('timestamp', startTime.toISOString())
-      .lte('timestamp', endTime.toISOString())
-      .order('timestamp', { ascending: false })
-      .limit(1)
-      .single();
+    const data = await prisma.applicationMetric.findFirst({
+      where: {
+        metricName: metric,
+        timestamp: {
+          gte: startTime,
+          lte: endTime,
+        }
+      },
+      orderBy: { timestamp: 'desc' },
+      select: { value: true }
+    });
 
     return data?.value || 0;
   }
@@ -456,33 +468,43 @@ export class AlertService {
     currentValue: number
   ): Promise<Alert | null> {
     try {
-      const alert: Omit<Alert, 'id'> = {
-        rule_id: rule.id,
-        rule_name: rule.name,
-        metric: rule.metric,
-        current_value: currentValue,
-        threshold: rule.threshold,
-        severity: rule.severity,
-        message: `${rule.description}. Valor atual: ${currentValue}, Limite: ${rule.threshold}`,
-        status: 'active',
-        triggered_at: new Date().toISOString(),
-      };
+      const data = await prisma.alert.create({
+        data: {
+          ruleId: rule.id,
+          ruleName: rule.name,
+          metric: rule.metric,
+          currentValue: currentValue,
+          threshold: rule.threshold,
+          severity: rule.severity,
+          message: `${rule.description}. Valor atual: ${currentValue}, Limite: ${rule.threshold}`,
+          status: 'active',
+          triggeredAt: new Date(),
+          // Assuming IDs are generated by DB or Prisma default if omitted, but schema says generated by db or uuid.
+          // Using prisma.alert.create without 'id' usually works if @default(uuid()).
+          // But if schema has @default(dbgenerated), we should let DB handle it.
+        }
+      });
 
-      const { data, error } = await this.supabase
-        .from('alerts')
-        .insert({
-          ...alert,
-          id: crypto.randomUUID(),
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      return this.mapToAlert(data);
     } catch (error) {
       console.error('Erro ao criar alerta:', error);
       return null;
     }
+  }
+
+  private mapToAlert(data: PrismaAlert): Alert {
+    return {
+      ...data,
+      rule_id: data.ruleId,
+      rule_name: data.ruleName,
+      current_value: data.currentValue,
+      triggered_at: data.triggeredAt.toISOString(),
+      resolved_at: data.resolvedAt?.toISOString(),
+      acknowledged_at: data.acknowledgedAt?.toISOString(),
+      acknowledged_by: data.acknowledgedBy || undefined,
+      severity: data.severity as Alert['severity'],
+      status: data.status as Alert['status'],
+    };
   }
 
   private async sendNotifications(alert: Alert): Promise<void> {
@@ -514,12 +536,13 @@ export class AlertService {
     recipient: string
   ): Promise<void> {
     try {
-      await this.supabase.from('alert_notifications').insert({
-        id: crypto.randomUUID(),
-        alert_id: alertId,
-        channel,
-        recipient,
-        status: 'pending',
+      await prisma.alertNotification.create({
+        data: {
+          alertId: alertId,
+          channel: channel,
+          recipient: recipient,
+          status: 'pending',
+        }
       });
     } catch (error) {
       console.error('Erro ao criar notificação:', error);
@@ -531,16 +554,15 @@ export class AlertService {
     acknowledgedBy: string
   ): Promise<boolean> {
     try {
-      const { error } = await this.supabase
-        .from('alerts')
-        .update({
+      await prisma.alert.update({
+        where: { id: alertId },
+        data: {
           status: 'acknowledged',
-          acknowledged_at: new Date().toISOString(),
-          acknowledged_by: acknowledgedBy,
-        })
-        .eq('id', alertId);
-
-      return !error;
+          acknowledgedAt: new Date(),
+          acknowledgedBy: acknowledgedBy,
+        }
+      });
+      return true;
     } catch (error) {
       console.error('Erro ao reconhecer alerta:', error);
       return false;
@@ -549,15 +571,15 @@ export class AlertService {
 
   async resolveAlert(alertId: string): Promise<boolean> {
     try {
-      const { error } = await this.supabase
-        .from('alerts')
-        .update({
+      await prisma.alert.update({
+        where: { id: alertId },
+        data: {
           status: 'resolved',
-          resolved_at: new Date().toISOString(),
-        })
-        .eq('id', alertId);
+          resolvedAt: new Date(),
+        }
+      });
 
-      return !error;
+      return true;
     } catch (error) {
       console.error('Erro ao resolver alerta:', error);
       return false;
@@ -566,14 +588,11 @@ export class AlertService {
 
   async getActiveAlerts(): Promise<Alert[]> {
     try {
-      const { data, error } = await this.supabase
-        .from('alerts')
-        .select('*')
-        .eq('status', 'active')
-        .order('triggered_at', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
+      const data = await prisma.alert.findMany({
+        where: { status: 'active' },
+        orderBy: { triggeredAt: 'desc' },
+      });
+      return data.map(this.mapToAlert);
     } catch (error) {
       console.error('Erro ao buscar alertas ativos:', error);
       return [];
@@ -582,35 +601,33 @@ export class AlertService {
 
   async getAlertStats(): Promise<AlertStats> {
     try {
-      const { data: alerts } = await this.supabase.from('alerts').select('*');
+      const alerts = await prisma.alert.findMany();
 
-      const activeAlerts: Alert[] = (alerts?.filter((a: Alert) => a.status === 'active') as Alert[]) || [];
-      const criticalAlerts: Alert[] = activeAlerts.filter((a: Alert) => a.severity === 'critical');
+      const activeAlerts = alerts.filter((a) => a.status === 'active');
+      const criticalAlerts = activeAlerts.filter((a) => a.severity === 'critical');
 
-      const alertsBySeverity =
-        alerts?.reduce(
-          (acc: Record<string, number>, alert: Alert) => {
-            acc[alert.severity] = (acc[alert.severity] || 0) + 1;
-            return acc;
-          },
-          {} as Record<string, number>
-        ) || {};
+      const alertsBySeverity = alerts.reduce(
+        (acc: Record<string, number>, alert) => {
+          acc[alert.severity] = (acc[alert.severity] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
 
-      const alertsByMetric =
-        alerts?.reduce(
-          (acc: Record<string, number>, alert: Alert) => {
-            acc[alert.metric] = (acc[alert.metric] || 0) + 1;
-            return acc;
-          },
-          {} as Record<string, number>
-        ) || {};
+      const alertsByMetric = alerts.reduce(
+        (acc: Record<string, number>, alert) => {
+          acc[alert.metric] = (acc[alert.metric] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
 
       // Calcular tempo médio de resolução
-      const resolvedAlerts: Alert[] =
-        (alerts?.filter((a: Alert) => a.status === 'resolved' && a.resolved_at) as Alert[]) || [];
-      const resolutionTimes = resolvedAlerts.map((alert: Alert) => {
-        const triggered = new Date(alert.triggered_at).getTime();
-        const resolved = new Date(alert.resolved_at!).getTime();
+      const resolvedAlerts = alerts.filter((a) => a.status === 'resolved' && a.resolvedAt);
+
+      const resolutionTimes = resolvedAlerts.map((alert) => {
+        const triggered = alert.triggeredAt.getTime();
+        const resolved = alert.resolvedAt!.getTime();
         return (resolved - triggered) / (1000 * 60); // em minutos
       });
 
@@ -621,7 +638,7 @@ export class AlertService {
           : 0;
 
       return {
-        total_alerts: alerts?.length || 0,
+        total_alerts: alerts.length,
         active_alerts: activeAlerts.length,
         critical_alerts: criticalAlerts.length,
         alerts_by_severity: alertsBySeverity,

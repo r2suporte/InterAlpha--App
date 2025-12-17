@@ -115,7 +115,7 @@ async function createAlert(request: NextRequest) {
       threshold: body.threshold,
       severity: body.severity,
       enabled: body.enabled ?? true,
-      cooldown_minutes: body.cooldown_minutes ?? 15,
+      cooldownMinutes: body.cooldown_minutes ?? 15,
     });
 
     if (!rule) {

@@ -61,7 +61,6 @@ export default clerkMiddleware(async (auth, request: NextRequest) => {
 
   // 3. Auth-specific rate limiting
   const authRateLimitedEndpoints = [
-    '/api/auth/login',
     '/api/auth/register',
     '/api/auth/reset-password',
     '/api/auth/cliente/login',

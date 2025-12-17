@@ -1,259 +1,152 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import * as React from 'react';
+import { Check, ChevronsUpDown, Search } from 'lucide-react';
 
-import {
-  Check,
-  Hash,
-  Mail,
-  MapPin,
-  Phone,
-  Plus,
-  Search,
-  User,
-  X,
-} from 'lucide-react';
-
-import { Badge } from '@/components/ui/badge';
+import { useDebounce } from '@/hooks/use-debounce';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { createClient } from '@/lib/supabase/client';
-
-interface Cliente {
-  id: string;
-  nome: string;
-  email: string;
-  telefone: string;
-  endereco: string;
-  numero_cliente: string;
-  created_at: string;
-}
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Cliente } from '@/types/ordens-servico';
 
 interface ClientSearchProps {
-  onClientSelect: (_client: Cliente) => void;
-  onCreateNew: () => void;
-  selectedClient?: Cliente | null;
+  onSelect: (cliente: Cliente) => void;
+  selectedClienteId?: string;
+  className?: string;
 }
 
 export function ClientSearch({
-  onClientSelect,
-  onCreateNew,
-  selectedClient,
+  onSelect,
+  selectedClienteId,
+  className,
 }: ClientSearchProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<Cliente[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const supabase = createClient();
+  const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState('');
+  const [clientes, setClientes] = React.useState<Cliente[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [selectedCliente, setSelectedCliente] = React.useState<Cliente | null>(
+    null
+  );
 
-  useEffect(() => {
-    const searchClients = async () => {
-      if (searchTerm.length < 2) {
-        setSearchResults([]);
-        setShowResults(false);
-        return;
-      }
+  const debouncedQuery = useDebounce(query, 500);
 
-      setIsSearching(true);
-
+  React.useEffect(() => {
+    async function fetchClientes() {
+      setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('clientes')
-          .select('*')
-          .or(
-            `nome.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,telefone.ilike.%${searchTerm}%,numero_cliente.ilike.%${searchTerm}%`
-          )
-          .order('created_at', { ascending: false })
-          .limit(10);
+        const searchParam = debouncedQuery ? `?search=${encodeURIComponent(debouncedQuery)}` : '?limit=10';
+        const response = await fetch(`/api/clientes${searchParam}`);
 
-        if (error) {
-          console.error('Erro ao buscar clientes:', error);
-          return;
+        if (!response.ok) {
+          throw new Error('Falha ao buscar clientes');
         }
 
-        setSearchResults(data || []);
-        setShowResults(true);
+        const data = await response.json();
+        if (data.clientes) {
+          setClientes(data.clientes);
+        } else {
+          setClientes([]);
+        }
       } catch (error) {
-        console.error('Erro na busca:', error);
+        console.error('Error fetching clients:', error);
+        setClientes([]);
       } finally {
-        setIsSearching(false);
+        setLoading(false);
       }
-    };
+    }
 
-    const debounceTimer = setTimeout(searchClients, 300);
-    return () => clearTimeout(debounceTimer);
-  }, [searchTerm, supabase]);
+    fetchClientes();
+  }, [debouncedQuery]);
 
-  const handleClientSelect = (client: Cliente) => {
-    onClientSelect(client);
-    setShowResults(false);
-    setSearchTerm('');
+  React.useEffect(() => {
+    async function fetchSelectedCliente() {
+      if (selectedClienteId && !selectedCliente) {
+        try {
+          const response = await fetch(`/api/clientes?search=${selectedClienteId}`); // This might not work if search doesn't support ID exact match directly or efficiently?
+          // Actually, we need an endpoint to get by ID, or filter.
+          // But `/api/clientes` search searches many fields.
+          // Let's rely on the list we have or fetch specific.
+          // Ideally we need `/api/clientes/[id]`.
+          // For now, let's assume if it's in the list otherwise we might miss it.
+          // Or just skip fetching individual for now if not critical or implement `api/clientes/[id]`.
+        } catch (e) { /* ignore */ }
+      }
+    }
+    // fetchSelectedCliente();
+  }, [selectedClienteId, selectedCliente]);
+
+  const handleSelect = (cliente: Cliente) => {
+    setSelectedCliente(cliente);
+    onSelect(cliente);
+    setOpen(false);
   };
-
-  const clearSelection = () => {
-    onClientSelect(null as any);
-    setSearchTerm('');
-    setShowResults(false);
-  };
-
-  if (selectedClient) {
-    return (
-      <Card className="border-2 border-green-200 bg-green-50">
-        <CardContent className="p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Badge
-                variant="secondary"
-                className="bg-green-100 text-green-800"
-              >
-                <Hash className="mr-1 h-3 w-3" />
-                {selectedClient.numero_cliente}
-              </Badge>
-              <Badge variant="outline" className="text-green-700">
-                Cliente Selecionado
-              </Badge>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearSelection}
-              className="text-red-600 hover:bg-red-50 hover:text-red-700"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-gray-500" />
-              <span className="font-medium">{selectedClient.nome}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-gray-500" />
-              <span className="text-sm text-gray-600">
-                {selectedClient.email}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-gray-500" />
-              <span className="text-sm text-gray-600">
-                {selectedClient.telefone}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-gray-500" />
-              <span className="text-sm text-gray-600">
-                {selectedClient.endereco}
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="client-search">Buscar Cliente Existente</Label>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-          <Input
-            id="client-search"
-            placeholder="Digite nome, e-mail, telefone ou número do cliente..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-          {isSearching && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 transform">
-              <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-blue-600"></div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {showResults && searchResults.length > 0 && (
-        <Card className="border-blue-200">
-          <CardContent className="p-0">
-            <div className="max-h-64 overflow-y-auto">
-              {searchResults.map((client, index) => (
-                <div key={client.id}>
-                  <div
-                    className="cursor-pointer p-4 transition-colors hover:bg-blue-50"
-                    onClick={() => handleClientSelect(client)}
-                  >
-                    <div className="mb-2 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">
-                          <Hash className="mr-1 h-3 w-3" />
-                          {client.numero_cliente}
-                        </Badge>
-                        <span className="font-medium">{client.nome}</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-blue-600"
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2 text-sm text-gray-600 md:grid-cols-2">
-                      <div className="flex items-center gap-1">
-                        <Mail className="h-3 w-3" />
-                        {client.email}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Phone className="h-3 w-3" />
-                        {client.telefone}
-                      </div>
-                    </div>
-                    {client.endereco && (
-                      <div className="mt-1 flex items-center gap-1 text-sm text-gray-600">
-                        <MapPin className="h-3 w-3" />
-                        {client.endereco}
-                      </div>
-                    )}
-                  </div>
-                  {index < searchResults.length - 1 && <Separator />}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {showResults &&
-        searchResults.length === 0 &&
-        searchTerm.length >= 2 &&
-        !isSearching && (
-          <Card className="border-yellow-200 bg-yellow-50">
-            <CardContent className="p-4 text-center">
-              <p className="mb-3 text-yellow-800">
-                Nenhum cliente encontrado com "{searchTerm}"
-              </p>
-              <Button
-                onClick={onCreateNew}
-                variant="outline"
-                className="border-yellow-300 text-yellow-800 hover:bg-yellow-100"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Cadastrar Novo Cliente
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-      <div className="text-center">
-        <Button onClick={onCreateNew} variant="outline" className="w-full">
-          <Plus className="mr-2 h-4 w-4" />
-          Cadastrar Novo Cliente
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn('w-full justify-between', className)}
+        >
+          {selectedCliente
+            ? selectedCliente.nome
+            : 'Selecione um cliente...'}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
-      </div>
-    </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-[400px] p-0">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Buscar cliente (nome, email, CPF)..."
+            value={query}
+            onValueChange={setQuery}
+          />
+          <CommandList>
+            {loading && <div className="p-4 text-center text-sm">Carregando...</div>}
+            {!loading && clientes.length === 0 && (
+              <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+            )}
+            <CommandGroup>
+              {clientes.map((cliente) => (
+                <CommandItem
+                  key={cliente.id}
+                  value={cliente.id}
+                  onSelect={() => handleSelect(cliente)}
+                >
+                  <Check
+                    className={cn(
+                      'mr-2 h-4 w-4',
+                      selectedCliente?.id === cliente.id
+                        ? 'opacity-100'
+                        : 'opacity-0'
+                    )}
+                  />
+                  <div className="flex flex-col">
+                    <span>{cliente.nome}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {cliente.email} • {cliente.cpf_cnpj || cliente.numero_cliente}
+                    </span>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

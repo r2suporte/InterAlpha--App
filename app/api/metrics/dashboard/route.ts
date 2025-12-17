@@ -3,8 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { withAuthenticatedApiMetrics } from '@/lib/middleware/metrics-middleware';
-import { applicationMetrics } from '@/lib/services/application-metrics';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 // 📈 Interfaces para Resposta do Dashboard
 interface MetricValue {
@@ -62,62 +62,69 @@ function calculateTrend(
 }
 
 // 📊 Função para Buscar Métricas de Performance
-async function getPerformanceMetrics(supabase: any) {
+async function getPerformanceMetrics() {
   const now = new Date();
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
 
   // Buscar métricas de tempo de resposta
-  const { data: responseTimeData } = await supabase
-    .from('application_metrics')
-    .select('value, created_at')
-    .eq('name', 'api_response_time')
-    .gte('created_at', twoDaysAgo.toISOString())
-    .order('created_at', { ascending: false });
+  const responseTimeData = await prisma.applicationMetric.findMany({
+    where: {
+      metricName: 'api_response_time',
+      timestamp: { gte: twoDaysAgo },
+    },
+    select: {
+      value: true,
+      timestamp: true,
+    },
+    orderBy: { timestamp: 'desc' },
+  });
 
   // Calcular médias
   const currentPeriod =
-    responseTimeData?.filter((m: any) => new Date(m.created_at) >= oneDayAgo) ||
-    [];
+    responseTimeData?.filter((m) => new Date(m.timestamp) >= oneDayAgo) || [];
 
   const previousPeriod =
     responseTimeData?.filter(
-      (m: any) =>
-        new Date(m.created_at) >= twoDaysAgo &&
-        new Date(m.created_at) < oneDayAgo
+      (m) =>
+        new Date(m.timestamp) >= twoDaysAgo &&
+        new Date(m.timestamp) < oneDayAgo
     ) || [];
 
   const currentAvg =
     currentPeriod.length > 0
-      ? currentPeriod.reduce((sum: number, m: any) => sum + m.value, 0) /
-        currentPeriod.length
+      ? currentPeriod.reduce((sum, m) => sum + (m.value || 0), 0) /
+      currentPeriod.length
       : 0;
 
   const previousAvg =
     previousPeriod.length > 0
-      ? previousPeriod.reduce((sum: number, m: any) => sum + m.value, 0) /
-        previousPeriod.length
+      ? previousPeriod.reduce((sum, m) => sum + (m.value || 0), 0) /
+      previousPeriod.length
       : 0;
 
   // Buscar throughput (chamadas por minuto)
-  const { data: throughputData } = await supabase
-    .from('application_metrics')
-    .select('value, created_at')
-    .eq('name', 'api_calls')
-    .gte('created_at', oneDayAgo.toISOString());
+  const throughputCount = await prisma.applicationMetric.count({
+    where: {
+      metricName: 'api_calls',
+      timestamp: { gte: oneDayAgo },
+    },
+  });
 
-  const currentThroughput = throughputData?.length || 0;
+  const currentThroughput = throughputCount || 0;
   const previousThroughput = Math.floor(currentThroughput * 0.9); // Simulado
 
   // Buscar taxa de erro
-  const { data: errorData } = await supabase
-    .from('application_metrics')
-    .select('value, created_at')
-    .eq('name', 'failed_requests')
-    .gte('created_at', oneDayAgo.toISOString());
+  const errorData = await prisma.applicationMetric.findMany({
+    where: {
+      metricName: 'failed_requests',
+      timestamp: { gte: oneDayAgo },
+    },
+    select: { value: true },
+  });
 
   const errorCount =
-    errorData?.reduce((sum: number, m: any) => sum + m.value, 0) || 0;
+    errorData?.reduce((sum, m) => sum + (m.value || 0), 0) || 0;
   const totalRequests = Math.max(currentThroughput, 1);
   const errorRate = (errorCount / totalRequests) * 100;
 
@@ -150,19 +157,30 @@ async function getPerformanceMetrics(supabase: any) {
 }
 
 // 👥 Função para Buscar Métricas de Uso
-async function getUsageMetrics(supabase: any) {
+async function getUsageMetrics() {
   const now = new Date();
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   // Buscar usuários ativos (simulado baseado em chamadas de API)
-  const { data: apiCallsData } = await supabase
-    .from('application_metrics')
-    .select('tags, created_at')
-    .eq('name', 'api_calls')
-    .gte('created_at', oneDayAgo.toISOString());
+  const apiCallsData = await prisma.applicationMetric.findMany({
+    where: {
+      metricName: 'api_calls',
+      timestamp: { gte: oneDayAgo },
+    },
+    select: {
+      metadata: true,
+      timestamp: true,
+    },
+  });
 
   const uniqueUsers = new Set(
-    apiCallsData?.map((call: any) => call.tags?.user_id).filter(Boolean) || []
+    apiCallsData
+      ?.map((call) => {
+        // cast to any because metadata is Json
+        const meta = call.metadata as any;
+        return meta?.tags?.user_id || meta?.user_id;
+      })
+      .filter(Boolean) || []
   ).size;
 
   return {
@@ -194,45 +212,51 @@ async function getUsageMetrics(supabase: any) {
 }
 
 // 💼 Função para Buscar Métricas de Negócio
-async function getBusinessMetrics(supabase: any) {
+async function getBusinessMetrics() {
   const now = new Date();
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
 
   // Buscar ordens criadas
-  const { data: ordersToday } = await supabase
-    .from('ordens_servico')
-    .select('id, valor_total')
-    .gte('created_at', oneDayAgo.toISOString());
+  const ordersToday = await prisma.ordemServico.findMany({
+    where: { createdAt: { gte: oneDayAgo } },
+    select: { id: true, valorTotal: true },
+  });
 
-  const { data: ordersYesterday } = await supabase
-    .from('ordens_servico')
-    .select('id, valor_total')
-    .gte('created_at', twoDaysAgo.toISOString())
-    .lt('created_at', oneDayAgo.toISOString());
+  const ordersYesterday = await prisma.ordemServico.findMany({
+    where: {
+      createdAt: {
+        gte: twoDaysAgo,
+        lt: oneDayAgo,
+      },
+    },
+    select: { id: true, valorTotal: true },
+  });
 
   // Buscar clientes registrados
-  const { data: clientsToday } = await supabase
-    .from('clientes')
-    .select('id')
-    .gte('created_at', oneDayAgo.toISOString());
+  const clientsTodayCount = await prisma.cliente.count({
+    where: { createdAt: { gte: oneDayAgo } },
+  });
 
-  const { data: clientsYesterday } = await supabase
-    .from('clientes')
-    .select('id')
-    .gte('created_at', twoDaysAgo.toISOString())
-    .lt('created_at', oneDayAgo.toISOString());
+  const clientsYesterdayCount = await prisma.cliente.count({
+    where: {
+      createdAt: {
+        gte: twoDaysAgo,
+        lt: oneDayAgo,
+      },
+    },
+  });
 
   // Calcular receita
   const revenueToday =
     ordersToday?.reduce(
-      (sum: number, order: any) => sum + (parseFloat(order.valor_total) || 0),
+      (sum, order) => sum + (Number(order.valorTotal) || 0),
       0
     ) || 0;
 
   const revenueYesterday =
     ordersYesterday?.reduce(
-      (sum: number, order: any) => sum + (parseFloat(order.valor_total) || 0),
+      (sum, order) => sum + (Number(order.valorTotal) || 0),
       0
     ) || 0;
 
@@ -247,12 +271,9 @@ async function getBusinessMetrics(supabase: any) {
       unit: 'ordens',
     },
     clientsRegistered: {
-      current: clientsToday?.length || 0,
-      previous: clientsYesterday?.length || 0,
-      trend: calculateTrend(
-        clientsToday?.length || 0,
-        clientsYesterday?.length || 0
-      ),
+      current: clientsTodayCount,
+      previous: clientsYesterdayCount,
+      trend: calculateTrend(clientsTodayCount, clientsYesterdayCount),
       unit: 'clientes',
     },
     revenue: {
@@ -301,18 +322,19 @@ async function getSystemMetrics() {
 }
 
 // 🚨 Função para Buscar Alertas
-async function getAlerts(supabase: any) {
+async function getAlerts() {
   const now = new Date();
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   // Buscar erros recentes para gerar alertas
-  const { data: recentErrors } = await supabase
-    .from('application_metrics')
-    .select('*')
-    .eq('name', 'exception_count')
-    .gte('created_at', oneDayAgo.toISOString())
-    .order('created_at', { ascending: false })
-    .limit(10);
+  const recentErrors = await prisma.applicationMetric.findMany({
+    where: {
+      metricName: 'exception_count',
+      timestamp: { gte: oneDayAgo },
+    },
+    orderBy: { timestamp: 'desc' },
+    take: 10,
+  });
 
   const alerts = [];
 
@@ -347,15 +369,13 @@ async function getAlerts(supabase: any) {
 // 📊 Handler Principal
 async function getDashboardMetrics(_request: NextRequest) {
   try {
-    const supabase = createClient();
-
     // Buscar todas as métricas em paralelo
     const [performance, usage, business, system, alerts] = await Promise.all([
-      getPerformanceMetrics(supabase),
-      getUsageMetrics(supabase),
-      getBusinessMetrics(supabase),
+      getPerformanceMetrics(),
+      getUsageMetrics(),
+      getBusinessMetrics(),
       getSystemMetrics(),
-      getAlerts(supabase),
+      getAlerts(),
     ]);
 
     const response: DashboardResponse = {

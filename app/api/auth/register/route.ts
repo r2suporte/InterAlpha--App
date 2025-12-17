@@ -4,7 +4,7 @@ import {
   generateClientCredentials,
   hashPassword,
 } from '@/lib/auth/client-auth';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,22 +28,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
-
     // Verificar se o usuário já existe
-    const { data: usuarioExistente, error: errorBusca } = await supabase
-      .from('clientes_portal')
-      .select('*')
-      .eq('email', email)
-      .single();
-
-    if (errorBusca && errorBusca.code !== 'PGRST116') {
-      console.error('Erro ao buscar usuário:', errorBusca);
-      return NextResponse.json(
-        { error: 'Erro interno do servidor' },
-        { status: 500 }
-      );
-    }
+    const usuarioExistente = await prisma.cliente.findFirst({
+      where: {
+        OR: [
+          { email: email },
+          { email2: email }, // Check alt emails too if generic
+          { login: email }   // Check against login just in case
+        ]
+      }
+    });
 
     if (usuarioExistente) {
       return NextResponse.json(
@@ -57,32 +51,28 @@ export async function POST(request: NextRequest) {
     const senhaHash = await hashPassword(credenciais.senha);
 
     // Criar novo usuário no portal
-    const { data: novoUsuario, error: errorCriacao } = await supabase
-      .from('clientes_portal')
-      .insert({
+    const novoUsuario = await prisma.cliente.create({
+      data: {
         email,
         nome,
         telefone: telefone || null,
+        cpfCnpj: cpf_cnpj, // Mapping snake_case from body to camelCase in Prisma
+        endereco,
+        cidade,
+        estado,
+        cep,
         login: credenciais.login,
-        senha_hash: senhaHash,
-        senha_temporaria: credenciais.senha,
-        ativo: true,
-        primeiro_acesso: true,
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (errorCriacao) {
-      console.error('Erro ao criar usuário:', errorCriacao);
-      return NextResponse.json(
-        { error: 'Erro ao criar usuário' },
-        { status: 500 }
-      );
-    }
+        senhaHash: senhaHash,
+        senhaTemporaria: credenciais.senha,
+        isActive: true, // ativo -> isActive
+        primeiroAcesso: true,
+        // createdBy? We don't have user ID in this context usually, assumed self-reg or public
+      },
+    });
 
     // Retornar dados do usuário criado (sem senha hash)
-    const { senha_hash, ...usuarioSemSenha } = novoUsuario;
+    // Prisma returns object, just sanitize
+    const { senhaHash: _, senhaTemporaria: __, ...usuarioSemSenha } = novoUsuario;
 
     return NextResponse.json(
       {

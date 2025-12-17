@@ -130,38 +130,51 @@ export default function OrdemServicoForm({
   }, [ordemServico]);
 
   // Calcular valor total quando peças ou valor do serviço mudam
+  const valorTotal = React.useMemo(() => {
+    const valorPecas = pecasUtilizadas.reduce(
+      (total: number, peca: PecaUtilizada) => total + peca.valor_total,
+      0
+    );
+    return parseFloat(formData.valor_servico || '0') + valorPecas;
+  }, [pecasUtilizadas, formData.valor_servico]);
+
+  // Atualizar valor_pecas no formData quando as peças mudam
   useEffect(() => {
     const valorPecas = pecasUtilizadas.reduce(
       (total: number, peca: PecaUtilizada) => total + peca.valor_total,
       0
     );
 
-    setFormData(prev => ({
-      ...prev,
-      valor_pecas: valorPecas.toString(),
-    }));
-  }, [pecasUtilizadas, formData.valor_servico]);
+    setFormData(prev => {
+      if (prev.valor_pecas === valorPecas.toString()) return prev;
+      return {
+        ...prev,
+        valor_pecas: valorPecas.toString(),
+      }
+    });
+  }, [pecasUtilizadas]);
 
-  const handleInputChange = (field: keyof OrdemServicoFormData, value: any) => {
+  const handleInputChange = React.useCallback((field: keyof OrdemServicoFormData, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
     }));
 
     // Limpar erro do campo quando o usuário começar a digitar
-    if (erros[field]) {
-      setErros(prev => ({
+    setErros(prev => {
+      if (!prev[field]) return prev;
+      return {
         ...prev,
         [field]: '',
-      }));
-    }
-  };
+      }
+    });
+  }, []);
 
-  const handlePecasChange = (pecas: PecaUtilizada[]) => {
+  const handlePecasChange = React.useCallback((pecas: PecaUtilizada[]) => {
     setPecasUtilizadas(pecas);
-  };
+  }, []);
 
-  const validarFormulario = (): boolean => {
+  const validarFormulario = React.useCallback((): boolean => {
     const novosErros: Record<string, string> = {};
 
     if (!formData.cliente_id) {
@@ -211,9 +224,9 @@ export default function OrdemServicoForm({
 
     setErros(novosErros);
     return Object.keys(novosErros).length === 0;
-  };
+  }, [formData]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = React.useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validarFormulario()) {
@@ -262,11 +275,11 @@ export default function OrdemServicoForm({
     } finally {
       setCarregando(false);
     }
-  };
+  }, [formData, onSave, onSubmit, validarFormulario]);
 
-  const equipamentoSelecionado = equipamentosDisponiveis.find(
+  const equipamentoSelecionado = React.useMemo(() => equipamentosDisponiveis.find(
     eq => eq.id === formData.equipamento_id
-  );
+  ), [equipamentosDisponiveis, formData.equipamento_id]);
 
   return (
     <div className="mx-auto max-w-4xl rounded-lg bg-white shadow-lg">
@@ -307,9 +320,8 @@ export default function OrdemServicoForm({
                   value={formData.cliente_id}
                   onChange={e => handleInputChange('cliente_id', e.target.value)}
                   disabled={readonly}
-                  className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${
-                    erros.cliente_id ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.cliente_id ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
                   <option value="">Selecione um cliente</option>
                   <option value="cliente-1">João Silva</option>
@@ -327,9 +339,8 @@ export default function OrdemServicoForm({
                     handleInputChange('equipamento_id', e.target.value)
                   }
                   disabled={readonly}
-                  className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${
-                    erros.equipamento_id ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.equipamento_id ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
                   <option value="">Selecione um equipamento</option>
                   {equipamentosDisponiveis.map(equipamento => (
@@ -349,9 +360,8 @@ export default function OrdemServicoForm({
                 value={formData.tecnico_id}
                 onChange={e => handleInputChange('tecnico_id', e.target.value)}
                 disabled={readonly || loadingTechnicians}
-                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${
-                  erros.tecnico_id ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.tecnico_id ? 'border-red-500' : 'border-gray-300'
+                  }`}
               >
                 <option value="">Selecione um técnico</option>
                 {getActiveTechnicians().map(technician => (
@@ -457,11 +467,10 @@ export default function OrdemServicoForm({
                   handleInputChange('data_previsao_conclusao', e.target.value)
                 }
                 disabled={readonly}
-                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${
-                  erros.data_previsao_conclusao
-                    ? 'border-red-500'
-                    : 'border-gray-300'
-                }`}
+                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.data_previsao_conclusao
+                  ? 'border-red-500'
+                  : 'border-gray-300'
+                  }`}
               />
               {erros.data_previsao_conclusao && (
                 <p className="mt-1 text-sm text-red-600">
@@ -501,8 +510,8 @@ export default function OrdemServicoForm({
                   <p className="font-medium text-blue-900">
                     {equipamentoSelecionado.problemas_identificados.length > 0
                       ? equipamentoSelecionado.problemas_identificados.join(
-                          ', '
-                        )
+                        ', '
+                      )
                       : 'Nenhum'}
                   </p>
                 </div>
@@ -545,9 +554,8 @@ export default function OrdemServicoForm({
                 disabled={readonly}
                 placeholder="Ex: F2LXHB0HJGH5"
                 maxLength={12}
-                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${
-                  erros.serial_number ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.serial_number ? 'border-red-500' : 'border-gray-300'
+                  }`}
               />
               {erros.serial_number && (
                 <p className="mt-1 text-sm text-red-600">
@@ -572,9 +580,8 @@ export default function OrdemServicoForm({
                 disabled={readonly}
                 placeholder="Ex: 123456789012345"
                 maxLength={15}
-                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${
-                  erros.imei ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.imei ? 'border-red-500' : 'border-gray-300'
+                  }`}
               />
               {erros.imei && (
                 <p className="mt-1 text-sm text-red-600">{erros.imei}</p>
@@ -598,9 +605,8 @@ export default function OrdemServicoForm({
               disabled={readonly}
               rows={3}
               placeholder="Descreva o estado físico do equipamento: riscos, danos, desgaste, etc..."
-              className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${
-                erros.estado_equipamento ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.estado_equipamento ? 'border-red-500' : 'border-gray-300'
+                }`}
             />
             {erros.estado_equipamento && (
               <p className="mt-1 text-sm text-red-600">
@@ -631,9 +637,8 @@ export default function OrdemServicoForm({
               disabled={readonly}
               rows={4}
               placeholder="Descreva detalhadamente o problema relatado pelo cliente..."
-              className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${
-                erros.problema_reportado ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.problema_reportado ? 'border-red-500' : 'border-gray-300'
+                }`}
             />
             {erros.problema_reportado && (
               <p className="mt-1 text-sm text-red-600">
@@ -654,9 +659,8 @@ export default function OrdemServicoForm({
               disabled={readonly}
               rows={4}
               placeholder="Descrição técnica detalhada do defeito identificado..."
-              className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${
-                erros.descricao_defeito ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.descricao_defeito ? 'border-red-500' : 'border-gray-300'
+                }`}
             />
             {erros.descricao_defeito && (
               <p className="mt-1 text-sm text-red-600">
@@ -729,9 +733,8 @@ export default function OrdemServicoForm({
                   handleInputChange('valor_servico', e.target.value)
                 }
                 disabled={readonly}
-                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${
-                  erros.valor_servico ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.valor_servico ? 'border-red-500' : 'border-gray-300'
+                  }`}
               />
               {erros.valor_servico && (
                 <p className="mt-1 text-sm text-red-600">
@@ -760,14 +763,7 @@ export default function OrdemServicoForm({
                 Valor Total
               </label>
               <div className="rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 font-semibold text-blue-900">
-                {formatarMoeda(
-                  parseFloat(formData.valor_servico || '0') +
-                    pecasUtilizadas.reduce(
-                      (total: number, peca: PecaUtilizada) =>
-                        total + peca.valor_total,
-                      0
-                    )
-                )}
+                {formatarMoeda(valorTotal)}
               </div>
             </div>
 

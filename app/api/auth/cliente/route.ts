@@ -5,7 +5,7 @@ import {
   hashPassword,
   verifyPassword,
 } from '@/lib/auth/client-auth';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,22 +18,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
-
     // Verificar se o cliente já existe
-    const { data: clienteExistente, error: errorBusca } = await supabase
-      .from('clientes_portal')
-      .select('*')
-      .eq('email', email)
-      .single();
-
-    if (errorBusca && errorBusca.code !== 'PGRST116') {
-      console.error('Erro ao buscar cliente:', errorBusca);
-      return NextResponse.json(
-        { error: 'Erro interno do servidor' },
-        { status: 500 }
-      );
-    }
+    const clienteExistente = await prisma.cliente.findFirst({
+      where: { email: email }
+    });
 
     let cliente;
     let credenciais;
@@ -43,50 +31,40 @@ export async function POST(request: NextRequest) {
       cliente = clienteExistente;
       credenciais = {
         login: cliente.login,
-        senha: cliente.senha_temporaria || 'Senha já foi alterada',
+        // Since we can't recover hash, logic suggests we might need to reset or just inform?
+        // Original code returned 'senha_temporaria' from DB.
+        // Prisma model now has senhaTemporaria field.
+        senha: cliente.senhaTemporaria || 'Senha já foi alterada',
       };
     } else {
       // Gerar novas credenciais
       credenciais = generateClientCredentials(email, nome);
       const senhaHash = await hashPassword(credenciais.senha);
 
-      // Criar novo cliente no portal
-      const { data: novoCliente, error: errorCriacao } = await supabase
-        .from('clientes_portal')
-        .insert({
+      // Criar novo cliente no portal (Prisma)
+      const novoCliente = await prisma.cliente.create({
+        data: {
           email,
           nome,
           telefone,
           login: credenciais.login,
-          senha_hash: senhaHash,
-          senha_temporaria: credenciais.senha,
-          primeiro_acesso: true,
-          ativo: true,
-          created_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (errorCriacao) {
-        console.error('Erro ao criar cliente:', errorCriacao);
-        return NextResponse.json(
-          { error: 'Erro ao criar cliente no portal' },
-          { status: 500 }
-        );
-      }
+          senhaHash: senhaHash,
+          senhaTemporaria: credenciais.senha,
+          primeiroAcesso: true,
+          isActive: true,
+        }
+      });
 
       cliente = novoCliente;
     }
 
     // Associar cliente à ordem de serviço
-    const { error: errorAssociacao } = await supabase
-      .from('ordens_servico')
-      .update({ cliente_portal_id: cliente.id })
-      .eq('id', ordem_servico_id);
-
-    if (errorAssociacao) {
-      console.error('Erro ao associar cliente à OS:', errorAssociacao);
-    }
+    // Logic Assumption: We unify clientePortalId with clienteId.
+    // So we update the OS's clienteId.
+    await prisma.ordemServico.update({
+      where: { id: ordem_servico_id },
+      data: { clienteId: cliente.id }
+    });
 
     return NextResponse.json({
       success: true,
@@ -100,7 +78,7 @@ export async function POST(request: NextRequest) {
         login: credenciais.login,
         senha: credenciais.senha,
       },
-      primeiro_acesso: cliente.primeiro_acesso,
+      primeiro_acesso: cliente.primeiroAcesso,
     });
   } catch (error) {
     console.error('Erro na API de autenticação do cliente:', error);
@@ -122,24 +100,28 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
-
     // Buscar cliente
-    const { data: cliente, error: errorBusca } = await supabase
-      .from('clientes_portal')
-      .select('*')
-      .eq('login', login)
-      .single();
+    const cliente = await prisma.cliente.findUnique({
+      where: { login: login }
+    });
 
-    if (errorBusca || !cliente) {
+    if (!cliente) {
       return NextResponse.json(
         { error: 'Cliente não encontrado' },
         { status: 404 }
       );
     }
 
+    // Need to handle null password (legacy/not set)
+    if (!cliente.senhaHash) {
+      return NextResponse.json(
+        { error: 'Senha não configurada.' },
+        { status: 400 }
+      );
+    }
+
     // Verificar senha atual
-    const senhaValida = await verifyPassword(senha_atual, cliente.senha_hash);
+    const senhaValida = await verifyPassword(senha_atual, cliente.senhaHash);
     if (!senhaValida) {
       return NextResponse.json(
         { error: 'Senha atual incorreta' },
@@ -149,23 +131,16 @@ export async function PUT(request: NextRequest) {
 
     // Atualizar senha
     const novaSenhaHash = await hashPassword(nova_senha);
-    const { error: errorUpdate } = await supabase
-      .from('clientes_portal')
-      .update({
-        senha_hash: novaSenhaHash,
-        senha_temporaria: null,
-        primeiro_acesso: false,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', cliente.id);
 
-    if (errorUpdate) {
-      console.error('Erro ao atualizar senha:', errorUpdate);
-      return NextResponse.json(
-        { error: 'Erro ao atualizar senha' },
-        { status: 500 }
-      );
-    }
+    await prisma.cliente.update({
+      where: { id: cliente.id },
+      data: {
+        senhaHash: novaSenhaHash,
+        senhaTemporaria: null,
+        primeiroAcesso: false,
+        updatedAt: new Date(),
+      }
+    });
 
     return NextResponse.json({
       success: true,

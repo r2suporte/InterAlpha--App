@@ -1,26 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { verifyClienteToken } from '@/lib/auth/client-middleware';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
-    const cliente = await verifyClienteToken(request);
+    const session = await verifyClienteToken(request);
 
-    if (!cliente) {
+    if (!session) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    const supabase = await createClient();
-
     // Buscar dados atualizados do cliente
-    const { data: clienteData, error: errorCliente } = await supabase
-      .from('clientes_portal')
-      .select('*')
-      .eq('id', cliente.clienteId)
-      .single();
+    /* props { id: string; nome: string; email: string | null; email2: string | null; email3: string | null; telefone: string | null; endereco: string | null; cidade: string | null; estado: string | null; ... 12 more ...; createdBy: string | null; } */
+    const clienteData = await prisma.cliente.findUnique({
+      where: { id: session.clienteId },
+    });
 
-    if (errorCliente || !clienteData) {
+    if (!clienteData) {
       return NextResponse.json(
         { error: 'Cliente não encontrado' },
         { status: 404 }
@@ -28,22 +25,20 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar ordens de serviço do cliente
-    const { data: ordensServico, error: errorOS } = await supabase
-      .from('ordens_servico')
-      .select(
-        `
-        id,
-        numero_os,
-        status,
-        descricao,
-        valor,
-        data_inicio,
-        data_fim,
-        created_at
-      `
-      )
-      .eq('cliente_portal_id', cliente.clienteId)
-      .order('created_at', { ascending: false });
+    const ordensServico = await prisma.ordemServico.findMany({
+      where: { clienteId: clienteData.id },
+      select: {
+        id: true,
+        numeroOs: true,
+        status: true,
+        descricao: true,
+        valorTotal: true,
+        dataInicio: true,
+        dataConclusao: true,
+        createdAt: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
 
     return NextResponse.json({
       cliente: {
@@ -51,7 +46,7 @@ export async function GET(request: NextRequest) {
         nome: clienteData.nome,
         email: clienteData.email,
         login: clienteData.login,
-        primeiro_acesso: clienteData.primeiro_acesso,
+        primeiro_acesso: clienteData.primeiroAcesso,
       },
       ordens_servico: ordensServico || [],
     });

@@ -30,8 +30,10 @@ export interface Cliente {
     email: string;
     telefone: string;
     endereco: string;
-    numero_cliente: string;
-    created_at: string;
+    numeroCliente?: string;
+    numero_cliente?: string; // Legacy support
+    createdAt?: Date | string;
+    created_at?: string; // Legacy support
 }
 
 export interface OrdemServicoCriada {

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 
 interface WhatsAppConfig {
   phoneNumberId: string;
@@ -213,7 +213,7 @@ export default class WhatsAppService {
 
     // Se não começar com código do país, adiciona o código do Brasil (55)
     if (!cleanPhone.startsWith('55') && cleanPhone.length === 11) {
-      cleanPhone = `55${  cleanPhone}`;
+      cleanPhone = `55${cleanPhone}`;
     }
 
     // Se começar com 0, remove o 0
@@ -267,21 +267,17 @@ export default class WhatsAppService {
     }
   ): Promise<void> {
     try {
-      const supabase = await createClient();
-
-      const { error } = await supabase.from('comunicacoes_cliente').insert({
-        ordem_servico_id: ordemServicoId,
-        tipo: dados.tipo,
-        mensagem: dados.mensagem,
-        status: dados.status,
-        whatsapp_message_id: dados.whatsapp_message_id,
-        erro_detalhes: dados.erro_detalhes,
-        tentativas: 1,
+      await prisma.comunicacaoCliente.create({
+        data: {
+          ordemServicoId: ordemServicoId,
+          tipo: dados.tipo,
+          conteudo: dados.mensagem,
+          destinatario: dados.destinatario,
+          status: dados.status,
+          messageId: dados.whatsapp_message_id,
+          erro: dados.erro_detalhes,
+        },
       });
-
-      if (error) {
-        console.error('Erro ao registrar comunicação WhatsApp:', error);
-      }
     } catch (error) {
       console.error('Erro ao registrar comunicação WhatsApp:', error);
     }
@@ -316,13 +312,13 @@ export default class WhatsAppService {
           success: true,
           message: 'Conexão com WhatsApp Business API estabelecida com sucesso',
         };
-      } 
-        const errorData = await response.json();
-        return {
-          success: false,
-          message: `Erro na API: ${errorData.error?.message || response.statusText}`,
-        };
-      
+      }
+      const errorData = await response.json();
+      return {
+        success: false,
+        message: `Erro na API: ${errorData.error?.message || response.statusText}`,
+      };
+
     } catch (error) {
       return {
         success: false,

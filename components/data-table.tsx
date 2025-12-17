@@ -341,6 +341,8 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   );
 }
 
+const MemoizedDraggableRow = React.memo(DraggableRow);
+
 export function DataTable({
   data: initialData,
 }: {
@@ -395,16 +397,16 @@ export function DataTable({
     getFacetedUniqueValues: getFacetedUniqueValues(),
   });
 
-  function handleDragEnd(event: DragEndEvent) {
+  const handleDragEnd = React.useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     if (active && over && active.id !== over.id) {
       setData(data => {
-        const oldIndex = dataIds.indexOf(active.id);
-        const newIndex = dataIds.indexOf(over.id);
+        const oldIndex = data.findIndex(item => item.id === active.id);
+        const newIndex = data.findIndex(item => item.id === over.id);
         return arrayMove(data, oldIndex, newIndex);
       });
     }
-  }
+  }, []);
 
   function handleRemoveSelected() {
     const selectedRows = table.getFilteredSelectedRowModel().rows;
@@ -536,9 +538,9 @@ export function DataTable({
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                         </TableHead>
                       );
                     })}
@@ -552,7 +554,7 @@ export function DataTable({
                     strategy={verticalListSortingStrategy}
                   >
                     {table.getRowModel().rows.map(row => (
-                      <DraggableRow key={row.id} row={row} />
+                      <MemoizedDraggableRow key={row.id} row={row} />
                     ))}
                   </SortableContext>
                 ) : (

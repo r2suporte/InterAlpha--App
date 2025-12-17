@@ -1,6 +1,7 @@
 /**
  * Hook para Verificação de Permissões no Frontend
  * Fornece funcionalidades para verificar permissões baseadas em roles
+ * Migrado para usar Clerk Auth
  */
 
 'use client';
@@ -13,24 +14,13 @@ import {
   useState,
 } from 'react';
 
-import { createBrowserClient } from '@supabase/ssr';
-import type { User } from '@supabase/supabase-js';
+import { useUser } from '@clerk/nextjs';
 
 import {
   PermissionManager,
   ROLE_HIERARCHY,
   UserRole,
 } from '@/lib/auth/permissions';
-
-/**
- * Hook para Verificação de Permissões no Frontend
- * Fornece funcionalidades para verificar permissões baseadas em roles
- */
-
-/**
- * Hook para Verificação de Permissões no Frontend
- * Fornece funcionalidades para verificar permissões baseadas em roles
- */
 
 // Tipos para o contexto de permissões
 export interface AuthenticatedUser {
@@ -65,130 +55,71 @@ export function PermissionsProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const { user: clerkUser, isLoaded } = useUser();
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Criar cliente Supabase
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // Função para sincronizar dados do usuário do Clerk
+  const syncUserData = useCallback(() => {
+    try {
+      if (!isLoaded) return;
 
-  // Função para buscar dados do usuário
-  const fetchUserData = useCallback(
-    async (authUser: User) => {
-      try {
-        setLoading(true);
-        setError(null);
+      if (!clerkUser) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
 
-        // Buscar dados do usuário no banco
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('id, email, role')
-          .eq('id', authUser.id)
-          .single();
+      setLoading(true);
+      setError(null);
 
-        if (userError) {
-          throw new Error(
-            `Erro ao buscar dados do usuário: ${userError.message}`
-          );
-        }
+      // Obter role dos metadados públicos do Clerk
+      // O middleware clerk-sync.ts garante que isso esteja lá, ou padrão 'user'
+      const role = (clerkUser.publicMetadata?.role as string) || 'user';
+      const email = clerkUser.primaryEmailAddress?.emailAddress || '';
 
-        if (!userData) {
-          throw new Error('Dados do usuário não encontrados');
-        }
+      // Validar role
+      if (!PermissionManager.isValidRole(role)) {
+        // Se a role for inválida, assume 'user' como fallback seguro, mas loga erro
+        console.warn(`Role inválida encontrada: ${role}. Usando 'user'.`);
+      }
 
-        // Validar role
-        if (!PermissionManager.isValidRole(userData.role)) {
-          throw new Error(`Role inválida: ${userData.role}`);
-        }
+      const validatedRole = PermissionManager.isValidRole(role)
+        ? (role as UserRole)
+        : 'user';
 
-        const authenticatedUser: AuthenticatedUser = {
-          id: userData.id,
-          email: userData.email,
-          role: userData.role as UserRole,
-          roleLevel: PermissionManager.getRoleLevel(userData.role as UserRole),
-          roleDescription: PermissionManager.getRoleDescription(
-            userData.role as UserRole
-          ),
-        };
+      const authenticatedUser: AuthenticatedUser = {
+        id: clerkUser.id,
+        email: email,
+        role: validatedRole,
+        roleLevel: PermissionManager.getRoleLevel(validatedRole),
+        roleDescription: PermissionManager.getRoleDescription(validatedRole),
+      };
 
-        setUser(authenticatedUser);
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Erro desconhecido';
-        setError(errorMessage);
-        console.error('Erro ao buscar dados do usuário:', err);
-      } finally {
+      setUser(authenticatedUser);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Erro desconhecido ao processar usuário';
+      setError(errorMessage);
+      console.error('Erro no PermissionsProvider:', err);
+    } finally {
+      if (isLoaded) {
         setLoading(false);
       }
-    },
-    [supabase]
-  );
-
-  // Função para limpar dados do usuário
-  const clearUser = useCallback(() => {
-    setUser(null);
-    setError(null);
-    setLoading(false);
-  }, []);
-
-  // Função para atualizar dados do usuário
-  const refreshUser = useCallback(async () => {
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.user) {
-        await fetchUserData(session.user);
-      } else {
-        clearUser();
-      }
-    } catch (err) {
-      console.error('Erro ao atualizar dados do usuário:', err);
-      setError('Erro ao atualizar dados do usuário');
     }
-  }, [supabase, fetchUserData, clearUser]);
+  }, [clerkUser, isLoaded]);
 
-  // Efeito para monitorar mudanças de autenticação
+  // Sincronizar quando o hook do Clerk atualizar
   useEffect(() => {
-    // Verificar sessão inicial
-    const getInitialSession = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session?.user) {
-          await fetchUserData(session.user);
-        } else {
-          clearUser();
-        }
-      } catch (err) {
-        console.error('Erro ao obter sessão inicial:', err);
-        clearUser();
-      }
-    };
+    syncUserData();
+  }, [syncUserData]);
 
-    getInitialSession();
-
-    // Escutar mudanças de autenticação
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        await fetchUserData(session.user);
-      } else if (event === 'SIGNED_OUT') {
-        clearUser();
-      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        await fetchUserData(session.user);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase, fetchUserData, clearUser]);
+  // Função para forçar atualização (re-sync com Clerk se necessário)
+  const refreshUser = useCallback(async () => {
+    await clerkUser?.reload();
+    syncUserData();
+  }, [clerkUser, syncUserData]);
 
   // Funções de verificação de permissões
   const hasPermission = useCallback(
@@ -432,7 +363,7 @@ export function RoleDebugInfo() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 max-w-sm rounded-lg bg-gray-800 p-4 text-xs text-white">
+    <div className="fixed bottom-4 right-4 max-w-sm rounded-lg bg-gray-800 p-4 text-xs text-white z-50 opacity-75 hover:opacity-100 transition-opacity">
       <h4 className="mb-2 font-bold">Debug - Permissões</h4>
       <p>
         <strong>Role:</strong> {debug.user?.role || 'N/A'}

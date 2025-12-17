@@ -19,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { createClient } from '@/lib/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Metricas {
   totalClientes: number;
@@ -46,61 +46,25 @@ export default function MetricasCard({ className }: MetricasCardProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
-
   const fetchMetricas = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Buscar total de clientes
-      const { count: totalClientes, error: clientesError } = await supabase
-        .from('clientes')
-        .select('*', { count: 'exact', head: true });
+      const response = await fetch('/api/dashboard/stats');
+      if (!response.ok) {
+        throw new Error('Falha ao carregar estatísticas');
+      }
 
-      if (clientesError) throw clientesError;
-
-      // Buscar total de ordens de serviço
-      const { count: totalOrdens, error: ordensError } = await supabase
-        .from('ordens_servico')
-        .select('*', { count: 'exact', head: true });
-
-      if (ordensError) throw ordensError;
-
-      // Buscar ordens abertas
-      const { count: ordensAbertas, error: abertasError } = await supabase
-        .from('ordens_servico')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'aberta');
-
-      if (abertasError) throw abertasError;
-
-      // Buscar faturamento total (simulado - ajustar quando a coluna valor existir)
-      const faturamentoTotal = (totalOrdens || 0) * 1500; // Valor médio simulado
-
-      // Buscar faturamento do mês atual
-      const inicioMes = new Date();
-      inicioMes.setDate(1);
-      inicioMes.setHours(0, 0, 0, 0);
-
-      const { count: ordensDoMes, error: mesError } = await supabase
-        .from('ordens_servico')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', inicioMes.toISOString());
-
-      if (mesError) throw mesError;
-
-      const faturamentoMes = (ordensDoMes || 0) * 1500;
-      const ticketMedio =
-        totalOrdens && totalOrdens > 0 ? faturamentoTotal / totalOrdens : 0;
+      const data = await response.json();
 
       setMetricas({
-        totalClientes: totalClientes || 0,
-        totalOrdens: totalOrdens || 0,
-        ordensAbertas: ordensAbertas || 0,
-        faturamentoTotal,
-        faturamentoMes,
-        ticketMedio,
+        totalClientes: data.totalClientes || 0,
+        totalOrdens: data.totalOrdens || 0,
+        ordensAbertas: data.ordensAbertas || 0,
+        faturamentoTotal: data.faturamentoTotal || 0,
+        faturamentoMes: data.faturamentoMes || 0,
+        ticketMedio: data.ticketMedio || 0,
       });
     } catch (error) {
       console.error('Erro ao buscar métricas:', error);

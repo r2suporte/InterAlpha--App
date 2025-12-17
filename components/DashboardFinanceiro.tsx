@@ -14,6 +14,7 @@ import {
   MetricasFinanceiras,
   STATUS_FINANCEIRO_LABELS,
   StatusFinanceiro,
+  formatarMoeda,
 } from '../types/financeiro';
 
 interface DashboardFinanceiroProps {
@@ -67,6 +68,21 @@ export default function DashboardFinanceiro({
   });
   const [loading, setLoading] = useState(false);
 
+  const handlePeriodoChange = React.useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value as any;
+    setFiltros(prev => ({ ...prev, periodo: val }));
+  }, []);
+
+  const handleStatusChange = React.useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setFiltros(prev => ({
+      ...prev,
+      status: val
+        ? (val as StatusFinanceiro)
+        : undefined,
+    }));
+  }, []);
+
   const carregarMetricas = async () => {
     setLoading(true);
     try {
@@ -89,12 +105,7 @@ export default function DashboardFinanceiro({
     carregarMetricas();
   }, [filtros]);
 
-  const formatarMoeda = (valor: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(valor);
-  };
+  /* Removed redundant formatarMoeda */
 
   const formatarPorcentagem = (valor: number) => {
     return `${valor.toFixed(1)}%`;
@@ -117,9 +128,7 @@ export default function DashboardFinanceiro({
           {/* Filtro de período */}
           <select
             value={filtros.periodo}
-            onChange={e =>
-              setFiltros(prev => ({ ...prev, periodo: e.target.value as any }))
-            }
+            onChange={handlePeriodoChange}
             className="rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
           >
             <option value="hoje">Hoje</option>
@@ -132,14 +141,7 @@ export default function DashboardFinanceiro({
           {/* Filtro de status */}
           <select
             value={filtros.status || ''}
-            onChange={e =>
-              setFiltros(prev => ({
-                ...prev,
-                status: e.target.value
-                  ? (e.target.value as StatusFinanceiro)
-                  : undefined,
-              }))
-            }
+            onChange={handleStatusChange}
             className="rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Todos os Status</option>

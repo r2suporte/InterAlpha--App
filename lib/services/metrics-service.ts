@@ -77,23 +77,22 @@ export class MetricsService {
     // Adicionar à memória para análise rápida
     this.metrics.push(metric);
 
-    // TODO: Add communication_metrics table to Prisma schema
     // Persistir no banco de dados
-    // try {
-    //   await prisma.communicationMetrics.create({
-    //     data: {
-    //       service: metric.service,
-    //       operation: metric.operation,
-    //       durationMs: metric.duration,
-    //       success: metric.success,
-    //       errorMessage: metric.error,
-    //       metadata: metric.metadata,
-    //       createdAt: metric.timestamp,
-    //     },
-    //   });
-    // } catch (error) {
-    //   console.error('Erro ao salvar métrica:', error);
-    // }
+    try {
+      await prisma.communicationMetric.create({
+        data: {
+          service: metric.service,
+          operation: metric.operation,
+          durationMs: metric.duration,
+          success: metric.success,
+          errorMessage: metric.error,
+          metadata: metric.metadata,
+          createdAt: metric.timestamp,
+        },
+      });
+    } catch (error) {
+      console.error('Erro ao salvar métrica:', error);
+    }
 
     console.log('📊 Metric recorded:', { service: metric.service, operation: metric.operation, duration: metric.duration, success: metric.success });
 

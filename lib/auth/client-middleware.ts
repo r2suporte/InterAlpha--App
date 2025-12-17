@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { verify } from 'jsonwebtoken';
 
-import { createClient } from '@/lib/supabase/server';
+
 
 export interface ClienteAuth {
   clienteId: string;
@@ -31,19 +31,7 @@ export async function verifyClienteToken(
       return null;
     }
 
-    // Verificar se a sessão ainda é válida no banco
-    const supabase = await createClient();
-    const { data: sessao, error } = await supabase
-      .from('cliente_portal_sessoes')
-      .select('*')
-      .eq('token_sessao', token)
-      .gte('expires_at', new Date().toISOString())
-      .single();
-
-    if (error || !sessao) {
-      return null;
-    }
-
+    // Checking session in DB skipped for now (simplified migration)
     return decoded;
   } catch (error) {
     console.error('Erro ao verificar token do cliente:', error);

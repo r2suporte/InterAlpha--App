@@ -147,6 +147,9 @@ export class CommunicationService {
         });
 
         if (result.success) {
+          // Log sucesso
+          await this.logCommunication(cliente, primaryChannel, message, 'enviado', result.messageId);
+
           return {
             ...result,
             channel: primaryChannel,
@@ -175,6 +178,8 @@ export class CommunicationService {
             });
 
             if (result.success) {
+              // Log sucesso fallback
+              await this.logCommunication(cliente, channel, message, 'enviado', result.messageId);
               return {
                 ...result,
                 channel,
@@ -186,6 +191,9 @@ export class CommunicationService {
         }
 
         // Se todos os canais falharam
+        // Log falha final (usando canal primário como referência)
+        await this.logCommunication(cliente, primaryChannel, message, 'erro', undefined, 'Falha em todos os canais');
+
         return {
           success: false,
           channel: primaryChannel,
@@ -202,6 +210,42 @@ export class CommunicationService {
       }
     );
   }
+
+  // Persistir log de comunicação no banco
+  private async logCommunication(
+    cliente: Cliente,
+    channel: string,
+    content: string,
+    status: 'enviado' | 'erro' | 'pendente',
+    messageId?: string,
+    error?: string
+  ): Promise<void> {
+    try {
+      await prisma.comunicacaoCliente.create({
+        data: {
+          // clientePortalId should be linked if we had it, but Cliente interface has ID. 
+          // Assuming cliente.id refers to 'Usuario' or 'Cliente' table ID.
+          // Schema has clientePortalId (Uuid) linked to nothing? Or maybe loose link?
+          // Schema `comunicacoes_cliente` has `cliente_portal_id` (optional).
+          // And `cliente_telefone`.
+          // We'll trust cliente.id is a UUID.
+          clientePortalId: cliente.id,
+          clienteTelefone: cliente.celular || cliente.telefone,
+          tipo: channel,
+          conteudo: content,
+          destinatario: cliente.email || cliente.celular || cliente.telefone || 'unknown',
+          status: status,
+          messageId: messageId,
+          erro: error,
+          dataEnvio: new Date(),
+          enviadoEm: status === 'enviado' ? new Date() : null,
+        }
+      });
+    } catch (e) {
+      console.error('Erro ao logar comunicação:', e);
+    }
+  }
+
 
   // 🔄 Obter Canais de Fallback
   private getFallbackChannels(
@@ -351,12 +395,36 @@ export class CommunicationService {
           selectedChannel
         );
 
-        return await this.sendCommunication(
+        const result = await this.sendCommunication(
           cliente,
           message,
           subject,
           communicationOptions
         );
+
+        // Se sucesso, vincular log à ordem de serviço
+        if (result.success && result.messageId) {
+          // Atualizar log para incluir ordemServicoId
+          // Apenas um best-effort, não crítico
+          try {
+            // Como não temos o ID do log criado em sendCommunication (ele é void), 
+            // teríamos que refatorar logCommunication para retornar ID.
+            // Mas podemos fazer um log adicional ou atualizar o ultimo enviada.
+            // Simplificação: vamos assumir que logCommunication pode ser chamado AQUI ao invés de dentro de sendCommunication?
+            // Não, sendCommunication é genérico.
+            // Melhor: Atualizar o último log deste cliente/msgId.
+            if (result.messageId) {
+              await prisma.comunicacaoCliente.updateMany({
+                where: { messageId: result.messageId },
+                data: { ordemServicoId: ordemServico.id }
+              });
+            }
+          } catch (e) {
+            console.error('Erro ao vincular OS à comunicação:', e);
+          }
+        }
+
+        return result;
       },
       {
         ordemServicoId: ordemServico.id,
@@ -563,35 +631,44 @@ export class CommunicationService {
     lastWeek: number;
   }> {
     try {
-      let query = this.supabase
-        .from('comunicacoes_cliente')
-        .select('tipo, status, data_envio');
+      let where: any = {};
 
       if (clienteId) {
-        // Buscar telefone/email do cliente para filtrar
-        const { data: cliente } = await this.supabase
-          .from('clientes')
-          .select('telefone, celular, email')
-          .eq('id', clienteId)
-          .single();
+        // Buscar contatos do cliente se necessário, ou filtrar por clienteId direto
+        // Supondo que clientePortalId seja a chave para clienteId
+        where = {
+          OR: [
+            { clientePortalId: clienteId },
+            // Fallback para buscar por contatos se o ID não bater (legado?)
+            // Mas Prisma OR queries complexas podem ser pesadas. Vamos confiar no ID por hora.
+            // Para ser compatível com lógica anterior de telefone/email:
+          ]
+        };
+
+        // Se quisermos manter a logica antiga de buscar telefones do cliente:
+        const cliente = await prisma.cliente.findUnique({
+          where: { id: clienteId },
+          select: { telefone: true, email: true }
+        });
 
         if (cliente) {
-          const contacts = [
-            cliente.telefone,
-            cliente.celular,
-            cliente.email,
-          ].filter(Boolean);
-          query = query.in('cliente_telefone', contacts);
+          const contacts = [cliente.telefone, cliente.email].filter(Boolean);
+          if (contacts.length > 0) {
+            where = {
+              OR: [
+                { clientePortalId: clienteId },
+                { clienteTelefone: { in: contacts as string[] } },
+                { destinatario: { in: contacts as string[] } }
+              ]
+            };
+          }
         }
       }
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      type CommRow = { tipo: string; status: string; data_envio?: string | null };
-
-      const rows: CommRow[] = (data || []) as CommRow[];
+      const rows = await prisma.comunicacaoCliente.findMany({
+        where: where,
+        select: { tipo: true, status: true, dataEnvio: true }
+      });
 
       const total = rows.length;
 
@@ -606,9 +683,8 @@ export class CommunicationService {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       const lastWeek = rows.filter((item) => {
-        if (!item.data_envio) return false;
-        const date = new Date(item.data_envio);
-        return date >= weekAgo;
+        if (!item.dataEnvio) return false;
+        return item.dataEnvio >= weekAgo;
       }).length;
 
       return {

@@ -35,6 +35,7 @@ model User {
 model Cliente {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   nome        String   @db.VarChar(255)
+  numeroCliente String?  @unique @map("numero_cliente") @db.VarChar(50)
   email       String?  @db.VarChar(255)
   email2      String?  @db.VarChar(255)
   email3      String?  @db.VarChar(255)
@@ -50,6 +51,15 @@ model Cliente {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
   createdBy   String?  @map("created_by") @db.Uuid
+  
+  // Auth Fields for Client Portal
+  login           String?   @unique @db.VarChar(50)
+  senhaHash       String?   @map("senha_hash") @db.VarChar(255)
+  senhaTemporaria String?   @map("senha_temporaria") @db.VarChar(255)
+  ultimoAcesso    DateTime? @map("ultimo_acesso") @db.Timestamptz
+  primeiroAcesso  Boolean?  @default(true) @map("primeiro_acesso")
+  
+
 
   // Relacionamentos
   ordensServico OrdemServico[]
@@ -80,7 +90,17 @@ model OrdemServico {
   dataAbertura  DateTime  @default(now()) @map("data_abertura") @db.Timestamptz
   dataInicio    DateTime? @map("data_inicio") @db.Timestamptz
   dataConclusao DateTime? @map("data_conclusao") @db.Timestamptz
-  observacoes   String?   @db.Text
+  dataPrevisaoConclusao DateTime? @map("data_previsao_conclusao") @db.Timestamptz
+
+  // Campos adicionais de diagnóstico
+  diagnosticoTecnico String?   @map("diagnostico_tecnico") @db.Text
+  laudoTecnico       String?   @map("laudo_tecnico") @db.Text
+
+  // Observações específicas
+  observacoesCliente String?   @map("observacoes_cliente") @db.Text
+  observacoesTecnico String?   @map("observacoes_tecnico") @db.Text
+  observacoes   String?   @db.Text // Mantendo por compatibilidade ou uso geral
+
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz
   createdBy     String?   @map("created_by") @db.Uuid
@@ -93,6 +113,7 @@ model OrdemServico {
   statusHistorico StatusHistorico[]
   comunicacoes    ComunicacaoCliente[]
   pecas           PecaUtilizada[]
+  aprovacoes      ClienteAprovacao[]
 
   @@map("ordens_servico")
 }
@@ -271,6 +292,24 @@ model AlertNotification {
 
   @@index([alertId])
   @@map("alert_notifications")
+}
+
+// ✅ Modelo de Aprovações do Cliente (Migrado do Supabase)
+model ClienteAprovacao {
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ordemServicoId    String       @map("ordem_servico_id") @db.Uuid
+  tipo              String       @db.VarChar(50) // 'servico', 'orcamento'
+  descricao         String       @db.Text
+  status            String       @db.VarChar(20) // 'aprovado', 'rejeitado', 'pendente'
+  observacoesCliente String?     @map("observacoes_cliente") @db.Text
+  aprovadoEm        DateTime?    @map("aprovado_em") @db.Timestamptz
+  expiresAt         DateTime?    @map("expires_at") @db.Timestamptz
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime     @default(now()) @map("updated_at") @db.Timestamptz
+
+  ordemServico      OrdemServico @relation(fields: [ordemServicoId], references: [id], onDelete: Cascade)
+
+  @@map("cliente_aprovacoes")
 }
 
 // 📊 Extensões do Supabase (Opcional)

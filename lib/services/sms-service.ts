@@ -266,19 +266,18 @@ export class SMSService {
     message_id?: string;
   }): Promise<void> {
     try {
-      // TODO: Add comunicacoes_cliente table to Prisma schema
-      // await prisma.comunicacoesCliente.create({
-      //   data: {
-      //     clienteTelefone: data.cliente_telefone,
-      //     tipo: data.tipo,
-      //     conteudo: data.conteudo,
-      //     status: data.status,
-      //     provider: data.provider,
-      //     messageId: data.message_id,
-      //     dataEnvio: new Date(),
-      //   },
-      // });
-      console.log('📱 SMS log:', data);
+      await prisma.comunicacaoCliente.create({
+        data: {
+          clienteTelefone: data.cliente_telefone,
+          destinatario: data.cliente_telefone, // Required field
+          tipo: data.tipo,
+          conteudo: data.conteudo,
+          status: data.status,
+          provider: data.provider,
+          messageId: data.message_id,
+        },
+      });
+      // console.log('📱 SMS log:', data);
     } catch (error) {
       console.error('❌ Erro ao salvar log de comunicação:', error);
     }

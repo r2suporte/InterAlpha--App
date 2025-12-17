@@ -3,10 +3,10 @@ import { buscarCNPJService } from '@/lib/validators';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { cnpj: string } }
+    { params }: { params: Promise<{ cnpj: string }> }
 ) {
     try {
-        const { cnpj } = params;
+        const { cnpj } = await params;
 
         if (!cnpj) {
             return NextResponse.json(
