@@ -1,0 +1,102 @@
+import {
+    Battery,
+    Camera,
+    Cpu,
+    Fan,
+    HardDrive,
+    Keyboard,
+    Laptop,
+    Monitor,
+    MousePointer,
+    Package,
+    Smartphone,
+    Speaker,
+    Tablet,
+    User,
+    Watch,
+    Wrench,
+    Zap,
+} from 'lucide-react';
+
+export const APPLE_DEVICES = {
+    'MacBook Pro': [
+        'MacBook Pro 13" M2 (2022)',
+        'MacBook Pro 14" M2 Pro/Max (2023)',
+        'MacBook Pro 16" M2 Pro/Max (2023)',
+        'MacBook Pro 13" M1 (2020)',
+        'MacBook Pro 14" M1 Pro/Max (2021)',
+        'MacBook Pro 16" M1 Pro/Max (2021)',
+        'MacBook Pro 13" Intel (2020)',
+        'MacBook Pro 16" Intel (2019-2020)',
+    ],
+    'MacBook Air': [
+        'MacBook Air 13" M2 (2022)',
+        'MacBook Air 15" M2 (2023)',
+        'MacBook Air 13" M1 (2020)',
+        'MacBook Air 13" Intel (2020)',
+    ],
+    'Mac Mini': [
+        'Mac Mini M2 (2023)',
+        'Mac Mini M2 Pro (2023)',
+        'Mac Mini M1 (2020)',
+        'Mac Mini Intel (2018)',
+    ],
+    'Mac Studio': [
+        'Mac Studio M2 Max (2023)',
+        'Mac Studio M2 Ultra (2023)',
+        'Mac Studio M1 Max (2022)',
+        'Mac Studio M1 Ultra (2022)',
+    ],
+    'Mac Pro': ['Mac Pro M2 Ultra (2023)', 'Mac Pro Intel (2019)'],
+    iPad: [
+        'iPad Pro 12.9" M2 (2022)',
+        'iPad Pro 11" M2 (2022)',
+        'iPad Pro 12.9" M1 (2021)',
+        'iPad Pro 11" M1 (2021)',
+        'iPad Air M1 (2022)',
+        'iPad Air 4ª geração (2020)',
+        'iPad 10ª geração (2022)',
+        'iPad 9ª geração (2021)',
+        'iPad Mini 6ª geração (2021)',
+    ],
+};
+
+export const COMMON_PARTS = [
+    { name: 'Tela LCD/OLED', price: 450.0, icon: Monitor },
+    { name: 'Bateria', price: 180.0, icon: Battery },
+    { name: 'Teclado', price: 320.0, icon: Keyboard },
+    { name: 'Trackpad', price: 150.0, icon: MousePointer },
+    { name: 'Placa Lógica', price: 800.0, icon: Cpu },
+    { name: 'SSD 256GB', price: 280.0, icon: HardDrive },
+    { name: 'SSD 512GB', price: 450.0, icon: HardDrive },
+    { name: 'SSD 1TB', price: 680.0, icon: HardDrive },
+    { name: 'Memória RAM 8GB', price: 220.0, icon: Cpu },
+    { name: 'Memória RAM 16GB', price: 380.0, icon: Cpu },
+    { name: 'Cabo Flex', price: 45.0, icon: Zap },
+    { name: 'Alto-falante', price: 80.0, icon: Speaker },
+    { name: 'Webcam', price: 120.0, icon: Camera },
+    { name: 'Conector de Carregamento', price: 90.0, icon: Zap },
+    { name: 'Ventilador/Cooler', price: 110.0, icon: Fan },
+];
+
+export const FORM_STEPS = [
+    {
+        id: 1,
+        title: 'Cliente',
+        icon: User,
+        description: 'Informações do cliente',
+    },
+    {
+        id: 2,
+        title: 'Dispositivo',
+        icon: Smartphone,
+        description: 'Dados do equipamento',
+    },
+    { id: 3, title: 'Diagnóstico', icon: Wrench, description: 'Análise técnica' },
+    {
+        id: 4,
+        title: 'Peças',
+        icon: Package,
+        description: 'Componentes utilizados',
+    },
+];

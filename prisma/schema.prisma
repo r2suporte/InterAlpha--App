@@ -63,11 +63,17 @@ model OrdemServico {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   numeroOs      String    @unique @map("numero_os") @db.VarChar(20)
   clienteId     String    @map("cliente_id") @db.Uuid
-  titulo        String    @db.VarChar(255)
-  descricao     String?   @db.Text
-  status        String    @default("aberta") @db.VarChar(20) // aberta, em_andamento, aguardando_peca, concluida, cancelada
-  prioridade    String    @default("media") @db.VarChar(10) // baixa, media, alta, urgente
-  tecnicoId     String?   @map("tecnico_id") @db.Uuid
+  titulo            String    @db.VarChar(255)
+  descricao         String?   @db.Text
+  tipoDispositivo   String?   @map("tipo_dispositivo") @db.VarChar(100)
+  modeloDispositivo String?   @map("modelo_dispositivo") @db.VarChar(255)
+  numeroSerie       String?   @map("numero_serie") @db.VarChar(100)
+  defeitoRelatado   String?   @map("defeito_relatado") @db.VarChar(255)
+  danosAparentes    String?   @map("danos_aparentes") @db.VarChar(255)
+  solucao           String?   @db.Text
+  status            String    @default("aberta") @db.VarChar(20) // aberta, em_andamento, aguardando_peca, concluida, cancelada
+  prioridade        String    @default("media") @db.VarChar(10) // baixa, media, alta, urgente
+  tecnicoId         String?   @map("tecnico_id") @db.Uuid
   valorServico  Decimal?  @default(0) @map("valor_servico") @db.Decimal(10, 2)
   valorPecas    Decimal?  @default(0) @map("valor_pecas") @db.Decimal(10, 2)
   valorTotal    Decimal?  @map("valor_total") @db.Decimal(10, 2)
@@ -86,8 +92,25 @@ model OrdemServico {
   pagamentos      Pagamento[]
   statusHistorico StatusHistorico[]
   comunicacoes    ComunicacaoCliente[]
+  pecas           PecaUtilizada[]
 
   @@map("ordens_servico")
+}
+
+// 🧩 Modelo de Peças Utilizadas
+model PecaUtilizada {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ordemServicoId String       @map("ordem_servico_id") @db.Uuid
+  nome           String       @db.VarChar(255)
+  quantidade     Int
+  precoUnitario  Decimal      @map("preco_unitario") @db.Decimal(10, 2)
+  precoTotal     Decimal      @map("preco_total") @db.Decimal(10, 2)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relacionamentos
+  ordemServico   OrdemServico @relation(fields: [ordemServicoId], references: [id], onDelete: Cascade)
+
+  @@map("pecas_utilizadas")
 }
 
 // 💳 Modelo de Pagamento

@@ -13,7 +13,8 @@ import {
 
 import { formatarMoeda } from '../types/financeiro';
 import { PecaUtilizada } from '../types/ordens-servico';
-import { Peca, calcularMargemLucro } from '../types/pecas';
+import { calcularMargemLucro } from '@/lib/utils/pricing';
+import { Peca } from '../types/pecas';
 
 interface PecasOrdemServicoProps {
   ordemServicoId: string;
@@ -115,9 +116,9 @@ export default function PecasOrdemServico({
       );
       const margem = pecaCompleta
         ? calcularMargemLucro(
-            pecaCompleta.preco_custo,
-            pecaUtilizada.valor_unitario
-          )
+          pecaCompleta.preco_custo,
+          pecaUtilizada.valor_unitario
+        )
         : 0;
 
       return {

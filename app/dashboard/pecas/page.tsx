@@ -59,8 +59,8 @@ import {
   Peca,
   STATUS_PECA_LABELS,
   StatusPeca,
-  calcularMargemLucro,
 } from '@/types/pecas';
+import { calcularMargemLucro } from '@/lib/utils/pricing';
 
 // 🎯 Determinar status badge baseado no status da peça
 function getStatusBadge(status: StatusPeca): 'success' | 'warning' | 'error' | 'pending' | 'info' {
