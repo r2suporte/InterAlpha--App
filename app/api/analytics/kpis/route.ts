@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 
 // 📊 Interfaces
 interface KPIMetric {
@@ -35,11 +34,7 @@ interface KPIData {
   }>;
 }
 
-// 🔧 Configuração do Supabase
-const _supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+
 
 // 📈 Função para calcular tendência
 function calculateTrend(current: number, previous: number): {
@@ -51,7 +46,7 @@ function calculateTrend(current: number, previous: number): {
   }
 
   const changePercentage = ((current - previous) / previous) * 100;
-  
+
   if (Math.abs(changePercentage) < 1) {
     return { trend: 'stable', changePercentage };
   }
@@ -68,13 +63,13 @@ async function getFinancialMetrics(): Promise<KPIMetric[]> {
     // Simular consultas ao banco de dados
     // const currentMonth = new Date().getMonth();
     // const currentYear = new Date().getFullYear();
-    
+
     // Receita atual vs anterior
     const currentRevenue = Math.random() * 200000 + 100000; // 100k-300k
     const previousRevenue = currentRevenue * (0.85 + Math.random() * 0.3); // ±15%
-    
+
     const revenueTrend = calculateTrend(currentRevenue, previousRevenue);
-    
+
     // Margem de lucro
     const currentMargin = 15 + Math.random() * 10; // 15-25%
     const previousMargin = currentMargin * (0.9 + Math.random() * 0.2);

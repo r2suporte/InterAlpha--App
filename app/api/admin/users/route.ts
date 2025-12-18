@@ -1,38 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { createClient } from '@supabase/supabase-js';
+import prisma from '@/lib/prisma';
 
 import { AuthenticatedUser, requireRoles } from '@/lib/auth/role-middleware';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
 
 // Função interna para listar usuários
 async function getUsers(_request: NextRequest, _user: AuthenticatedUser) {
   try {
-    const { data: users, error } = await supabaseAdmin
-      .from('users')
-      .select('id, email, name, role, is_active, created_at')
-      .order('created_at', { ascending: false });
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
 
-    if (error) {
-      console.error('Erro ao buscar usuários:', error);
-      return NextResponse.json(
-        { error: 'Erro interno do servidor' },
-        { status: 500 }
-      );
-    }
+    // Map to match the previous response format if needed (snake_case vs camelCase)
+    // Previous selection was: id, email, name, role, is_active, created_at
+    // Prisma returns camelCase by default property names usually, but let's map it.
+    const mappedUsers = users.map(u => ({
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      role: u.role,
+      is_active: u.isActive,
+      created_at: u.createdAt,
+    }));
 
-    return NextResponse.json({ users });
+    return NextResponse.json({ users: mappedUsers });
   } catch (error) {
-    console.error('Erro inesperado:', error);
+    console.error('Erro ao buscar usuários:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -123,11 +126,9 @@ async function createUser(request: NextRequest, user: AuthenticatedUser) {
     }
 
     // Verificar se o email já existe
-    const { data: existingUser } = await supabaseAdmin
-      .from('users')
-      .select('email')
-      .eq('email', email)
-      .single();
+    const existingUser = await prisma.user.findFirst({
+      where: { email },
+    });
 
     if (existingUser) {
       return NextResponse.json(
@@ -138,63 +139,29 @@ async function createUser(request: NextRequest, user: AuthenticatedUser) {
       );
     }
 
-    // Gerar senha temporária
+    // Gerar senha temporária (Simulação - NÃO SALVA no banco pois não tem campo senha)
+    // TODO: Integrar com Clerk ou Auth Provider para criar usuário
     const tempPassword = `InterAlpha${Math.random().toString(36).slice(-8)}!`;
 
-    // Criar usuário no Supabase Auth
-    const { data: authData, error: authError } =
-      await supabaseAdmin.auth.admin.createUser({
-        email,
-        password: tempPassword,
-        email_confirm: true,
-        user_metadata: {
-          name,
-          role,
-        },
-      });
-
-    if (authError) {
-      console.error('Erro ao criar usuário no Auth:', authError);
-      return NextResponse.json(
-        {
-          error: 'Erro ao criar usuário',
-        },
-        { status: 500 }
-      );
-    }
-
     // Criar usuário na tabela users
-    const { error: insertError } = await supabaseAdmin.from('users').insert({
-      id: authData.user.id,
-      email,
-      name,
-      role,
-      phone: phone || null,
-      is_active: true,
+    const newUser = await prisma.user.create({
+      data: {
+        email,
+        name,
+        role,
+        phone: phone || null,
+        isActive: true,
+      },
     });
-
-    if (insertError) {
-      console.error('Erro ao inserir usuário na tabela:', insertError);
-
-      // Tentar remover o usuário do Auth se falhou na tabela
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-
-      return NextResponse.json(
-        {
-          error: 'Erro ao criar usuário',
-        },
-        { status: 500 }
-      );
-    }
 
     return NextResponse.json(
       {
-        message: 'Usuário criado com sucesso',
+        message: 'Usuário criado com sucesso (Atenção: Integração Auth pendente)',
         user: {
-          id: authData.user.id,
-          email,
-          name,
-          role,
+          id: newUser.id,
+          email: newUser.email,
+          name: newUser.name,
+          role: newUser.role,
           tempPassword,
         },
       },

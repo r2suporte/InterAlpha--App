@@ -22,13 +22,15 @@ import {
 import { Cliente } from '@/types/ordens-servico';
 
 interface ClientSearchProps {
-  onSelect: (cliente: Cliente) => void;
+  onClientSelect: (cliente: Cliente) => void;
+  onCreateNew?: () => void;
   selectedClienteId?: string;
   className?: string;
 }
 
 export function ClientSearch({
-  onSelect,
+  onClientSelect,
+  onCreateNew,
   selectedClienteId,
   className,
 }: ClientSearchProps) {
@@ -89,7 +91,7 @@ export function ClientSearch({
 
   const handleSelect = (cliente: Cliente) => {
     setSelectedCliente(cliente);
-    onSelect(cliente);
+    onClientSelect(cliente);
     setOpen(false);
   };
 
@@ -118,7 +120,22 @@ export function ClientSearch({
           <CommandList>
             {loading && <div className="p-4 text-center text-sm">Carregando...</div>}
             {!loading && clientes.length === 0 && (
-              <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+              <CommandEmpty className="py-2 px-4 space-y-2">
+                <p className="text-sm text-muted-foreground">Nenhum cliente encontrado.</p>
+                {onCreateNew && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      onCreateNew();
+                      setOpen(false);
+                    }}
+                  >
+                    + Cadastrar Novo
+                  </Button>
+                )}
+              </CommandEmpty>
             )}
             <CommandGroup>
               {clientes.map((cliente) => (

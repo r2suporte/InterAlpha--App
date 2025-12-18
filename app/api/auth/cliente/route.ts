@@ -18,9 +18,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar se o cliente já existe
+    // Verificar      // Verificar email
     const clienteExistente = await prisma.cliente.findFirst({
-      where: { email: email }
+      where: { email },
     });
 
     let cliente;

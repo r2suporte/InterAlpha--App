@@ -33,10 +33,7 @@ const nextConfig = {
   // installed Next.js version. If you need experimental options, add them
   // behind a feature-flag or verify compatibility with your Next.js version.
   serverExternalPackages: ['bcryptjs'],
-  eslint: {
-    // Durante o build, apenas erros fatais bloqueiam
-    ignoreDuringBuilds: false,
-  },
+
   typescript: {
     // Não ignorar erros de TypeScript no build
     ignoreBuildErrors: false,

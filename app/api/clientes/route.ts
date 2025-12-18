@@ -134,7 +134,7 @@ async function createCliente(request: NextRequest) {
     }
 
     // Verificar email
-    const clienteExistente = await prisma.cliente.findUnique({
+    const clienteExistente = await prisma.cliente.findFirst({
       where: { email },
     });
 

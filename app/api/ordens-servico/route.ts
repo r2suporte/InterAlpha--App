@@ -84,9 +84,7 @@ async function getOrdensServico(request: NextRequest) {
           // cliente_portal? In Prisma schema I don't see a separate relation, 
           // assuming 'cliente' covers it or it's not strictly needed if unified.
           // The DB schema had 'Cliente' model.
-          equipamento: {
-            select: { id: true, marca: true, modelo: true, numeroSerie: true }
-          }
+          // equipamento relation removed as it does not exist in schema
         }
       })
     ]);
@@ -151,7 +149,7 @@ async function getOrdensServico(request: NextRequest) {
         endereco: order.cliente.endereco,
         numero_cliente: (order.cliente as any).numeroCliente
       } : null,
-      equipamento: order.equipamento || { // Fallback if regular fields
+      equipamento: {
         marca: order.tipoDispositivo,
         modelo: order.modeloDispositivo,
         numero_serie: order.numeroSerie

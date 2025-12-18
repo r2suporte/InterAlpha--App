@@ -475,9 +475,9 @@ export async function DELETE(
         const clienteParaSMS = {
           id: ordemAtualizada.cliente.id,
           nome: ordemAtualizada.cliente.nome,
-          telefone: ordemAtualizada.cliente.telefone,
-          celular: ordemAtualizada.cliente.telefone,
-          email: ordemAtualizada.cliente.email
+          telefone: ordemAtualizada.cliente.telefone || undefined,
+          celular: ordemAtualizada.cliente.telefone || undefined,
+          email: ordemAtualizada.cliente.email || undefined
         };
 
         await smsService.sendOrdemServicoSMS(ordemParaSMS, clienteParaSMS, 'atualizacao');
