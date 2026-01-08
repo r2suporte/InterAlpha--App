@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const usuarioExistente = await prisma.cliente.findFirst({
       where: {
         OR: [
-          { email: email },
+          { email },
           { email2: email }, // Check alt emails too if generic
           { login: email }   // Check against login just in case
         ]
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         estado,
         cep,
         login: credenciais.login,
-        senhaHash: senhaHash,
+        senhaHash,
         senhaTemporaria: credenciais.senha,
         isActive: true, // ativo -> isActive
         primeiroAcesso: true,

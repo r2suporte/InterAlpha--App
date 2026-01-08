@@ -413,8 +413,8 @@ describe('lib/middleware/security-audit', () => {
 
       const stats = getSecurityStats();
 
-      expect(stats.eventsByType['failed_login']).toBe(2);
-      expect(stats.eventsByType['suspicious_request']).toBe(1);
+      expect(stats.eventsByType.failed_login).toBe(2);
+      expect(stats.eventsByType.suspicious_request).toBe(1);
     });
 
     it('should count events by severity', () => {
@@ -435,10 +435,10 @@ describe('lib/middleware/security-audit', () => {
 
       const stats = getSecurityStats();
 
-      expect(stats.eventsBySeverity['low']).toBe(1);
-      expect(stats.eventsBySeverity['medium']).toBe(1);
-      expect(stats.eventsBySeverity['high']).toBe(1);
-      expect(stats.eventsBySeverity['critical']).toBe(1);
+      expect(stats.eventsBySeverity.low).toBe(1);
+      expect(stats.eventsBySeverity.medium).toBe(1);
+      expect(stats.eventsBySeverity.high).toBe(1);
+      expect(stats.eventsBySeverity.critical).toBe(1);
       expect(stats.criticalEvents).toBe(1);
     });
 
@@ -558,9 +558,9 @@ describe('lib/middleware/security-audit', () => {
       // Get stats
       const stats = getSecurityStats();
       expect(stats.totalEvents).toBe(3);
-      expect(stats.eventsByType['failed_login']).toBe(3);
-      expect(stats.eventsBySeverity['medium']).toBe(2);
-      expect(stats.eventsBySeverity['high']).toBe(1);
+      expect(stats.eventsByType.failed_login).toBe(3);
+      expect(stats.eventsBySeverity.medium).toBe(2);
+      expect(stats.eventsBySeverity.high).toBe(1);
 
       // Get recent events
       const events = getRecentSecurityEvents();

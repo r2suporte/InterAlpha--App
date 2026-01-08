@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // Buscar cliente pelo login
     const cliente = await prisma.cliente.findUnique({
-      where: { login: login },
+      where: { login },
     });
 
     if (!cliente || !cliente.isActive) {
@@ -63,8 +63,22 @@ export async function POST(request: NextRequest) {
       data: { ultimoAcesso: new Date() }
     });
 
-    // Criar sessão no banco (Skip for now as table missing in Prisma, relying on JWT)
-    // TODO: Add ClientSession to schema if DB tracking required
+    // Criar sessão no banco
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+    // Expira em 24h
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+
+    await prisma.clientSession.create({
+      data: {
+        clienteId: cliente.id,
+        token: token,
+        ipAddress: ip,
+        userAgent: userAgent,
+        expiresAt: expiresAt
+      }
+    });
 
     // Buscar ordens de serviço do cliente
     const ordensServico = await prisma.ordemServico.findMany({
@@ -93,11 +107,6 @@ export async function POST(request: NextRequest) {
       },
       token,
       ordens_servico: ordensServico || [],
-      // Note: mapping camelCase response to snake_case if frontend expects it?
-      // existing response had 'ordens_servico' key but inside it was field selection
-      // Previous fields: numero_os, status, descricao, valor (valorTotal?), data_inicio, data_fim (dataConclusao?), created_at
-      // Prisma returns camelCase. FrontEnd might break?
-      // I should map them.
     });
 
     // Definir cookie com o token
@@ -120,8 +129,19 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    // const token = request.cookies.get('cliente-token')?.value;
-    // Session deletion skipped as table missing
+    const token = request.cookies.get('cliente-token')?.value;
+
+    if (token) {
+      // Remover sessão do banco
+      try {
+        await prisma.clientSession.deleteMany({
+          where: { token: token }
+        });
+      } catch (e) {
+        console.error('Erro ao remover sessão:', e);
+        // Não falhar o logout se o banco der erro, apenas limpar cookie
+      }
+    }
 
     const response = NextResponse.json({ success: true });
     response.cookies.delete('cliente-token');

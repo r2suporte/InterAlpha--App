@@ -13,10 +13,10 @@ async function debugEndpointQueries() {
   const periodo = '30';
   const dataFim = now;
   const dataInicio = new Date(
-    now.getTime() - parseInt(periodo) * 24 * 60 * 60 * 1000
+    now.getTime() - parseInt(periodo, 10) * 24 * 60 * 60 * 1000
   );
   const periodoAnterior = new Date(
-    dataInicio.getTime() - parseInt(periodo) * 24 * 60 * 60 * 1000
+    dataInicio.getTime() - parseInt(periodo, 10) * 24 * 60 * 60 * 1000
   );
 
   console.log('📅 Datas calculadas:');

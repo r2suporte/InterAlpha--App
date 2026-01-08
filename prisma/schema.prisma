@@ -63,9 +63,28 @@ model Cliente {
 
   // Relacionamentos
   ordensServico OrdemServico[]
+  sessions      ClientSession[]
   createdByUser User?          @relation("ClienteCreatedBy", fields: [createdBy], references: [id])
 
   @@map("clientes")
+}
+
+// 🔐 Modelo de Sessão do Cliente
+model ClientSession {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clienteId String   @map("cliente_id") @db.Uuid
+  token     String   @unique @db.VarChar(500)
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent") @db.Text
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relacionamentos
+  cliente   Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@index([clienteId])
+  @@index([token])
+  @@map("client_sessions")
 }
 
 // 🔧 Modelo de Ordem de Serviço

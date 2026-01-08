@@ -234,8 +234,8 @@ export class CommunicationService {
           tipo: channel,
           conteudo: content,
           destinatario: cliente.email || cliente.celular || cliente.telefone || 'unknown',
-          status: status,
-          messageId: messageId,
+          status,
+          messageId,
           erro: error,
           dataEnvio: new Date(),
           enviadoEm: status === 'enviado' ? new Date() : null,
@@ -666,7 +666,7 @@ export class CommunicationService {
       }
 
       const rows = await prisma.comunicacaoCliente.findMany({
-        where: where,
+        where,
         select: { tipo: true, status: true, dataEnvio: true }
       });
 

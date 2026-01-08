@@ -473,7 +473,7 @@ export class AlertService {
           ruleId: rule.id,
           ruleName: rule.name,
           metric: rule.metric,
-          currentValue: currentValue,
+          currentValue,
           threshold: rule.threshold,
           severity: rule.severity,
           message: `${rule.description}. Valor atual: ${currentValue}, Limite: ${rule.threshold}`,
@@ -538,9 +538,9 @@ export class AlertService {
     try {
       await prisma.alertNotification.create({
         data: {
-          alertId: alertId,
-          channel: channel,
-          recipient: recipient,
+          alertId,
+          channel,
+          recipient,
           status: 'pending',
         }
       });
@@ -559,7 +559,7 @@ export class AlertService {
         data: {
           status: 'acknowledged',
           acknowledgedAt: new Date(),
-          acknowledgedBy: acknowledgedBy,
+          acknowledgedBy,
         }
       });
       return true;

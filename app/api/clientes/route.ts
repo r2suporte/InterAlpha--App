@@ -258,7 +258,7 @@ async function updateCliente(request: NextRequest) {
     // Verificar email duplicado (outro ID)
     const clienteEmail = await prisma.cliente.findFirst({
       where: {
-        email: email,
+        email,
         id: { not: id },
       },
     });

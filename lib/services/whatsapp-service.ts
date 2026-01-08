@@ -269,7 +269,7 @@ export default class WhatsAppService {
     try {
       await prisma.comunicacaoCliente.create({
         data: {
-          ordemServicoId: ordemServicoId,
+          ordemServicoId,
           tipo: dados.tipo,
           conteudo: dados.mensagem,
           destinatario: dados.destinatario,

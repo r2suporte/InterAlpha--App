@@ -63,7 +63,7 @@ class BackupScheduler {
     };
 
     const cronTime = schedules[schedule] || schedules.daily;
-    
+
     return `# InterAlpha App - Backup Automatizado (${schedule})
 ${cronTime} cd "${this.projectPath}" && "${nodeCmd}" "${scriptPath}" >> "${logPath}" 2>&1`;
   }
@@ -86,7 +86,7 @@ ${cronTime} cd "${this.projectPath}" && "${nodeCmd}" "${scriptPath}" >> "${logPa
    */
   async removeOldEntries(crontab) {
     const lines = crontab.split('\n');
-    const filteredLines = lines.filter(line => 
+    const filteredLines = lines.filter(line =>
       !line.includes('InterAlpha App - Backup') && line.trim() !== ''
     );
     return filteredLines.join('\n');
@@ -103,14 +103,14 @@ ${cronTime} cd "${this.projectPath}" && "${nodeCmd}" "${scriptPath}" >> "${logPa
 
       // Obter crontab atual
       let currentCrontab = await this.getCurrentCrontab();
-      
+
       // Remover entradas antigas do InterAlpha
       currentCrontab = await this.removeOldEntries(currentCrontab);
-      
+
       // Adicionar nova entrada
       const newEntry = this.generateCronEntry(schedule);
-      const updatedCrontab = currentCrontab ? 
-        `${currentCrontab}\n${newEntry}` : 
+      const updatedCrontab = currentCrontab ?
+        `${currentCrontab}\n${newEntry}` :
         newEntry;
 
       // Criar arquivo temporário com novo crontab
@@ -119,14 +119,14 @@ ${cronTime} cd "${this.projectPath}" && "${nodeCmd}" "${scriptPath}" >> "${logPa
 
       // Instalar novo crontab
       await this.executeCommand(`crontab "${tempFile}"`);
-      
+
       // Limpar arquivo temporário
       await fs.unlink(tempFile);
 
       console.log('✅ Backup automático configurado com sucesso!');
       console.log(`📅 Agendamento: ${schedule}`);
       console.log(`📝 Logs em: ${this.logFile}`);
-      
+
       return true;
     } catch (error) {
       console.error('❌ Erro ao configurar backup automático:', error);
@@ -143,7 +143,7 @@ ${cronTime} cd "${this.projectPath}" && "${nodeCmd}" "${scriptPath}" >> "${logPa
 
       // Obter crontab atual
       const currentCrontab = await this.getCurrentCrontab();
-      
+
       // Remover entradas do InterAlpha
       const updatedCrontab = await this.removeOldEntries(currentCrontab);
 
@@ -157,7 +157,7 @@ ${cronTime} cd "${this.projectPath}" && "${nodeCmd}" "${scriptPath}" >> "${logPa
 
         // Instalar crontab atualizado
         await this.executeCommand(`crontab "${tempFile}"`);
-        
+
         // Limpar arquivo temporário
         await fs.unlink(tempFile);
       }
@@ -178,7 +178,7 @@ ${cronTime} cd "${this.projectPath}" && "${nodeCmd}" "${scriptPath}" >> "${logPa
       console.log('📊 Status do Backup Automático\n');
 
       const crontab = await this.getCurrentCrontab();
-      const interalphaEntries = crontab.split('\n').filter(line => 
+      const interalphaEntries = crontab.split('\n').filter(line =>
         line.includes('InterAlpha App - Backup')
       );
 
@@ -224,7 +224,7 @@ ${cronTime} cd "${this.projectPath}" && "${nodeCmd}" "${scriptPath}" >> "${logPa
   async testBackup() {
     try {
       console.log('🧪 Executando teste de backup...\n');
-      
+
       const BackupService = require('./backup-database.js');
       const backup = new BackupService();
       const result = await backup.run();
@@ -249,23 +249,24 @@ async function main() {
   const command = process.argv[2];
 
   switch (command) {
-    case 'install':
+    case 'install': {
       const schedule = process.argv[3] || 'daily';
       await scheduler.installCronJob(schedule);
       break;
-    
+    }
+
     case 'uninstall':
       await scheduler.uninstallCronJob();
       break;
-    
+
     case 'status':
       await scheduler.showStatus();
       break;
-    
+
     case 'test':
       await scheduler.testBackup();
       break;
-    
+
     default:
       console.log('🔧 Configurador de Backup Automático - InterAlpha App\n');
       console.log('Uso: node setup-backup-cron.js <comando> [opções]\n');

@@ -14,7 +14,7 @@ console.log('🔍 Iniciando testes das APIs externas...\n');
 async function testarViaCEP() {
   console.log('📍 1. Testando API ViaCEP');
   console.log('─────────────────────────────────');
-  
+
   const cepsParaTestar = [
     { cep: '01310100', descricao: 'Av Paulista, São Paulo' },
     { cep: '20040020', descricao: 'Praça XV, Rio de Janeiro' },
@@ -24,14 +24,14 @@ async function testarViaCEP() {
   for (const { cep, descricao } of cepsParaTestar) {
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-      
+
       if (!response.ok) {
         console.log(`❌ ${descricao} (${cep}): HTTP ${response.status}`);
         continue;
       }
 
       const data = await response.json();
-      
+
       if (data.erro) {
         console.log(`❌ ${descricao} (${cep}): CEP não encontrado`);
       } else {
@@ -43,7 +43,7 @@ async function testarViaCEP() {
       console.log(`❌ ${descricao} (${cep}): ${error.message}`);
     }
   }
-  
+
   console.log('');
 }
 
@@ -53,7 +53,7 @@ async function testarViaCEP() {
 async function testarBrasilAPICNPJ() {
   console.log('🏢 2. Testando API BrasilAPI (CNPJ)');
   console.log('─────────────────────────────────');
-  
+
   const cnpjsParaTestar = [
     { cnpj: '00000000000191', descricao: 'Banco do Brasil' },
     { cnpj: '33000167000101', descricao: 'Caixa Econômica Federal' },
@@ -63,7 +63,7 @@ async function testarBrasilAPICNPJ() {
   for (const { cnpj, descricao } of cnpjsParaTestar) {
     try {
       const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
-      
+
       if (!response.ok) {
         if (response.status === 404) {
           console.log(`❌ ${descricao} (${cnpj}): CNPJ não encontrado`);
@@ -76,21 +76,21 @@ async function testarBrasilAPICNPJ() {
       }
 
       const data = await response.json();
-      
+
       console.log(`✅ ${descricao} (${cnpj})`);
       console.log(`   🏢 Razão Social: ${data.razao_social || 'N/A'}`);
       console.log(`   🏪 Nome Fantasia: ${data.nome_fantasia || 'N/A'}`);
       console.log(`   📊 Situação: ${data.descricao_situacao_cadastral || 'N/A'}`);
       console.log(`   📍 Município: ${data.municipio || 'N/A'}/${data.uf || 'N/A'}`);
-      
+
     } catch (error) {
       console.log(`❌ ${descricao} (${cnpj}): ${error.message}`);
     }
-    
+
     // Delay para evitar rate limit
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
-  
+
   console.log('');
 }
 
@@ -100,7 +100,7 @@ async function testarBrasilAPICNPJ() {
 function testarValidacaoCPF() {
   console.log('🪪 3. Testando Validação de CPF (Local)');
   console.log('─────────────────────────────────');
-  
+
   const cpfsParaTestar = [
     { cpf: '111.111.111-11', valido: false, descricao: 'CPF com dígitos repetidos' },
     { cpf: '123.456.789-00', valido: false, descricao: 'CPF inválido' },
@@ -110,31 +110,31 @@ function testarValidacaoCPF() {
   // Função simples de validação CPF
   function validarCPF(cpf) {
     const cleanCpf = cpf.replace(/\D/g, '');
-    
+
     if (cleanCpf.length !== 11) return false;
     if (/^(\d)\1+$/.test(cleanCpf)) return false;
-    
+
     // Validação dos dígitos verificadores
     let soma = 0;
     let resto;
-    
+
     for (let i = 1; i <= 9; i++) {
-      soma += parseInt(cleanCpf.substring(i - 1, i)) * (11 - i);
+      soma += parseInt(cleanCpf.substring(i - 1, i), 10) * (11 - i);
     }
-    
+
     resto = (soma * 10) % 11;
     if (resto === 10 || resto === 11) resto = 0;
-    if (resto !== parseInt(cleanCpf.substring(9, 10))) return false;
-    
+    if (resto !== parseInt(cleanCpf.substring(9, 10), 10)) return false;
+
     soma = 0;
     for (let i = 1; i <= 10; i++) {
-      soma += parseInt(cleanCpf.substring(i - 1, i)) * (12 - i);
+      soma += parseInt(cleanCpf.substring(i - 1, i), 10) * (12 - i);
     }
-    
+
     resto = (soma * 10) % 11;
     if (resto === 10 || resto === 11) resto = 0;
-    if (resto !== parseInt(cleanCpf.substring(10, 11))) return false;
-    
+    if (resto !== parseInt(cleanCpf.substring(10, 11), 10)) return false;
+
     return true;
   }
 
@@ -144,7 +144,7 @@ function testarValidacaoCPF() {
     const status = resultado ? 'VÁLIDO' : 'INVÁLIDO';
     console.log(`${emoji} ${cpf} - ${status} (${descricao})`);
   });
-  
+
   console.log('');
 }
 
@@ -154,7 +154,7 @@ function testarValidacaoCPF() {
 async function testarConectividade() {
   console.log('🌐 4. Testando Conectividade das APIs');
   console.log('─────────────────────────────────');
-  
+
   const apis = [
     { nome: 'ViaCEP', url: 'https://viacep.com.br' },
     { nome: 'BrasilAPI', url: 'https://brasilapi.com.br/api' },
@@ -165,7 +165,7 @@ async function testarConectividade() {
       const start = Date.now();
       const response = await fetch(url, { method: 'HEAD' });
       const tempo = Date.now() - start;
-      
+
       if (response.ok || response.status === 404) { // 404 é ok para testar conectividade
         console.log(`✅ ${nome}: Online (${tempo}ms)`);
       } else {
@@ -176,7 +176,7 @@ async function testarConectividade() {
       console.log(`   Erro: ${error.message}`);
     }
   }
-  
+
   console.log('');
 }
 
@@ -185,14 +185,14 @@ async function testarConectividade() {
 // ============================================
 async function executarTestes() {
   const inicio = Date.now();
-  
+
   await testarConectividade();
   await testarViaCEP();
   await testarBrasilAPICNPJ();
   testarValidacaoCPF();
-  
+
   const tempo = ((Date.now() - inicio) / 1000).toFixed(2);
-  
+
   console.log('═══════════════════════════════════');
   console.log(`✅ Testes concluídos em ${tempo}s`);
   console.log('═══════════════════════════════════\n');

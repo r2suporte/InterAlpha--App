@@ -26,7 +26,7 @@ describe('Supabase Server Client', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'valid-key-' + 'x'.repeat(100);
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = `valid-key-${  'x'.repeat(100)}`;
   });
 
   describe('createClient function', () => {
@@ -214,7 +214,7 @@ describe('Supabase Server Client', () => {
         set: jest.fn(),
       });
 
-      const testKey = 'test-key-' + 'y'.repeat(100);
+      const testKey = `test-key-${  'y'.repeat(100)}`;
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = testKey;
 
       await createClient();

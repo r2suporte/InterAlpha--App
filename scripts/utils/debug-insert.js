@@ -11,11 +11,13 @@ async function debugInsert() {
     console.log('🔍 Debug da inserção...\n');
 
     // Primeiro, vamos verificar se existe um cliente portal
-    let { data: clientePortal, error: clienteError } = await supabase
+    const { data: initialCliente, error: clienteError } = await supabase
       .from('clientes_portal')
       .select('*')
       .limit(1)
       .single();
+
+    let clientePortal = initialCliente;
 
     if (clienteError && clienteError.code === 'PGRST116') {
       // Não há clientes portal, vamos criar um

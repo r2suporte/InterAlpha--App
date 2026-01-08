@@ -91,7 +91,7 @@ export function PermissionsProvider({
 
       const authenticatedUser: AuthenticatedUser = {
         id: clerkUser.id,
-        email: email,
+        email,
         role: validatedRole,
         roleLevel: PermissionManager.getRoleLevel(validatedRole),
         roleDescription: PermissionManager.getRoleDescription(validatedRole),

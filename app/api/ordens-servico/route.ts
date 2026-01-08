@@ -158,7 +158,7 @@ async function getOrdensServico(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: data,
+      data,
       pagination: {
         page,
         limit,
@@ -309,8 +309,8 @@ async function createOrdemServico(request: NextRequest) {
       status: formData.status,
       prioridade: formData.prioridade,
       tecnicoId: formData.tecnico_id || null,
-      valorServico: valorServico,
-      valorPecas: valorPecas,
+      valorServico,
+      valorPecas,
       dataAbertura: new Date(),
       // ... other fields
     };

@@ -148,7 +148,7 @@ export async function checkRolePermission(request: NextRequest): Promise<{
     const payload = await verifyJWT(token as string);
 
     // Busca informações do usuário no banco de dados (Neon via Prisma)
-    const userId = payload.userId;
+    const {userId} = payload;
 
     if (!userId) {
       return {

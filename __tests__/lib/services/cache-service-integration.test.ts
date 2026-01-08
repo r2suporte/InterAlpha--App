@@ -140,7 +140,7 @@ describe('lib/services/cache-service - Integration Tests', () => {
 
   describe('Cache operations flow', () => {
     testWithRedis('should complete SET->GET cycle', async () => {
-      const testKey = 'test:integration:' + Date.now();
+      const testKey = `test:integration:${  Date.now()}`;
       const testData = { id: '123', name: 'Test Item', timestamp: Date.now() };
 
       // Set value
@@ -162,28 +162,28 @@ describe('lib/services/cache-service - Integration Tests', () => {
 
     testWithRedis('should handle different data types', async () => {
       // String
-      const stringKey = 'string:' + Date.now();
+      const stringKey = `string:${  Date.now()}`;
       await cacheService.set(stringKey, 'test string', CACHE_TTL.SHORT);
       let value = await cacheService.get(stringKey);
       expect(value).toBe('test string');
       await cacheService.delete(stringKey);
 
       // Number
-      const numberKey = 'number:' + Date.now();
+      const numberKey = `number:${  Date.now()}`;
       await cacheService.set(numberKey, 42, CACHE_TTL.SHORT);
       value = await cacheService.get(numberKey);
       expect(value).toBe(42);
       await cacheService.delete(numberKey);
 
       // Boolean
-      const boolKey = 'bool:' + Date.now();
+      const boolKey = `bool:${  Date.now()}`;
       await cacheService.set(boolKey, true, CACHE_TTL.SHORT);
       value = await cacheService.get(boolKey);
       expect(value).toBe(true);
       await cacheService.delete(boolKey);
 
       // Array
-      const arrayKey = 'array:' + Date.now();
+      const arrayKey = `array:${  Date.now()}`;
       const arrayData = [1, 2, { id: '123' }];
       await cacheService.set(arrayKey, arrayData, CACHE_TTL.SHORT);
       value = await cacheService.get(arrayKey);
@@ -191,7 +191,7 @@ describe('lib/services/cache-service - Integration Tests', () => {
       await cacheService.delete(arrayKey);
 
       // Object
-      const objectKey = 'object:' + Date.now();
+      const objectKey = `object:${  Date.now()}`;
       const objectData = { a: 1, b: { c: 2 }, d: [3, 4] };
       await cacheService.set(objectKey, objectData, CACHE_TTL.SHORT);
       value = await cacheService.get(objectKey);
@@ -200,7 +200,7 @@ describe('lib/services/cache-service - Integration Tests', () => {
     });
 
     testWithRedis('should support EXISTS check', async () => {
-      const testKey = 'exists:test:' + Date.now();
+      const testKey = `exists:test:${  Date.now()}`;
 
       // Should not exist initially
       let exists = await cacheService.exists(testKey);
@@ -218,7 +218,7 @@ describe('lib/services/cache-service - Integration Tests', () => {
     });
 
     testWithRedis('should support EXPIRE operation', async () => {
-      const testKey = 'expire:test:' + Date.now();
+      const testKey = `expire:test:${  Date.now()}`;
 
       // Create with long TTL
       await cacheService.set(testKey, 'value', 3600);
@@ -232,7 +232,7 @@ describe('lib/services/cache-service - Integration Tests', () => {
     });
 
     testWithRedis('should support INCREMENT operation', async () => {
-      const counterKey = 'counter:test:' + Date.now();
+      const counterKey = `counter:test:${  Date.now()}`;
 
       // Increment by 1
       let result = await cacheService.increment(counterKey);
@@ -251,7 +251,7 @@ describe('lib/services/cache-service - Integration Tests', () => {
     });
 
     testWithRedis('should support LIST operations', async () => {
-      const listKey = 'list:test:' + Date.now();
+      const listKey = `list:test:${  Date.now()}`;
 
       // Push values
       await cacheService.listPush(listKey, { id: '1' });
@@ -268,21 +268,21 @@ describe('lib/services/cache-service - Integration Tests', () => {
     });
 
     testWithRedis('should support DELETE PATTERN', async () => {
-      const prefix = 'pattern:test:' + Date.now() + ':';
+      const prefix = `pattern:test:${  Date.now()  }:`;
 
       // Create multiple keys
-      await cacheService.set(prefix + 'key1', 'value1', CACHE_TTL.SHORT);
-      await cacheService.set(prefix + 'key2', 'value2', CACHE_TTL.SHORT);
-      await cacheService.set(prefix + 'key3', 'value3', CACHE_TTL.SHORT);
+      await cacheService.set(`${prefix  }key1`, 'value1', CACHE_TTL.SHORT);
+      await cacheService.set(`${prefix  }key2`, 'value2', CACHE_TTL.SHORT);
+      await cacheService.set(`${prefix  }key3`, 'value3', CACHE_TTL.SHORT);
 
       // Delete by pattern
-      const deleted = await cacheService.deletePattern(prefix + '*');
+      const deleted = await cacheService.deletePattern(`${prefix  }*`);
       expect(deleted).toBeGreaterThanOrEqual(3);
 
       // Verify all deleted
-      const exists1 = await cacheService.exists(prefix + 'key1');
-      const exists2 = await cacheService.exists(prefix + 'key2');
-      const exists3 = await cacheService.exists(prefix + 'key3');
+      const exists1 = await cacheService.exists(`${prefix  }key1`);
+      const exists2 = await cacheService.exists(`${prefix  }key2`);
+      const exists3 = await cacheService.exists(`${prefix  }key3`);
       expect(exists1).toBe(false);
       expect(exists2).toBe(false);
       expect(exists3).toBe(false);
@@ -318,7 +318,7 @@ describe('lib/services/cache-service - Integration Tests', () => {
     });
 
     testWithRedis('should track metrics with counters', async () => {
-      const metricsKey = 'metrics:requests:' + Date.now();
+      const metricsKey = `metrics:requests:${  Date.now()}`;
 
       // Track requests
       await cacheService.increment(metricsKey);

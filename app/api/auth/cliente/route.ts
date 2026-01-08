@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
           nome,
           telefone,
           login: credenciais.login,
-          senhaHash: senhaHash,
+          senhaHash,
           senhaTemporaria: credenciais.senha,
           primeiroAcesso: true,
           isActive: true,
@@ -102,7 +102,7 @@ export async function PUT(request: NextRequest) {
 
     // Buscar cliente
     const cliente = await prisma.cliente.findUnique({
-      where: { login: login }
+      where: { login }
     });
 
     if (!cliente) {
