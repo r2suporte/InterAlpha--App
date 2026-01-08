@@ -11,6 +11,7 @@ import {
   Wrench,
 } from 'lucide-react';
 
+import { useClients } from '../hooks/use-clients';
 import { useTechnicians } from '../hooks/use-technicians';
 import { EquipamentoApple } from '../types/equipamentos';
 import { formatarMoeda } from '../types/financeiro';
@@ -43,6 +44,8 @@ export default function OrdemServicoForm({
     numero_os: '',
     cliente_id: '',
     equipamento_id: '',
+    tipo_dispositivo: '',
+    modelo_dispositivo: '',
     tipo_servico: 'reparo',
     titulo: '',
     descricao: '',
@@ -75,52 +78,12 @@ export default function OrdemServicoForm({
   const [carregando, setCarregando] = useState(false);
   const [erros, setErros] = useState<Record<string, string>>({});
 
-  // Hook para buscar técnicos
-  const { loading: loadingTechnicians, getActiveTechnicians } =
-    useTechnicians();
+  // Hooks para buscar dados
+  const { clients, loading: loadingClients } = useClients();
+  const { loading: loadingTechnicians, getActiveTechnicians } = useTechnicians();
 
   // Simular dados de equipamentos
-  useEffect(() => {
-    const equipamentosSimulados: EquipamentoApple[] = [
-      {
-        id: '1',
-        tipo: 'ipad',
-        modelo: 'iPad Pro 11" 4ª geração (2022)',
-        serial_number: 'F2LW48XHQD6R',
-        status_garantia: 'ativa_apple',
-        fora_garantia: false,
-        descricao_problema: 'Tela com riscos leves',
-        problemas_identificados: ['Riscos na tela'],
-        danos_equipamento: [
-          {
-            tipo: 'Tela',
-            descricao: 'Riscos superficiais',
-            severidade: 'baixa',
-          },
-        ],
-        observacoes: 'Cliente relatou queda',
-      },
-      {
-        id: '2',
-        tipo: 'ipad',
-        modelo: 'iPad 10ª geração (2022)',
-        serial_number: 'F2LW48XHQD6S',
-        status_garantia: 'expirada',
-        fora_garantia: true,
-        descricao_problema: 'Tela quebrada',
-        problemas_identificados: ['Tela quebrada', 'Touch não funciona'],
-        danos_equipamento: [
-          {
-            tipo: 'Tela',
-            descricao: 'Tela completamente quebrada',
-            severidade: 'alta',
-          },
-        ],
-        observacoes: 'Necessário troca completa da tela',
-      },
-    ];
-    setEquipamentosDisponiveis(equipamentosSimulados);
-  }, []);
+
 
   // Carregar dados da ordem de serviço se fornecida
   useEffect(() => {
@@ -181,8 +144,12 @@ export default function OrdemServicoForm({
       novosErros.cliente_id = 'Cliente é obrigatório';
     }
 
-    if (!formData.equipamento_id) {
-      novosErros.equipamento_id = 'Equipamento é obrigatório';
+    if (!formData.tipo_dispositivo) {
+      novosErros.tipo_dispositivo = 'Tipo de dispositivo é obrigatório';
+    }
+
+    if (!formData.modelo_dispositivo) {
+      novosErros.modelo_dispositivo = 'Modelo do dispositivo é obrigatório';
     }
 
     if (!formData.problema_reportado.trim()) {
@@ -235,10 +202,20 @@ export default function OrdemServicoForm({
 
     setCarregando(true);
     try {
-      await onSave(formData);
+      const dataToSubmit = {
+        ...formData,
+        pecas: pecasUtilizadas.map(p => ({
+          id: p.id.startsWith('temp-') ? p.peca_id || p.id : p.id, // Use real inventory ID if temp
+          nome: p.nome,
+          quantidade: p.quantidade,
+          valor_unitario: p.valor_unitario
+        }))
+      };
+
+      await onSave(dataToSubmit);
 
       if (onSubmit) {
-        await onSubmit(formData);
+        await onSubmit(dataToSubmit);
       }
 
       // Reset form
@@ -277,9 +254,7 @@ export default function OrdemServicoForm({
     }
   }, [formData, onSave, onSubmit, validarFormulario]);
 
-  const equipamentoSelecionado = React.useMemo(() => equipamentosDisponiveis.find(
-    eq => eq.id === formData.equipamento_id
-  ), [equipamentosDisponiveis, formData.equipamento_id]);
+
 
   return (
     <div className="mx-auto max-w-4xl rounded-lg bg-white shadow-lg">
@@ -319,38 +294,48 @@ export default function OrdemServicoForm({
                 <select
                   value={formData.cliente_id}
                   onChange={e => handleInputChange('cliente_id', e.target.value)}
-                  disabled={readonly}
+                  disabled={readonly || loadingClients}
                   className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.cliente_id ? 'border-red-500' : 'border-gray-300'
                     }`}
                 >
                   <option value="">Selecione um cliente</option>
-                  <option value="cliente-1">João Silva</option>
-                  <option value="cliente-2">Maria Santos</option>
-                  <option value="cliente-3">Pedro Oliveira</option>
-                </select>
-              </FormField>
-            </div>
-
-            <div>
-              <FormField label="Equipamento *" error={erros.equipamento_id}>
-                <select
-                  value={formData.equipamento_id}
-                  onChange={e =>
-                    handleInputChange('equipamento_id', e.target.value)
-                  }
-                  disabled={readonly}
-                  className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.equipamento_id ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                >
-                  <option value="">Selecione um equipamento</option>
-                  {equipamentosDisponiveis.map(equipamento => (
-                    <option key={equipamento.id} value={equipamento.id}>
-                      {equipamento.modelo}
+                  {clients.map(client => (
+                    <option key={client.id} value={client.id}>
+                      {client.nome} {client.numero_cliente ? `(${client.numero_cliente})` : ''}
                     </option>
                   ))}
                 </select>
+                {loadingClients && (
+                  <p className="mt-1 text-xs text-gray-500">Carregando clientes...</p>
+                )}
               </FormField>
             </div>
+
+            <FormField label="Tipo de Dispositivo *" error={erros.tipo_dispositivo}>
+              <input
+                type="text"
+                value={formData.tipo_dispositivo || ''}
+                onChange={e => handleInputChange('tipo_dispositivo', e.target.value)}
+                disabled={readonly}
+                placeholder="Ex: iPhone, iPad, MacBook"
+                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.tipo_dispositivo ? 'border-red-500' : 'border-gray-300'
+                  }`}
+              />
+            </FormField>
+          </div>
+
+          <div>
+            <FormField label="Modelo *" error={erros.modelo_dispositivo}>
+              <input
+                type="text"
+                value={formData.modelo_dispositivo || ''}
+                onChange={e => handleInputChange('modelo_dispositivo', e.target.value)}
+                disabled={readonly}
+                placeholder="Ex: 13 Pro, Air M1"
+                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.modelo_dispositivo ? 'border-red-500' : 'border-gray-300'
+                  }`}
+              />
+            </FormField>
 
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -481,51 +466,7 @@ export default function OrdemServicoForm({
           </div>
 
           {/* Informações do Equipamento Selecionado */}
-          {equipamentoSelecionado && (
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-              <h4 className="mb-2 font-medium text-blue-900">
-                Detalhes do Equipamento
-              </h4>
-              <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
-                <div>
-                  <span className="text-blue-700">Série:</span>
-                  <p className="font-medium text-blue-900">
-                    {equipamentoSelecionado.serial_number}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-blue-700">Tipo:</span>
-                  <p className="font-medium capitalize text-blue-900">
-                    {equipamentoSelecionado.tipo}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-blue-700">Garantia:</span>
-                  <p className="font-medium capitalize text-blue-900">
-                    {equipamentoSelecionado.status_garantia}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-blue-700">Problemas:</span>
-                  <p className="font-medium text-blue-900">
-                    {equipamentoSelecionado.problemas_identificados.length > 0
-                      ? equipamentoSelecionado.problemas_identificados.join(
-                        ', '
-                      )
-                      : 'Nenhum'}
-                  </p>
-                </div>
-              </div>
-              {equipamentoSelecionado.observacoes && (
-                <div className="mt-2">
-                  <span className="text-blue-700">Observações:</span>
-                  <p className="font-medium text-blue-900">
-                    {equipamentoSelecionado.observacoes}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+
         </div>
 
         {/* Informações do Equipamento Apple */}

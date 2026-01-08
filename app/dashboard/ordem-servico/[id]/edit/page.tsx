@@ -42,6 +42,12 @@ const convertToFormData = (ordem: OrdemServico): OrdemServicoFormData => {
     observacoes_tecnico: ordem.observacoes_tecnico || '',
     garantia_servico_dias: ordem.garantia_servico_dias.toString(),
     garantia_pecas_dias: ordem.garantia_pecas_dias.toString(),
+    pecas: ordem.pecas?.map(p => ({
+      id: p.id,
+      nome: p.nome,
+      quantidade: p.quantidade,
+      valor_unitario: p.valor_unitario
+    })),
   };
 };
 

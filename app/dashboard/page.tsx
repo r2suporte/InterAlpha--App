@@ -113,27 +113,13 @@ export default function Page() {
                       <TrendingUp className="mr-2 h-4 w-4" />
                       Analytics
                     </Button>
-                    <Button
-                      size="sm"
-                      className="bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg hover:from-blue-700 hover:to-blue-800"
-                      onClick={handleNewOS}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Nova OS
-                    </Button>
+
                   </div>
                 </ShowHide>
 
                 <ShowHide on={['sm']}>
                   <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      className="bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg hover:from-blue-700 hover:to-blue-800"
-                      onClick={handleNewOS}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Nova OS
-                    </Button>
+
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm">

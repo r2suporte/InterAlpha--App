@@ -97,7 +97,11 @@ async function getOrdensServico(request: NextRequest) {
       descricao: order.descricao,
       status: order.status,
       prioridade: order.prioridade,
-      tipo_servico: order.tipoDispositivo, // Note: Schema has 'tipoDispositivo', code used 'tipo_servico' mapped to something? 
+      prioridade: order.prioridade,
+      tipo_servico: order.titulo, // Mapped from Titulo
+      tipo_dispositivo: order.tipoDispositivo,
+      modelo_dispositivo: order.modeloDispositivo,
+      serial_number: order.numeroSerie,
       // Looking at previous GET, it selected 'tipo_servico'.
       // Schema (Step 468) matches 'tipoDispositivo' @map("tipo_dispositivo").
       // Code below in POST uses 'tipo_servico' mapped to 'tipoDispositivo' probably?
@@ -295,16 +299,10 @@ async function createOrdemServico(request: NextRequest) {
       numeroOs: numeroOS,
       clienteId: formData.cliente_id,
       // equipamentoId: formData.equipamento_id, // Commented out until verified in schema
-      titulo: formData.titulo,
+      titulo: formData.tipo_servico || 'Ordem de Serviço', // Storing Service Type in Title
       descricao: formData.descricao,
-      tipoDispositivo: formData.tipo_servico, // Mapping 'tipo_servico' to 'tipoDispositivo'? 
-      // Original code: tipo_servico -> tipo_servico.
-      // Schema: tipoDispositivo.
-      // Maybe I should store type in `tipoDispositivo`.
-      // Also `modeloDispositivo`?
-      // If I have `equipamento_id`, I should fetch the equipment to fill these?
-      // Or if relation exists, connect it.
-      // Let's assume for now I fill flat fields from form if available, or just create.
+      tipoDispositivo: formData.tipo_dispositivo, // Storing Device Type
+      modeloDispositivo: formData.modelo_dispositivo, // Storing Device Model
 
       status: formData.status,
       prioridade: formData.prioridade,
@@ -312,75 +310,73 @@ async function createOrdemServico(request: NextRequest) {
       valorServico,
       valorPecas,
       dataAbertura: new Date(),
-      // ... other fields
-    };
 
-    // Additional fields map
-    if (formData.data_inicio) dataToCreate.dataInicio = new Date(formData.data_inicio);
-    if (formData.data_previsao_conclusao) dataToCreate.dataPrevisaoConclusao = new Date(formData.data_previsao_conclusao);
-    if (formData.problema_reportado) dataToCreate.defeitoRelatado = formData.problema_reportado;
-    if (formData.diagnostico_inicial) dataToCreate.diagnosticoTecnico = formData.diagnostico_inicial;
-    if (formData.analise_tecnica) dataToCreate.laudoTecnico = formData.analise_tecnica;
-    if (formData.observacoes_cliente) dataToCreate.observacoesCliente = formData.observacoes_cliente;
-    if (formData.observacoes_tecnico) dataToCreate.observacoesTecnico = formData.observacoes_tecnico;
+      // Mapping detailed fields
+      numeroSerie: formData.serial_number,
+      defeitoRelatado: formData.problema_reportado,
+      danosAparentes: formData.estado_equipamento,
+      diagnosticoTecnico: formData.diagnostico_inicial,
+      laudoTecnico: formData.analise_tecnica,
+      observacoesCliente: formData.observacoes_cliente,
+      observacoesTecnico: formData.observacoes_tecnico,
 
 
-    const novaOrdem = await prisma.ordemServico.create({
-      data: dataToCreate,
-      include: {
-        cliente: true,
-        // equipamento: true // Include if relation exists
-      }
-    });
+      const novaOrdem = await prisma.ordemServico.create({
+        data: dataToCreate,
+        include: {
+          cliente: true,
+          // equipamento: true // Include if relation exists
+        }
+      });
 
-    const novaOrdemMapped = {
-      ...novaOrdem,
-      numero_os: novaOrdem.numeroOs,
-      cliente_id: novaOrdem.clienteId,
-      cliente: novaOrdem.cliente ? {
-        ...novaOrdem.cliente,
-        numero_cliente: (novaOrdem.cliente as any).numeroCliente
-      } : null
-      // ... map others
-    };
+      const novaOrdemMapped = {
+        ...novaOrdem,
+        numero_os: novaOrdem.numeroOs,
+        cliente_id: novaOrdem.clienteId,
+        cliente: novaOrdem.cliente ? {
+          ...novaOrdem.cliente,
+          numero_cliente: (novaOrdem.cliente as any).numeroCliente
+        } : null
+        // ... map others
+      };
 
-    // Create History
-    await prisma.statusHistorico.create({
-      data: {
-        ordemServicoId: novaOrdem.id,
-        statusAnterior: '', // or 'none'
-        statusNovo: formData.status,
-        motivo: 'Criação da ordem de serviço',
-        usuarioId: 'system', // or logged user if available?
-        usuarioNome: 'Sistema'
-      }
-    });
+      // Create History
+      await prisma.statusHistorico.create({
+        data: {
+          ordemServicoId: novaOrdem.id,
+          statusAnterior: '', // or 'none'
+          statusNovo: formData.status,
+          motivo: 'Criação da ordem de serviço',
+          usuarioId: 'system', // or logged user if available?
+          usuarioNome: 'Sistema'
+        }
+      });
 
-    // Notify (Socket, SMS, Email, PDF) - Reuse logic but pass `novaOrdemMapped`
-    // ... (Simplified for this edit, logic below)
+      // Notify (Socket, SMS, Email, PDF) - Reuse logic but pass `novaOrdemMapped`
+      // ... (Simplified for this edit, logic below)
 
-    // WebSocket
-    try {
-      const io = getSocketIOInstance();
-      if (io) {
-        io.emit('new-order-created', { /* ... */ });
-      }
-    } catch (e) { }
+      // WebSocket
+      try {
+        const io = getSocketIOInstance();
+        if(io) {
+          io.emit('new-order-created', { /* ... */ });
+        }
+      } catch(e) { }
 
     // SMS/Email/PDF logic here...
     // (Omitted for brevity in plan, but will be in full code)
 
     return NextResponse.json({
-      success: true,
-      message: 'Ordem de serviço criada com sucesso',
-      data: novaOrdemMapped
-    }, { status: 201 });
+        success: true,
+        message: 'Ordem de serviço criada com sucesso',
+        data: novaOrdemMapped
+      }, { status: 201 });
 
-  } catch (error) {
-    console.error('Erro na criação da ordem:', error);
-    return NextResponse.json(
-      { error: 'Erro interno do servidor', details: String(error) },
-      { status: 500 }
-    );
+    } catch (error) {
+      console.error('Erro na criação da ordem:', error);
+      return NextResponse.json(
+        { error: 'Erro interno do servidor', details: String(error) },
+        { status: 500 }
+      );
+    }
   }
-}

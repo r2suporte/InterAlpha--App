@@ -26,6 +26,7 @@ model User {
   ordensServicoTecnico OrdemServico[]    @relation("OrdemServicoTecnico")
   ordensServicoCriadas OrdemServico[]    @relation("OrdemServicoCreatedBy")
   pagamentosCriados    Pagamento[]       @relation("PagamentoCreatedBy")
+  despesasCriadas      Despesa[]         @relation("DespesaCreatedBy")
   statusHistorico      StatusHistorico[]
 
   @@map("users")
@@ -149,6 +150,8 @@ model PecaUtilizada {
 
   // Relacionamentos
   ordemServico   OrdemServico @relation(fields: [ordemServicoId], references: [id], onDelete: Cascade)
+  peca           Peca?        @relation(fields: [pecaId], references: [id])
+  pecaId         String?      @map("peca_id") @db.Uuid
 
   @@map("pecas_utilizadas")
 }
@@ -173,6 +176,29 @@ model Pagamento {
   createdByUser User?        @relation("PagamentoCreatedBy", fields: [createdBy], references: [id])
 
   @@map("pagamentos")
+}
+
+// 💸 Modelo de Despesa
+model Despesa {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  descricao       String    @db.VarChar(255)
+  valor           Decimal   @db.Decimal(10, 2)
+  data            DateTime  @db.Timestamptz
+  categoria       String    @db.VarChar(50)
+  status          String    @default("pendente") @db.VarChar(20) // pago, pendente, vencido
+  fornecedor      String?   @db.VarChar(255)
+  dataVencimento  DateTime? @map("data_vencimento") @db.Timestamptz
+  observacoes     String?   @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  createdBy       String?   @map("created_by") @db.Uuid
+
+  // Relacionamentos
+  createdByUser    User?       @relation("DespesaCreatedBy", fields: [createdBy], references: [id])
+  fornecedorRef    Fornecedor? @relation(fields: [fornecedorId], references: [id])
+  fornecedorId     String?     @map("fornecedor_id") @db.Uuid
+
+  @@map("despesas")
 }
 
 // 📝 Modelo de Histórico de Status
@@ -337,3 +363,46 @@ model ClienteAprovacao {
 // - pgcrypto: Para criptografia
 // - pg_stat_statements: Para análise de performance
 // - timescaledb: Para dados de time-series (se necessário)
+// 🏭 Modelo de Fornecedor
+model Fornecedor {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome          String   @db.VarChar(255)
+  cpfCnpj       String?  @map("cpf_cnpj") @db.VarChar(20)
+  email         String?  @db.VarChar(255)
+  telefone      String?  @db.VarChar(20)
+  endereco      String?  @db.Text
+  observacoes   String?  @db.Text
+  
+  pecas         Peca[]
+  despesas      Despesa[]
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("fornecedores")
+}
+
+// 📦 Modelo de Peça (Estoque)
+model Peca {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome          String   @db.VarChar(255)
+  codigo        String?  @unique @db.VarChar(50) // SKU
+  marca         String?  @db.VarChar(100)
+  modelo        String?  @db.VarChar(100)
+  
+  quantidade    Int      @default(0)
+  minimo        Int      @default(1) // Estoque mínimo para alerta
+  
+  precoCusto    Decimal  @map("preco_custo") @db.Decimal(10, 2)
+  precoVenda    Decimal  @map("preco_venda") @db.Decimal(10, 2)
+  localizacao   String?  @db.VarChar(100) // Prateleira A, etc.
+  
+  fornecedorId  String?  @map("fornecedor_id") @db.Uuid
+  fornecedor    Fornecedor? @relation(fields: [fornecedorId], references: [id])
+  
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  usos PecaUtilizada[]
+
+  @@map("pecas")
+}

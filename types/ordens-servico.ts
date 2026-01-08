@@ -120,6 +120,9 @@ export interface OrdemServico {
   financeiro?: FinanceiroOrdemServico;
   status_financeiro?: StatusFinanceiro;
 
+  // Peças
+  pecas?: PecaUtilizada[];
+
   // Metadados
   created_at: string;
   updated_at: string;
@@ -135,6 +138,8 @@ export interface OrdemServicoFormData {
 
   // Informações específicas do equipamento
   serial_number: string;
+  tipo_dispositivo?: string;
+  modelo_dispositivo?: string;
   imei: string; // Para iPads com conectividade celular
 
   tipo_servico: TipoServico | '';
@@ -162,12 +167,19 @@ export interface OrdemServicoFormData {
 
   garantia_servico_dias: string;
   garantia_pecas_dias: string;
+  pecas?: {
+    id: string;
+    nome: string;
+    quantidade: number;
+    valor_unitario: number;
+  }[];
 }
 
 // Interface para peças utilizadas
 export interface PecaUtilizada {
   id: string;
   ordem_servico_id: string;
+  peca_id?: string; // ID da peça no estoque
   nome: string;
   codigo_peca?: string;
   codigo_apple?: string; // Código oficial Apple da peça

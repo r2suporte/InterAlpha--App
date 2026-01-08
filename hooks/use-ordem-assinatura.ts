@@ -10,71 +10,15 @@ interface UseOrdemAssinaturaProps {
 
 export function useOrdemAssinatura({ ordem }: UseOrdemAssinaturaProps) {
   const handlePrint = useCallback(() => {
-    // Configurações específicas para impressão
-    const printStyles = `
-      <style>
-        @media print {
-          body { margin: 0; }
-          .print\\:hidden { display: none !important; }
-          .print\\:shadow-none { box-shadow: none !important; }
-          .print\\:p-0 { padding: 0 !important; }
-          @page { 
-            margin: 1cm; 
-            size: A4;
-          }
-        }
-      </style>
-    `;
+    // Abre o PDF gerado pela API em uma nova aba, onde o usuário pode visualizar e imprimir
+    window.open(`/api/ordens-servico/${ordem.id}/pdf`, '_blank');
+  }, [ordem.id]);
 
-    // Adiciona estilos de impressão temporariamente
-    const styleElement = document.createElement('style');
-    styleElement.innerHTML = printStyles;
-    document.head.appendChild(styleElement);
-
-    // Executa a impressão
-    window.print();
-
-    // Remove os estilos após a impressão
-    setTimeout(() => {
-      document.head.removeChild(styleElement);
-    }, 1000);
-  }, []);
-
-  const handleDownloadPDF = useCallback(async () => {
-    try {
-      // Para implementação futura com biblioteca de PDF
-      // Por enquanto, abre a janela de impressão que permite salvar como PDF
-      const printStyles = `
-        <style>
-          @media print {
-            body { margin: 0; }
-            .print\\:hidden { display: none !important; }
-            .print\\:shadow-none { box-shadow: none !important; }
-            .print\\:p-0 { padding: 0 !important; }
-            @page { 
-              margin: 1cm; 
-              size: A4;
-            }
-          }
-        </style>
-      `;
-
-      const styleElement = document.createElement('style');
-      styleElement.innerHTML = printStyles;
-      document.head.appendChild(styleElement);
-
-      // Abre a janela de impressão (usuário pode escolher "Salvar como PDF")
-      window.print();
-
-      setTimeout(() => {
-        document.head.removeChild(styleElement);
-      }, 1000);
-    } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
-      // Fallback para impressão normal
-      handlePrint();
-    }
-  }, [handlePrint]);
+  const handleDownloadPDF = useCallback(() => {
+    // Para download, podemos também abrir em nova aba ou criar um link temporário
+    // Como a API retorna Content-Disposition: attachment, abrir irá disparar download ou visualização
+    window.open(`/api/ordens-servico/${ordem.id}/pdf`, '_blank');
+  }, [ordem.id]);
 
   const generateFileName = useCallback(() => {
     const cliente = ordem.cliente || ordem.cliente_portal;

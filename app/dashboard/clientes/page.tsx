@@ -553,33 +553,13 @@ export default function ClientesPage() {
                   <Filter className="mr-2 h-4 w-4" />
                   Filtros
                 </Button>
-                <Button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    console.log('🔵 Clique em Novo Cliente');
-                    openCreateModal();
-                  }}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl"
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Novo Cliente
-                </Button>
+
               </div>
             </ShowHide>
 
             <ShowHide on={['sm']}>
               <div className="flex w-full items-center space-x-2">
-                <Button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    console.log('🔵 Clique em Novo Cliente (Mobile)');
-                    openCreateModal();
-                  }}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl"
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Novo Cliente
-                </Button>
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">

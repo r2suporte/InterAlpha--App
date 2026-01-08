@@ -35,71 +35,50 @@ export default function PecasOrdemServico({
   const [busca, setBusca] = useState('');
   const [mostrarBusca, setMostrarBusca] = useState(false);
 
-  // Simular dados de peças disponíveis
   useEffect(() => {
-    const pecasSimuladas: Peca[] = [
-      {
-        id: '1',
-        part_number: 'A2337',
-        nome: 'Tela LCD iPhone 13',
-        descricao: 'Tela LCD original para iPhone 13',
-        categoria: 'tela',
-        preco_custo: 180.0,
-        preco_venda: 280.0,
-        margem_lucro: 35.7,
-        quantidade_estoque: 15,
-        estoque_minimo: 5,
-        fornecedor_id: 'fornecedor-1',
-        localizacao_estoque: 'A1-B2',
-        status: 'disponivel',
-        garantia_meses: 6,
-        ativo: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-        created_by: 'sistema',
-      },
-      {
-        id: '2',
-        part_number: 'A2484',
-        nome: 'Bateria iPhone 13',
-        descricao: 'Bateria original para iPhone 13',
-        categoria: 'bateria',
-        preco_custo: 85.0,
-        preco_venda: 150.0,
-        margem_lucro: 43.3,
-        quantidade_estoque: 25,
-        estoque_minimo: 10,
-        fornecedor_id: 'fornecedor-1',
-        localizacao_estoque: 'B1-C3',
-        status: 'disponivel',
-        garantia_meses: 12,
-        ativo: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-        created_by: 'sistema',
-      },
-      {
-        id: '3',
-        part_number: 'A2633',
-        nome: 'Câmera Traseira iPhone 13',
-        descricao: 'Câmera traseira original para iPhone 13',
-        categoria: 'camera',
-        preco_custo: 120.0,
-        preco_venda: 200.0,
-        margem_lucro: 40.0,
-        quantidade_estoque: 8,
-        estoque_minimo: 3,
-        fornecedor_id: 'fornecedor-2',
-        localizacao_estoque: 'C1-D2',
-        status: 'disponivel',
-        garantia_meses: 6,
-        ativo: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-        created_by: 'sistema',
-      },
-    ];
-    setPecasDisponiveis(pecasSimuladas);
+    const fetchPecas = async () => {
+      try {
+        const response = await fetch('/api/estoque/pecas');
+        if (!response.ok) throw new Error('Falha ao buscar peças');
+        const data = await response.json();
+        // Adapt API data format to Peca interface if necessary
+        // API returns PascalCase or snake_case? Let's assume standard JSON response matches interface or we adapt.
+        // Looking at Peca type: it likely expects snake_case based on previous mock data.
+        // API returns mixed? Let's trust the API returns compatible objects or minimal map.
+        // Previous API route `app/api/estoque/pecas/route.ts` returns prisma objects directly.
+        // Prisma model uses camelCase mainly but map to snake_case in DB.
+        // However, Prisma JS client returns camelCase properties by default (e.g. precoCusto) unless we mapped them in Types?
+        // Wait, Schema has `@map`. Prisma Client uses field name (camelCase).
+        // The Mock Data used `preco_custo`. 
+        // I need to map the API response (camelCase) to the component's expected format (snake_case) or update the component to use camelCase.
+        // Better to update component to use camelCase matching the typical Typescript/Prisma usage, 
+        // BUT existing code throughout this file uses `preco_custo`.
+        // So I will map here.
+
+        const mappedPecas: Peca[] = data.map((p: any) => ({
+          id: p.id,
+          nome: p.nome,
+          part_number: p.codigo, // Schema has 'codigo', mock had 'part_number'
+          descricao: p.descricao || p.nome,
+          categoria: p.categoria || 'geral',
+          preco_custo: Number(p.precoCusto),
+          preco_venda: Number(p.precoVenda),
+          quantidade_estoque: p.quantidade,
+          estoque_minimo: p.minimo,
+          marca: p.marca,
+          modelo: p.modelo,
+          // ... map other fields safe defaults
+          status: p.quantidade > 0 ? 'disponivel' : 'indisponivel',
+          ativo: true
+        }));
+
+        setPecasDisponiveis(mappedPecas);
+      } catch (error) {
+        console.error('Erro ao carregar peças:', error);
+      }
+    };
+
+    fetchPecas();
   }, []);
 
   // Converter peças utilizadas para formato com dados completos
@@ -133,6 +112,7 @@ export default function PecasOrdemServico({
     const novaPecaUtilizada: PecaUtilizada = {
       id: `temp-${Date.now()}`,
       ordem_servico_id: ordemServicoId,
+      peca_id: peca.id,
       nome: peca.nome,
       codigo_peca: peca.part_number,
       quantidade: 1,

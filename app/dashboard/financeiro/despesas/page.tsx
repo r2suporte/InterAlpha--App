@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 import {
   AlertTriangle,
@@ -60,6 +60,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { useToast } from '@/components/ui/toast-system';
 
 interface Despesa {
   id: string;
@@ -69,51 +70,16 @@ interface Despesa {
   categoria: string;
   status: 'pago' | 'pendente' | 'vencido';
   fornecedor?: string;
+  fornecedorId?: string;
+  fornecedorNome?: string;
   data_vencimento?: string;
   observacoes?: string;
 }
 
-const mockDespesas: Despesa[] = [
-  {
-    id: '1',
-    descricao: 'Aluguel da loja',
-    valor: 3500.0,
-    data: '2024-01-01',
-    categoria: 'Fixas',
-    status: 'pago',
-    fornecedor: 'Imobiliária Central',
-    data_vencimento: '2024-01-05',
-  },
-  {
-    id: '2',
-    descricao: 'Compra de peças iPhone',
-    valor: 1250.0,
-    data: '2024-01-10',
-    categoria: 'Estoque',
-    status: 'pendente',
-    fornecedor: 'TechParts Ltda',
-    data_vencimento: '2024-01-20',
-  },
-  {
-    id: '3',
-    descricao: 'Conta de energia elétrica',
-    valor: 450.0,
-    data: '2024-01-08',
-    categoria: 'Utilidades',
-    status: 'vencido',
-    fornecedor: 'Companhia Elétrica',
-    data_vencimento: '2024-01-15',
-  },
-  {
-    id: '4',
-    descricao: 'Salário funcionário',
-    valor: 2800.0,
-    data: '2024-01-01',
-    categoria: 'Pessoal',
-    status: 'pago',
-    fornecedor: 'João Técnico',
-  },
-];
+interface Fornecedor {
+  id: string;
+  nome: string;
+}
 
 const categorias = [
   'Todas',
@@ -129,19 +95,63 @@ const statusOptions = ['Todos', 'Pago', 'Pendente', 'Vencido'];
 
 export default function DespesasPage() {
   const { isMobile } = useBreakpoint();
-  const [despesas, setDespesas] = useState<Despesa[]>(mockDespesas);
+  const { success, error } = useToast();
+  const [despesas, setDespesas] = useState<Despesa[]>([]);
+  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filtroCategoria, setFiltroCategoria] = useState('Todas');
   const [filtroStatus, setFiltroStatus] = useState('Todos');
   const [busca, setBusca] = useState('');
   const [dialogAberto, setDialogAberto] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [novaDespesa, setNovaDespesa] = useState({
     descricao: '',
     valor: '',
     categoria: '',
     fornecedor: '',
+    fornecedor_id: '',
     data_vencimento: '',
     observacoes: '',
+    status: 'pendente' as 'pago' | 'pendente' | 'vencido',
   });
+
+  const fetchDespesas = useCallback(async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (filtroCategoria !== 'Todas') params.append('categoria', filtroCategoria);
+      if (filtroStatus !== 'Todos') params.append('status', filtroStatus);
+      if (busca) params.append('search', busca);
+
+      const response = await fetch(`/api/financeiro/despesas?${params.toString()}`);
+      if (!response.ok) throw new Error('Falha ao carregar despesas');
+
+      const data = await response.json();
+      setDespesas(data);
+    } catch (err) {
+      console.error(err);
+      error('Erro', 'Não foi possível carregar as despesas.');
+    } finally {
+      setLoading(false);
+    }
+  }, [filtroCategoria, filtroStatus, busca, error]);
+
+  const fetchFornecedores = useCallback(async () => {
+    try {
+      const response = await fetch('/api/estoque/fornecedores');
+      if (response.ok) {
+        const data = await response.json();
+        setFornecedores(data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar fornecedores:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDespesas();
+    fetchFornecedores();
+  }, [fetchDespesas, fetchFornecedores]);
 
   const formatarMoeda = (valor: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -151,6 +161,7 @@ export default function DespesasPage() {
   };
 
   const formatarData = (data: string) => {
+    if (!data) return '-';
     return new Date(data).toLocaleDateString('pt-BR');
   };
 
@@ -167,53 +178,86 @@ export default function DespesasPage() {
     }
   };
 
-  const handleSalvarDespesa = () => {
-    // Validação básica
-    if (
-      !novaDespesa.descricao ||
-      !novaDespesa.valor ||
-      !novaDespesa.categoria
-    ) {
-      alert('Por favor, preencha todos os campos obrigatórios.');
+  const handleSalvarDespesa = async () => {
+    if (!novaDespesa.descricao || !novaDespesa.valor || !novaDespesa.categoria) {
+      error('Erro', 'Por favor, preencha todos os campos obrigatórios.');
       return;
     }
 
-    // Criar nova despesa
-    const despesa: Despesa = {
-      id: (despesas.length + 1).toString(),
-      descricao: novaDespesa.descricao,
-      valor: parseFloat(novaDespesa.valor),
-      data: new Date().toISOString().split('T')[0],
-      categoria: novaDespesa.categoria,
-      status: 'pendente',
-      fornecedor: novaDespesa.fornecedor || undefined,
-      data_vencimento: novaDespesa.data_vencimento || undefined,
-      observacoes: novaDespesa.observacoes || undefined,
-    };
+    try {
+      const url = editingId
+        ? `/api/financeiro/despesas/${editingId}`
+        : '/api/financeiro/despesas';
 
-    // Adicionar à lista
-    setDespesas([...despesas, despesa]);
+      const method = editingId ? 'PUT' : 'POST';
 
-    // Limpar formulário
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(novaDespesa),
+      });
+
+      if (!response.ok) throw new Error('Falha ao salvar despesa');
+
+      success('Sucesso', `Despesa ${editingId ? 'atualizada' : 'criada'} com sucesso!`);
+
+      setDialogAberto(false);
+      resetForm();
+      fetchDespesas();
+    } catch (err) {
+      console.error(err);
+      error('Erro', 'Erro ao salvar despesa.');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta despesa?')) return;
+
+    try {
+      const response = await fetch(`/api/financeiro/despesas/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Falha ao excluir despesa');
+
+      success('Sucesso', 'Despesa excluída com sucesso.');
+      fetchDespesas();
+    } catch (err) {
+      console.error(err);
+      error('Erro', 'Erro ao excluir despesa.');
+    }
+  };
+
+  const handleEdit = (despesa: Despesa) => {
+    setEditingId(despesa.id);
+    setNovaDespesa({
+      descricao: despesa.descricao,
+      valor: despesa.valor.toString(),
+      categoria: despesa.categoria,
+      fornecedor: despesa.fornecedor || '',
+      fornecedor_id: despesa.fornecedorId || '',
+      data_vencimento: despesa.data_vencimento ? new Date(despesa.data_vencimento).toISOString().split('T')[0] : '',
+      observacoes: despesa.observacoes || '',
+      status: despesa.status,
+    });
+    setDialogAberto(true);
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
     setNovaDespesa({
       descricao: '',
       valor: '',
       categoria: '',
       fornecedor: '',
+      fornecedor_id: '',
       data_vencimento: '',
       observacoes: '',
+      status: 'pendente',
     });
-
-    // Fechar diálogo
-    setDialogAberto(false);
-
-    // Simular salvamento
-    console.log('Nova despesa salva:', despesa);
-    alert('Despesa adicionada com sucesso!');
   };
 
   const handleExportarDespesas = () => {
-    console.log('🔵 Exportando despesas...');
     const dados = despesas.map(d => ({
       descricao: d.descricao,
       valor: d.valor,
@@ -235,34 +279,18 @@ export default function DespesasPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    console.log('✅ Despesas exportadas');
   };
 
-  const despesasFiltradas = despesas.filter(despesa => {
-    const matchCategoria =
-      filtroCategoria === 'Todas' || despesa.categoria === filtroCategoria;
-    const matchStatus =
-      filtroStatus === 'Todos' || despesa.status === filtroStatus.toLowerCase();
-    const matchBusca =
-      despesa.descricao.toLowerCase().includes(busca.toLowerCase()) ||
-      despesa.fornecedor?.toLowerCase().includes(busca.toLowerCase());
-
-    return matchCategoria && matchStatus && matchBusca;
-  });
-
-  const totalDespesas = despesasFiltradas.reduce(
-    (acc, despesa) => acc + despesa.valor,
-    0
-  );
-  const despesasPagas = despesasFiltradas
+  const totalDespesas = despesas.reduce((acc, despesa) => acc + Number(despesa.valor), 0);
+  const despesasPagas = despesas
     .filter(d => d.status === 'pago')
-    .reduce((acc, despesa) => acc + despesa.valor, 0);
-  const despesasPendentes = despesasFiltradas
+    .reduce((acc, despesa) => acc + Number(despesa.valor), 0);
+  const despesasPendentes = despesas
     .filter(d => d.status === 'pendente')
-    .reduce((acc, despesa) => acc + despesa.valor, 0);
-  const despesasVencidas = despesasFiltradas
+    .reduce((acc, despesa) => acc + Number(despesa.valor), 0);
+  const despesasVencidas = despesas
     .filter(d => d.status === 'vencido')
-    .reduce((acc, despesa) => acc + despesa.valor, 0);
+    .reduce((acc, despesa) => acc + Number(despesa.valor), 0);
 
   return (
     <SidebarProvider>
@@ -298,7 +326,7 @@ export default function DespesasPage() {
                   {formatarMoeda(totalDespesas)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {despesasFiltradas.length} despesas
+                  {despesas.length} despesas
                 </p>
               </CardContent>
             </Card>
@@ -357,7 +385,7 @@ export default function DespesasPage() {
                 <div className="flex flex-col space-y-2 md:flex-row md:space-x-2 md:space-y-0">
                   <button
                     onClick={() => {
-                      console.log('🔵 Clique em Nova Despesa');
+                      resetForm();
                       setDialogAberto(true);
                     }}
                     className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -371,9 +399,9 @@ export default function DespesasPage() {
                   <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Nova Despesa</DialogTitle>
+                        <DialogTitle>{editingId ? 'Editar Despesa' : 'Nova Despesa'}</DialogTitle>
                         <DialogDescription>
-                          Adicione uma nova despesa ao sistema
+                          {editingId ? 'Edite os detalhes da despesa' : 'Adicione uma nova despesa ao sistema'}
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
@@ -430,18 +458,67 @@ export default function DespesasPage() {
                           </Select>
                         </div>
                         <div>
-                          <Label htmlFor="fornecedor">Fornecedor</Label>
-                          <Input
-                            id="fornecedor"
-                            placeholder="Nome do fornecedor"
-                            value={novaDespesa.fornecedor}
-                            onChange={e =>
+                          <Label htmlFor="status">Status</Label>
+                          <Select
+                            value={novaDespesa.status}
+                            onValueChange={value =>
                               setNovaDespesa({
                                 ...novaDespesa,
-                                fornecedor: e.target.value,
+                                status: value as any,
                               })
                             }
-                          />
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pendente">Pendente</SelectItem>
+                              <SelectItem value="pago">Pago</SelectItem>
+                              <SelectItem value="vencido">Vencido</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="fornecedor">Fornecedor</Label>
+                          <Select
+                            value={novaDespesa.fornecedor_id}
+                            onValueChange={value => {
+                              const fornecedorSelecionado = fornecedores.find(f => f.id === value);
+                              setNovaDespesa({
+                                ...novaDespesa,
+                                fornecedor_id: value,
+                                fornecedor: fornecedorSelecionado ? fornecedorSelecionado.nome : novaDespesa.fornecedor
+                              })
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um fornecedor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Outro / Não cadastrado</SelectItem>
+                              {fornecedores.map(f => (
+                                <SelectItem key={f.id} value={f.id}>
+                                  {f.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          {(!novaDespesa.fornecedor_id || novaDespesa.fornecedor_id === 'none') && (
+                            <Input
+                              id="fornecedor_manual"
+                              placeholder="Nome do fornecedor (se não cadastrado)"
+                              value={novaDespesa.fornecedor}
+                              onChange={e =>
+                                setNovaDespesa({
+                                  ...novaDespesa,
+                                  fornecedor: e.target.value,
+                                  fornecedor_id: ''
+                                })
+                              }
+                              className="mt-2"
+                            />
+                          )}
                         </div>
                         <div>
                           <Label htmlFor="vencimento">Data de Vencimento</Label>
@@ -487,7 +564,6 @@ export default function DespesasPage() {
                   </Dialog>
                   <button
                     onClick={() => {
-                      console.log('🔵 Clique em Exportar Despesas');
                       handleExportarDespesas();
                     }}
                     className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -545,76 +621,89 @@ export default function DespesasPage() {
 
               {/* Lista de Despesas */}
               <div className="space-y-4">
-                {despesasFiltradas.map(despesa => (
-                  <div
-                    key={despesa.id}
-                    className="flex items-center justify-between rounded-lg border p-4"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-4">
-                        <div className="flex-1">
-                          <h3 className="font-medium">{despesa.descricao}</h3>
-                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                            <span>{formatarData(despesa.data)}</span>
-                            <span>•</span>
-                            <span>{despesa.categoria}</span>
-                            {despesa.fornecedor && (
-                              <>
-                                <span>•</span>
-                                <span>{despesa.fornecedor}</span>
-                              </>
-                            )}
-                            {despesa.data_vencimento && (
-                              <>
-                                <span>•</span>
-                                <span>
-                                  Venc: {formatarData(despesa.data_vencimento)}
-                                </span>
-                              </>
-                            )}
+                {loading ? (
+                  <div className="py-8 text-center text-muted-foreground">Carregando despesas...</div>
+                ) : (
+                  despesas.map(despesa => (
+                    <div
+                      key={despesa.id}
+                      className="flex items-center justify-between rounded-lg border p-4"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex-1">
+                            <h3 className="font-medium">{despesa.descricao}</h3>
+                            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                              <span>{formatarData(despesa.data)}</span>
+                              <span>•</span>
+                              <span>{despesa.categoria}</span>
+                              {despesa.fornecedor && (
+                                <>
+                                  <span>•</span>
+                                  <span>{despesa.fornecedorNome || despesa.fornecedor}</span>
+                                </>
+                              )}
+                              {despesa.data_vencimento && (
+                                <>
+                                  <span>•</span>
+                                  <span>
+                                    Venc: {formatarData(despesa.data_vencimento)}
+                                  </span>
+                                </>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-red-600">
-                            -{formatarMoeda(despesa.valor)}
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-red-600">
+                              -{formatarMoeda(despesa.valor)}
+                            </div>
+                            <Badge className={getStatusColor(despesa.status)}>
+                              {despesa.status.charAt(0).toUpperCase() +
+                                despesa.status.slice(1)}
+                            </Badge>
                           </div>
-                          <Badge className={getStatusColor(despesa.status)}>
-                            {despesa.status.charAt(0).toUpperCase() +
-                              despesa.status.slice(1)}
-                          </Badge>
                         </div>
                       </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(despesa)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <FileText className="mr-2 h-4 w-4" />
+                            Ver Detalhes
+                          </DropdownMenuItem>
+                          {despesa.status !== 'pago' && (
+                            <DropdownMenuItem onClick={() => {
+                              setEditingId(despesa.id);
+                              setNovaDespesa(prev => ({ ...prev, status: 'pago' }));
+                              handleSalvarDespesa();
+                            }}>
+                              <DollarSign className="mr-2 h-4 w-4" />
+                              Marcar como Pago
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={() => handleDelete(despesa.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <FileText className="mr-2 h-4 w-4" />
-                          Ver Detalhes
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <DollarSign className="mr-2 h-4 w-4" />
-                          Marcar como Pago
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
 
-              {despesasFiltradas.length === 0 && (
+              {!loading && despesas.length === 0 && (
                 <div className="py-8 text-center">
                   <p className="text-muted-foreground">
                     Nenhuma despesa encontrada
