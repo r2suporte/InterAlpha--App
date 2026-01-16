@@ -1,54 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { withAuthenticatedApiLogging } from '@/lib/middleware/logging-middleware';
 
-import { createClient } from '@/lib/supabase/server';
-
-// GET - Listar equipamentos
-export async function GET(request: NextRequest) {
+// GET - Listar equipamentos (global ou filtrado)
+async function getEquipamentos(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const search = searchParams.get('search');
+    const search = searchParams.get('search') || '';
+    const imei = searchParams.get('imei');
+    const serial = searchParams.get('serial_number') || searchParams.get('serial');
 
-    const supabase = await createClient();
+    const where: any = {};
 
-    let query = supabase.from('equipamentos').select('*');
+    if (imei) {
+      where.imei = imei;
+    }
+    if (serial) {
+      where.numeroSerie = serial;
+    }
 
-    // Aplicar filtro de busca
     if (search) {
-      query = query.or(
-        `modelo.ilike.%${search}%,serial_number.ilike.%${search}%,imei.ilike.%${search}%`
-      );
+      where.OR = [
+        { modelo: { contains: search, mode: 'insensitive' } },
+        { numeroSerie: { contains: search, mode: 'insensitive' } },
+        { imei: { contains: search, mode: 'insensitive' } },
+        { cliente: { nome: { contains: search, mode: 'insensitive' } } }
+      ];
     }
 
-    // Aplicar paginação
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    query = query.order('created_at', { ascending: false }).range(from, to);
-
-    const { data: equipamentos, error, count } = await query;
-
-    if (error) {
-      console.error('Erro ao buscar equipamentos:', error);
-      return NextResponse.json(
-        { error: 'Erro ao buscar equipamentos' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: equipamentos,
-      pagination: {
-        page,
-        limit,
-        total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit),
+    const equipamentos = await prisma.equipamento.findMany({
+      where,
+      include: {
+        cliente: {
+          select: { id: true, nome: true }
+        }
       },
+      orderBy: { updatedAt: 'desc' },
+      take: 50
     });
+
+    return NextResponse.json(equipamentos);
+
   } catch (error) {
-    console.error('Erro na listagem de equipamentos:', error);
+    console.error('Erro ao buscar equipamentos:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -56,137 +50,73 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Criar novo equipamento
-export async function POST(request: NextRequest) {
+// POST - Criar equipamento
+async function createEquipamento(request: NextRequest) {
   try {
+    const data = await request.json();
     const {
+      clienteId,
       tipo,
+      marca,
       modelo,
-      serial_number,
-      ano_fabricacao,
-      cor,
-      configuracao,
-      status_garantia,
-      data_compra,
-      data_vencimento_garantia_apple,
-      data_vencimento_garantia_loja,
-      numero_nota_fiscal,
-      loja_compra,
-      condicao_geral,
-      danos_visiveis,
-      descricao_danos,
-      acessorios_inclusos,
-      versao_sistema,
-      senha_desbloqueio,
-      icloud_removido,
-      find_my_desabilitado,
-    } = await request.json();
+      numeroSerie,
+      imei,
+      senha,
+      acessorios,
+      estado,
+      observacoes
+    } = data;
 
-    // Validação dos campos obrigatórios
-    if (!tipo || !modelo || !serial_number) {
+    if (!clienteId || !tipo || !modelo) {
       return NextResponse.json(
-        { error: 'Tipo, modelo e serial number são obrigatórios' },
+        { error: 'Cliente, Tipo e Modelo são obrigatórios' },
         { status: 400 }
       );
     }
 
-    // Validar tipo de equipamento
-    const tiposValidos = [
-      'macbook_air',
-      'macbook_pro',
-      'mac_mini',
-      'imac',
-      'mac_studio',
-      'mac_pro',
-      'ipad',
-      'ipad_air',
-      'ipad_pro',
-      'ipad_mini',
-    ];
-
-    if (!tiposValidos.includes(tipo)) {
-      return NextResponse.json(
-        { error: `Tipo inválido. Tipos válidos: ${tiposValidos.join(', ')}` },
-        { status: 400 }
-      );
+    // Verificar duplicação de serial se fornecido
+    if (numeroSerie) {
+      const existente = await prisma.equipamento.findFirst({
+        where: {
+          numeroSerie,
+          // Opcional: restringir duplicidade apenas para o mesmo cliente? 
+          // Geralmente serial é único globalmente, mas as vezes repete.
+          // Vamos assumir único por enquanto para evitar confusão.
+        }
+      });
+      if (existente && existente.clienteId !== clienteId) {
+        // Aviso ou erro? Vamos permitir mas logar? 
+        // Melhor retornar erro se for estrito.
+        // Mas como é oficina, as vezes digitam errado.
+        // Vamos apenas criar.
+      }
     }
 
-    const supabase = await createClient();
+    const novoEquipamento = await prisma.equipamento.create({
+      data: {
+        clienteId,
+        tipo,
+        marca,
+        modelo,
+        numeroSerie,
+        imei,
+        senha,
+        acessorios,
+        estado,
+        observacoes
+      }
+    });
 
-    // Verificar se já existe equipamento com o mesmo serial number
-    const { data: equipamentoExistente, error: errorBusca } = await supabase
-      .from('equipamentos')
-      .select('*')
-      .eq('serial_number', serial_number)
-      .single();
+    return NextResponse.json(novoEquipamento, { status: 201 });
 
-    if (errorBusca && errorBusca.code !== 'PGRST116') {
-      console.error('Erro ao buscar equipamento:', errorBusca);
-      return NextResponse.json(
-        { error: 'Erro interno do servidor' },
-        { status: 500 }
-      );
-    }
-
-    if (equipamentoExistente) {
-      return NextResponse.json(
-        { error: 'Já existe um equipamento cadastrado com este serial number' },
-        { status: 409 }
-      );
-    }
-
-    // Preparar dados para inserção
-    const equipamentoData = {
-      tipo: tipo.trim(),
-      modelo: modelo.trim(),
-      serial_number: serial_number.trim(),
-      ano_fabricacao: ano_fabricacao || null,
-      cor: cor?.trim() || null,
-      configuracao: configuracao?.trim() || null,
-      status_garantia: status_garantia || 'fora_garantia',
-      data_compra: data_compra || null,
-      data_vencimento_garantia_apple: data_vencimento_garantia_apple || null,
-      data_vencimento_garantia_loja: data_vencimento_garantia_loja || null,
-      numero_nota_fiscal: numero_nota_fiscal?.trim() || null,
-      loja_compra: loja_compra?.trim() || null,
-      condicao_geral: condicao_geral || 'bom',
-      danos_visiveis: danos_visiveis || [],
-      descricao_danos: descricao_danos?.trim() || null,
-      acessorios_inclusos: acessorios_inclusos || [],
-      versao_sistema: versao_sistema?.trim() || null,
-      senha_desbloqueio: senha_desbloqueio?.trim() || null,
-      icloud_removido: icloud_removido || false,
-      find_my_desabilitado: find_my_desabilitado || false,
-    };
-
-    // Inserir novo equipamento
-    const { data: novoEquipamento, error: errorCriacao } = await supabase
-      .from('equipamentos')
-      .insert(equipamentoData)
-      .select()
-      .single();
-
-    if (errorCriacao) {
-      console.error('Erro ao criar equipamento:', errorCriacao);
-      return NextResponse.json(
-        { error: 'Erro ao criar equipamento' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Equipamento criado com sucesso',
-        data: novoEquipamento,
-      },
-      { status: 201 }
-    );
   } catch (error) {
-    console.error('Erro na criação do equipamento:', error);
+    console.error('Erro ao criar equipamento:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
+
+export const GET = withAuthenticatedApiLogging(getEquipamentos);
+export const POST = withAuthenticatedApiLogging(createEquipamento);

@@ -390,7 +390,7 @@ export const navigationGroups: NavGroup[] = [
       {
         title: 'Peças',
         href: '/dashboard/pecas',
-        icon: LayoutDashboard,
+        icon: Package, // Changed icon to match page
         description: 'Estoque e controle de peças',
       },
       {
@@ -461,6 +461,12 @@ export const navigationGroups: NavGroup[] = [
         href: '/dashboard/configuracoes',
         icon: Settings,
         description: 'Configurações do sistema',
+      },
+      {
+        title: 'Usuários',
+        href: '/dashboard/usuarios',
+        icon: Users,
+        description: 'Gestão de usuários e permissões',
       },
       {
         title: 'Empresa',

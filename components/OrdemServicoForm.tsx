@@ -1,32 +1,42 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Calculator,
   FileText,
-  Package,
   Save,
   User,
   Wrench,
+  Smartphone,
 } from 'lucide-react';
 
-import { useClients } from '../hooks/use-clients';
+import { useClients } from '../hooks/use-clients'; // Keeping for type if needed
 import { useTechnicians } from '../hooks/use-technicians';
-import { EquipamentoApple } from '../types/equipamentos';
 import { formatarMoeda } from '../types/financeiro';
 import {
   OrdemServicoFormData,
   PecaUtilizada,
-  PrioridadeOrdemServico,
-  StatusOrdemServico,
-  TipoServico,
+  Cliente
 } from '../types/ordens-servico';
 import PecasOrdemServico from './PecasOrdemServico';
 import { FormField } from './form/form-field';
+import { ClientSearch } from '@/components/client-search';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+// Equipment Type
+interface Equipamento {
+  id: string;
+  tipo: string;
+  marca: string;
+  modelo: string;
+  numeroSerie: string;
+  imei?: string;
+  observacoes?: string;
+}
 
 interface OrdemServicoFormProps {
-  ordemServico?: OrdemServicoFormData;
+  ordemServico?: OrdemServicoFormData & { id?: string }; // Extend to allow ID
   onSave: (_dados: OrdemServicoFormData) => void;
   onSubmit?: (_dados: OrdemServicoFormData) => void;
   onCancel: () => void;
@@ -60,9 +70,8 @@ export default function OrdemServicoForm({
     data_previsao_conclusao: '',
     observacoes_cliente: '',
     observacoes_tecnico: '',
-    garantia_servico_dias: '',
-    garantia_pecas_dias: '',
-    // Novos campos para autorizada Apple
+    garantia_servico_dias: '90',
+    garantia_pecas_dias: '90',
     serial_number: '',
     imei: '',
     descricao_defeito: '',
@@ -71,141 +80,183 @@ export default function OrdemServicoForm({
   });
 
   const [pecasUtilizadas, setPecasUtilizadas] = useState<PecaUtilizada[]>([]);
+  const [equipamentosCliente, setEquipamentosCliente] = useState<Equipamento[]>([]);
+  const [modoNovoEquipamento, setModoNovoEquipamento] = useState(false);
+  const [salvarNovoEquipamento, setSalvarNovoEquipamento] = useState(true);
 
-  const [equipamentosDisponiveis, setEquipamentosDisponiveis] = useState<
-    EquipamentoApple[]
-  >([]);
   const [carregando, setCarregando] = useState(false);
+  const [carregandoEquipamentos, setCarregandoEquipamentos] = useState(false);
   const [erros, setErros] = useState<Record<string, string>>({});
 
-  // Hooks para buscar dados
-  const { clients, loading: loadingClients } = useClients();
   const { loading: loadingTechnicians, getActiveTechnicians } = useTechnicians();
 
-  // Simular dados de equipamentos
-
-
-  // Carregar dados da ordem de serviço se fornecida
+  // Load initial data
   useEffect(() => {
     if (ordemServico) {
       setFormData(ordemServico);
+      // If editing, we might need to load equipment list if client is set
+      if (ordemServico.cliente_id) {
+        fetchEquipamentosCliente(ordemServico.cliente_id);
+      }
     }
   }, [ordemServico]);
 
-  // Calcular valor total quando peças ou valor do serviço mudam
-  const valorTotal = React.useMemo(() => {
-    const valorPecas = pecasUtilizadas.reduce(
-      (total: number, peca: PecaUtilizada) => total + peca.valor_total,
-      0
-    );
-    return parseFloat(formData.valor_servico || '0') + valorPecas;
-  }, [pecasUtilizadas, formData.valor_servico]);
+  // Fetch equipments when client changes
+  useEffect(() => {
+    if (formData.cliente_id && !ordemServico) { // Only auto-fetch if not editing initial load (handled above)
+      fetchEquipamentosCliente(formData.cliente_id);
+    } else if (!formData.cliente_id) {
+      setEquipamentosCliente([]);
+    }
+  }, [formData.cliente_id]);
 
-  // Atualizar valor_pecas no formData quando as peças mudam
+  const fetchEquipamentosCliente = async (clienteId: string) => {
+    setCarregandoEquipamentos(true);
+    try {
+      const res = await fetch(`/api/clientes/${clienteId}/equipamentos`);
+      if (res.ok) {
+        const data = await res.json();
+        setEquipamentosCliente(data);
+      }
+    } catch (e) {
+      console.error("Erro ao buscar equipamentos", e);
+    } finally {
+      setCarregandoEquipamentos(false);
+    }
+  };
+
+  // Update total value
   useEffect(() => {
     const valorPecas = pecasUtilizadas.reduce(
       (total: number, peca: PecaUtilizada) => total + peca.valor_total,
       0
     );
-
-    setFormData(prev => {
-      if (prev.valor_pecas === valorPecas.toString()) return prev;
-      return {
-        ...prev,
-        valor_pecas: valorPecas.toString(),
-      }
-    });
+    // Update form data if mismatch to ensure consistency
+    if (formData.valor_pecas !== valorPecas.toString()) {
+      setFormData(prev => ({ ...prev, valor_pecas: valorPecas.toString() }));
+    }
   }, [pecasUtilizadas]);
 
-  const handleInputChange = React.useCallback((field: keyof OrdemServicoFormData, value: any) => {
+  const valorTotal = React.useMemo(() => {
+    const valorPecas = parseFloat(formData.valor_pecas || '0');
+    return parseFloat(formData.valor_servico || '0') + valorPecas;
+  }, [formData.valor_pecas, formData.valor_servico]);
+
+
+  const handleInputChange = useCallback((field: keyof OrdemServicoFormData, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
     }));
-
-    // Limpar erro do campo quando o usuário começar a digitar
     setErros(prev => {
-      if (!prev[field]) return prev;
-      return {
-        ...prev,
-        [field]: '',
-      }
+      const newErros = { ...prev };
+      delete newErros[field];
+      return newErros;
     });
   }, []);
 
-  const handlePecasChange = React.useCallback((pecas: PecaUtilizada[]) => {
-    setPecasUtilizadas(pecas);
-  }, []);
+  const handleClientSelect = (cliente: Cliente) => {
+    handleInputChange('cliente_id', cliente.id);
+    // Reset equipment selection
+    handleInputChange('equipamento_id', '');
+    setModoNovoEquipamento(false);
+  };
 
-  const validarFormulario = React.useCallback((): boolean => {
-    const novosErros: Record<string, string> = {};
-
-    if (!formData.cliente_id) {
-      novosErros.cliente_id = 'Cliente é obrigatório';
-    }
-
-    if (!formData.tipo_dispositivo) {
-      novosErros.tipo_dispositivo = 'Tipo de dispositivo é obrigatório';
-    }
-
-    if (!formData.modelo_dispositivo) {
-      novosErros.modelo_dispositivo = 'Modelo do dispositivo é obrigatório';
-    }
-
-    if (!formData.problema_reportado.trim()) {
-      novosErros.problema_reportado = 'Descrição do problema é obrigatória';
-    }
-
-    // Validação dos novos campos obrigatórios
-    if (!formData.serial_number?.trim()) {
-      novosErros.serial_number = 'Número de série é obrigatório';
-    } else if (!/^[A-Z0-9]{8,12}$/.test(formData.serial_number)) {
-      novosErros.serial_number =
-        'Número de série deve ter 8-12 caracteres alfanuméricos';
-    }
-
-    if (!formData.descricao_defeito?.trim()) {
-      novosErros.descricao_defeito =
-        'Descrição detalhada do defeito é obrigatória';
-    }
-
-    if (!formData.estado_equipamento?.trim()) {
-      novosErros.estado_equipamento =
-        'Descrição do estado do equipamento é obrigatória';
-    }
-
-    // Validação do IMEI (apenas se preenchido)
-    if (formData.imei && formData.imei.trim()) {
-      if (!/^[0-9]{15}$/.test(formData.imei)) {
-        novosErros.imei = 'IMEI deve conter exatamente 15 dígitos numéricos';
+  const handleEquipamentoSelect = (equipamentoId: string) => {
+    if (equipamentoId === 'new') {
+      setModoNovoEquipamento(true);
+      handleInputChange('equipamento_id', '');
+      // Clear fields for typing
+      handleInputChange('tipo_dispositivo', '');
+      handleInputChange('modelo_dispositivo', '');
+      handleInputChange('serial_number', '');
+      handleInputChange('imei', '');
+      handleInputChange('estado_equipamento', '');
+    } else {
+      setModoNovoEquipamento(false);
+      handleInputChange('equipamento_id', equipamentoId);
+      // Populate fields
+      const eq = equipamentosCliente.find(e => e.id === equipamentoId);
+      if (eq) {
+        handleInputChange('tipo_dispositivo', eq.tipo);
+        handleInputChange('modelo_dispositivo', eq.modelo);
+        handleInputChange('serial_number', eq.numeroSerie || '');
+        handleInputChange('imei', eq.imei || '');
+        // Note: Estado is per OS, usually, not persistent on equipment unless updated?
+        // Only pull if empty? No, better rewrite if explicitly selecting equipment.
       }
     }
+  };
 
-    if (parseFloat(formData.valor_servico) < 0) {
-      novosErros.valor_servico = 'Valor do serviço não pode ser negativo';
+  const criarEquipamento = async () => {
+    if (!formData.tipo_dispositivo || !formData.modelo_dispositivo) return null;
+    try {
+      const res = await fetch('/api/equipamentos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clienteId: formData.cliente_id,
+          tipo: formData.tipo_dispositivo,
+          modelo: formData.modelo_dispositivo,
+          numeroSerie: formData.serial_number,
+          marca: '', // We don't have separate brand field in OS form yet, assume implicit or map
+          imei: formData.imei,
+          estado: formData.estado_equipamento
+        })
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.error("Erro ao criar equipamento", e);
+    }
+    return null;
+  };
+
+  const validarFormulario = (): boolean => {
+    const novosErros: Record<string, string> = {};
+
+    if (!formData.cliente_id) novosErros.cliente_id = 'Cliente é obrigatório';
+    if (!formData.descricao?.trim()) novosErros.descricao = 'Descrição requerida';
+    // Usually 'problema_reportado' is used.
+    if (!formData.problema_reportado?.trim()) novosErros.problema_reportado = 'Problema reportado é obrigatório';
+
+    if (!formData.tipo_dispositivo) novosErros.tipo_dispositivo = 'Tipo de dispositivo é obrigatório';
+    if (!formData.modelo_dispositivo) novosErros.modelo_dispositivo = 'Modelo é obrigatório';
+
+    if (!formData.serial_number?.trim()) {
+      // Is serial mandatory? User requirements say "Risk: no tracking".
+      // So verify serial if possible.
+      // novosErros.serial_number = 'Serial é obrigatório';
     }
 
-    if (!formData.data_previsao_conclusao) {
-      novosErros.data_previsao_conclusao = 'Data prevista é obrigatória';
-    }
+    if (!formData.data_previsao_conclusao) novosErros.data_previsao_conclusao = 'Previsão de conclusão obrigatória';
 
     setErros(novosErros);
     return Object.keys(novosErros).length === 0;
-  }, [formData]);
+  };
 
-  const handleSubmit = React.useCallback(async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validarFormulario()) {
-      return;
-    }
+    if (!validarFormulario()) return;
 
     setCarregando(true);
     try {
+      let finalEquipamentoId = formData.equipamento_id;
+
+      // Auto-create equipment if new mode and checkbox checked
+      if (modoNovoEquipamento && salvarNovoEquipamento && !finalEquipamentoId) {
+        const novoEq = await criarEquipamento();
+        if (novoEq) {
+          finalEquipamentoId = novoEq.id;
+        }
+      }
+
       const dataToSubmit = {
         ...formData,
+        equipamento_id: finalEquipamentoId,
         pecas: pecasUtilizadas.map(p => ({
-          id: p.id.startsWith('temp-') ? p.peca_id || p.id : p.id, // Use real inventory ID if temp
+          id: p.id.startsWith('temp-') ? p.peca_id || p.id : p.id,
           nome: p.nome,
           quantidade: p.quantidade,
           valor_unitario: p.valor_unitario
@@ -213,549 +264,339 @@ export default function OrdemServicoForm({
       };
 
       await onSave(dataToSubmit);
+      if (onSubmit) await onSubmit(dataToSubmit);
 
-      if (onSubmit) {
-        await onSubmit(dataToSubmit);
-      }
-
-      // Reset form
-      setFormData({
-        numero_os: '',
-        cliente_id: '',
-        equipamento_id: '',
-        tipo_servico: 'reparo',
-        titulo: '',
-        descricao: '',
-        problema_reportado: '',
-        diagnostico_inicial: '',
-        status: 'aberta',
-        prioridade: 'media',
-        tecnico_id: '',
-        valor_servico: '',
-        valor_pecas: '',
-        data_inicio: '',
-        data_previsao_conclusao: '',
-        observacoes_cliente: '',
-        observacoes_tecnico: '',
-        garantia_servico_dias: '',
-        garantia_pecas_dias: '',
-        // Novos campos para autorizada Apple
-        serial_number: '',
-        imei: '',
-        descricao_defeito: '',
-        estado_equipamento: '',
-        analise_tecnica: '',
-      });
-      setPecasUtilizadas([]);
     } catch (error) {
-      console.error('Erro ao criar ordem de serviço:', error);
+      console.error('Erro ao salvar:', error);
     } finally {
       setCarregando(false);
     }
-  }, [formData, onSave, onSubmit, validarFormulario]);
-
-
+  };
 
   return (
-    <div className="mx-auto max-w-4xl rounded-lg bg-white shadow-lg">
-      {/* Cabeçalho */}
-      <div className="border-b border-gray-200 px-6 py-4">
+    <div className="mx-auto max-w-5xl rounded-xl bg-white shadow-xl overflow-hidden">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-6 text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <FileText className="h-6 w-6 text-blue-600" />
-            <h2 className="text-xl font-semibold text-gray-900">
-              {ordemServico
-                ? 'Editar Ordem de Serviço'
-                : 'Nova Ordem de Serviço'}
-            </h2>
+            <FileText className="h-8 w-8" />
+            <div>
+              <h2 className="text-2xl font-bold">
+                {ordemServico ? 'Editar Ordem de Serviço' : 'Nova Ordem de Serviço'}
+              </h2>
+              <p className="text-blue-100 text-sm">Preencha os dados abaixo para registrar o serviço</p>
+            </div>
           </div>
-
           {readonly && (
-            <span className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600">
+            <span className="rounded-full bg-white/20 backdrop-blur-md px-4 py-1.5 text-sm font-medium">
               Somente Leitura
             </span>
           )}
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8 p-6">
-        {/* Informações Básicas */}
-        <div className="space-y-6">
-          <div className="mb-4 flex items-center gap-3">
-            <User className="h-5 w-5 text-gray-600" />
-            <h3 className="text-lg font-medium text-gray-900">
-              Informações Básicas
-            </h3>
+      <form onSubmit={handleSubmit} className="p-8 space-y-10">
+
+        {/* Section: Cliente & Equipamento */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          {/* Cliente */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-blue-700 mb-2">
+              <User className="h-5 w-5" />
+              <h3 className="font-semibold text-lg">Cliente</h3>
+            </div>
+
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-100 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Selecione o Cliente *</label>
+                <ClientSearch
+                  onClientSelect={handleClientSelect}
+                  selectedClienteId={formData.cliente_id}
+                />
+                {erros.cliente_id && <p className="text-red-500 text-sm mt-1">{erros.cliente_id}</p>}
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div>
-              <FormField label="Cliente *" error={erros.cliente_id}>
+          {/* Equipamento */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-blue-700 mb-2">
+              <Smartphone className="h-5 w-5" />
+              <h3 className="font-semibold text-lg">Equipamento</h3>
+            </div>
+
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-100 space-y-4">
+              {!formData.cliente_id ? (
+                <div className="flex flex-col items-center justify-center h-32 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-lg">
+                  <User className="h-8 w-8 mb-2 opacity-20" />
+                  Selecione um cliente primeiro
+                </div>
+              ) : (
+                <>
+                  {/* Equipment Selector */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Dispositivo *</label>
+                    <select
+                      className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={modoNovoEquipamento ? 'new' : (formData.equipamento_id || 'new')}
+                      onChange={(e) => handleEquipamentoSelect(e.target.value)}
+                      disabled={readonly || carregandoEquipamentos}
+                    >
+                      <option value="new">+ Novo Equipamento / Não Cadastrado</option>
+                      {equipamentosCliente.map(eq => (
+                        <option key={eq.id} value={eq.id}>
+                          {eq.tipo} {eq.modelo} - {eq.numeroSerie ? `S/N: ${eq.numeroSerie}` : 'Sem S/N'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Equipment Fields */}
+                  <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <FormField label="Tipo *" error={erros.tipo_dispositivo}>
+                      <input
+                        className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm"
+                        placeholder="Ex: iPhone"
+                        value={formData.tipo_dispositivo || ''}
+                        onChange={e => handleInputChange('tipo_dispositivo', e.target.value)}
+                        disabled={readonly || (!modoNovoEquipamento && !!formData.equipamento_id)}
+                      />
+                    </FormField>
+                    <FormField label="Modelo *" error={erros.modelo_dispositivo}>
+                      <input
+                        className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm"
+                        placeholder="Ex: 13 Pro"
+                        value={formData.modelo_dispositivo || ''}
+                        onChange={e => handleInputChange('modelo_dispositivo', e.target.value)}
+                        disabled={readonly || (!modoNovoEquipamento && !!formData.equipamento_id)}
+                      />
+                    </FormField>
+                    <FormField label="Serial Number" error={erros.serial_number}>
+                      <input
+                        className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm font-mono"
+                        placeholder="S/N"
+                        value={formData.serial_number || ''}
+                        onChange={e => handleInputChange('serial_number', e.target.value.toUpperCase())}
+                        disabled={readonly || (!modoNovoEquipamento && !!formData.equipamento_id)}
+                      />
+                    </FormField>
+                    <FormField label="IMEI">
+                      <input
+                        className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm font-mono"
+                        placeholder="Opcional"
+                        value={formData.imei || ''}
+                        onChange={e => handleInputChange('imei', e.target.value)}
+                        disabled={readonly || (!modoNovoEquipamento && !!formData.equipamento_id)}
+                      />
+                    </FormField>
+                  </div>
+
+                  {/* Save Option */}
+                  {modoNovoEquipamento && (
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+                      <input
+                        type="checkbox"
+                        id="saveEq"
+                        checked={salvarNovoEquipamento}
+                        onChange={e => setSalvarNovoEquipamento(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label htmlFor="saveEq" className="text-sm text-gray-600">
+                        Salvar este equipamento no cadastro do cliente
+                      </label>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Section: Detalhes do Serviço */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 text-blue-700 border-b pb-2">
+            <Wrench className="h-5 w-5" />
+            <h3 className="font-semibold text-lg">Detalhes do Serviço</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
+            <FormField label="Problema Relatado *" error={erros.problema_reportado} className="md:col-span-2">
+              <textarea
+                className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm min-h-[80px]"
+                placeholder="Descreva o problema relatado pelo cliente..."
+                value={formData.problema_reportado || ''}
+                onChange={e => handleInputChange('problema_reportado', e.target.value)}
+                disabled={readonly}
+              />
+            </FormField>
+
+            <FormField label="Estado do Equipamento" error={erros.estado_equipamento} className="md:col-span-2">
+              <textarea
+                className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm min-h-[60px]"
+                placeholder="Riscos, amassados, ou condições pré-existentes..."
+                value={formData.estado_equipamento || ''}
+                onChange={e => handleInputChange('estado_equipamento', e.target.value)}
+                disabled={readonly}
+              />
+            </FormField>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Tipo de Serviço">
                 <select
-                  value={formData.cliente_id}
-                  onChange={e => handleInputChange('cliente_id', e.target.value)}
-                  disabled={readonly || loadingClients}
-                  className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.cliente_id ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm"
+                  value={formData.tipo_servico}
+                  onChange={e => handleInputChange('tipo_servico', e.target.value)}
+                  disabled={readonly}
                 >
-                  <option value="">Selecione um cliente</option>
-                  {clients.map(client => (
-                    <option key={client.id} value={client.id}>
-                      {client.nome} {client.numero_cliente ? `(${client.numero_cliente})` : ''}
-                    </option>
-                  ))}
+                  <option value="reparo">Reparo</option>
+                  <option value="manutencao">Manutenção</option>
+                  <option value="diagnostico">Diagnóstico</option>
+                  <option value="upgrade">Upgrade</option>
+                  <option value="limpeza">Limpeza</option>
                 </select>
-                {loadingClients && (
-                  <p className="mt-1 text-xs text-gray-500">Carregando clientes...</p>
-                )}
+              </FormField>
+
+              <FormField label="Prioridade">
+                <select
+                  className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm"
+                  value={formData.prioridade}
+                  onChange={e => handleInputChange('prioridade', e.target.value)}
+                  disabled={readonly}
+                >
+                  <option value="baixa">Baixa</option>
+                  <option value="media">Média</option>
+                  <option value="alta">Alta</option>
+                  <option value="urgente">Urgente</option>
+                </select>
               </FormField>
             </div>
 
-            <FormField label="Tipo de Dispositivo *" error={erros.tipo_dispositivo}>
-              <input
-                type="text"
-                value={formData.tipo_dispositivo || ''}
-                onChange={e => handleInputChange('tipo_dispositivo', e.target.value)}
-                disabled={readonly}
-                placeholder="Ex: iPhone, iPad, MacBook"
-                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.tipo_dispositivo ? 'border-red-500' : 'border-gray-300'
-                  }`}
-              />
-            </FormField>
-          </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Status">
+                <select
+                  className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm"
+                  value={formData.status}
+                  onChange={e => handleInputChange('status', e.target.value)}
+                  disabled={readonly}
+                >
+                  <option value="aberta">Aberta</option>
+                  <option value="em_andamento">Em Andamento</option>
+                  <option value="aguardando_peca">Aguardando Peça</option>
+                  <option value="concluida">Concluída</option>
+                  <option value="cancelada">Cancelada</option>
+                </select>
+              </FormField>
 
-          <div>
-            <FormField label="Modelo *" error={erros.modelo_dispositivo}>
-              <input
-                type="text"
-                value={formData.modelo_dispositivo || ''}
-                onChange={e => handleInputChange('modelo_dispositivo', e.target.value)}
-                disabled={readonly}
-                placeholder="Ex: 13 Pro, Air M1"
-                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.modelo_dispositivo ? 'border-red-500' : 'border-gray-300'
-                  }`}
-              />
-            </FormField>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Técnico Responsável *
-              </label>
-              <select
-                value={formData.tecnico_id}
-                onChange={e => handleInputChange('tecnico_id', e.target.value)}
-                disabled={readonly || loadingTechnicians}
-                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.tecnico_id ? 'border-red-500' : 'border-gray-300'
-                  }`}
-              >
-                <option value="">Selecione um técnico</option>
-                {getActiveTechnicians().map(technician => (
-                  <option key={technician.id} value={technician.id}>
-                    {technician.name} (
-                    {technician.role === 'supervisor_tecnico'
-                      ? 'Supervisor'
-                      : 'Técnico'}
-                    )
-                  </option>
-                ))}
-              </select>
-              {erros.tecnico_id && (
-                <p className="mt-1 text-sm text-red-600">{erros.tecnico_id}</p>
-              )}
-              {loadingTechnicians && (
-                <p className="mt-1 text-sm text-gray-500">
-                  Carregando técnicos...
-                </p>
-              )}
+              <FormField label="Previsão Entrega *" error={erros.data_previsao_conclusao}>
+                <input
+                  type="date"
+                  className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm"
+                  value={formData.data_previsao_conclusao || ''}
+                  onChange={e => handleInputChange('data_previsao_conclusao', e.target.value)}
+                  disabled={readonly}
+                />
+              </FormField>
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Tipo de Serviço
-              </label>
-              <select
-                value={formData.tipo_servico}
-                onChange={e =>
-                  handleInputChange(
-                    'tipo_servico',
-                    e.target.value as TipoServico
-                  )
-                }
-                disabled={readonly}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-              >
-                <option value="reparo">Reparo</option>
-                <option value="manutencao">Manutenção</option>
-                <option value="diagnostico">Diagnóstico</option>
-                <option value="upgrade">Upgrade</option>
-                <option value="limpeza">Limpeza</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Prioridade
-              </label>
-              <select
-                value={formData.prioridade}
-                onChange={e =>
-                  handleInputChange(
-                    'prioridade',
-                    e.target.value as PrioridadeOrdemServico
-                  )
-                }
-                disabled={readonly}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-              >
-                <option value="baixa">Baixa</option>
-                <option value="media">Média</option>
-                <option value="alta">Alta</option>
-                <option value="urgente">Urgente</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Status
-              </label>
-              <select
-                value={formData.status}
-                onChange={e =>
-                  handleInputChange(
-                    'status',
-                    e.target.value as StatusOrdemServico
-                  )
-                }
-                disabled={readonly}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-              >
-                <option value="aguardando_orcamento">
-                  Aguardando Orçamento
-                </option>
-                <option value="orcamento_aprovado">Orçamento Aprovado</option>
-                <option value="em_andamento">Em Andamento</option>
-                <option value="aguardando_peca">Aguardando Peça</option>
-                <option value="concluida">Concluída</option>
-                <option value="entregue">Entregue</option>
-                <option value="cancelada">Cancelada</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Data Prevista de Conclusão *
-              </label>
-              <input
-                type="date"
-                value={formData.data_previsao_conclusao}
-                onChange={e =>
-                  handleInputChange('data_previsao_conclusao', e.target.value)
-                }
-                disabled={readonly}
-                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.data_previsao_conclusao
-                  ? 'border-red-500'
-                  : 'border-gray-300'
-                  }`}
-              />
-              {erros.data_previsao_conclusao && (
-                <p className="mt-1 text-sm text-red-600">
-                  {erros.data_previsao_conclusao}
-                </p>
-              )}
+            <div className="md:col-span-2">
+              <FormField label="Técnico Responsável" error={erros.tecnico_id}>
+                <select
+                  className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm"
+                  value={formData.tecnico_id || ''}
+                  onChange={e => handleInputChange('tecnico_id', e.target.value)}
+                  disabled={readonly || loadingTechnicians}
+                >
+                  <option value="">Selecione...</option>
+                  {getActiveTechnicians().map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </FormField>
             </div>
           </div>
-
-          {/* Informações do Equipamento Selecionado */}
-
         </div>
 
-        {/* Informações do Equipamento Apple */}
+        {/* Section: Peças */}
         <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <Package className="h-5 w-5 text-gray-600" />
-            <h3 className="text-lg font-medium text-gray-900">
-              Informações do Equipamento Apple
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Número de Série *
-              </label>
-              <input
-                type="text"
-                value={formData.serial_number || ''}
-                onChange={e =>
-                  handleInputChange(
-                    'serial_number',
-                    e.target.value.toUpperCase()
-                  )
-                }
-                disabled={readonly}
-                placeholder="Ex: F2LXHB0HJGH5"
-                maxLength={12}
-                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.serial_number ? 'border-red-500' : 'border-gray-300'
-                  }`}
-              />
-              {erros.serial_number && (
-                <p className="mt-1 text-sm text-red-600">
-                  {erros.serial_number}
-                </p>
-              )}
-              <p className="mt-1 text-xs text-gray-500">
-                Número de série Apple (8-12 caracteres alfanuméricos)
-              </p>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                IMEI (apenas para iPads com celular)
-              </label>
-              <input
-                type="text"
-                value={formData.imei || ''}
-                onChange={e =>
-                  handleInputChange('imei', e.target.value.replace(/\D/g, ''))
-                }
-                disabled={readonly}
-                placeholder="Ex: 123456789012345"
-                maxLength={15}
-                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.imei ? 'border-red-500' : 'border-gray-300'
-                  }`}
-              />
-              {erros.imei && (
-                <p className="mt-1 text-sm text-red-600">{erros.imei}</p>
-              )}
-              <p className="mt-1 text-xs text-gray-500">
-                15 dígitos numéricos (obrigatório apenas para iPads com
-                conectividade celular)
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Estado do Equipamento *
-            </label>
-            <textarea
-              value={formData.estado_equipamento || ''}
-              onChange={e =>
-                handleInputChange('estado_equipamento', e.target.value)
-              }
-              disabled={readonly}
-              rows={3}
-              placeholder="Descreva o estado físico do equipamento: riscos, danos, desgaste, etc..."
-              className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.estado_equipamento ? 'border-red-500' : 'border-gray-300'
-                }`}
-            />
-            {erros.estado_equipamento && (
-              <p className="mt-1 text-sm text-red-600">
-                {erros.estado_equipamento}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Descrição do Problema */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <Wrench className="h-5 w-5 text-gray-600" />
-            <h3 className="text-lg font-medium text-gray-900">
-              Descrição do Problema
-            </h3>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Problema Relatado *
-            </label>
-            <textarea
-              value={formData.problema_reportado}
-              onChange={e =>
-                handleInputChange('problema_reportado', e.target.value)
-              }
-              disabled={readonly}
-              rows={4}
-              placeholder="Descreva detalhadamente o problema relatado pelo cliente..."
-              className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.problema_reportado ? 'border-red-500' : 'border-gray-300'
-                }`}
-            />
-            {erros.problema_reportado && (
-              <p className="mt-1 text-sm text-red-600">
-                {erros.problema_reportado}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Descrição Detalhada do Defeito *
-            </label>
-            <textarea
-              value={formData.descricao_defeito || ''}
-              onChange={e =>
-                handleInputChange('descricao_defeito', e.target.value)
-              }
-              disabled={readonly}
-              rows={4}
-              placeholder="Descrição técnica detalhada do defeito identificado..."
-              className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.descricao_defeito ? 'border-red-500' : 'border-gray-300'
-                }`}
-            />
-            {erros.descricao_defeito && (
-              <p className="mt-1 text-sm text-red-600">
-                {erros.descricao_defeito}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Análise Técnica
-            </label>
-            <textarea
-              value={formData.analise_tecnica || ''}
-              onChange={e =>
-                handleInputChange('analise_tecnica', e.target.value)
-              }
-              disabled={readonly}
-              rows={4}
-              placeholder="Análise técnica detalhada, diagnóstico, causa raiz, procedimentos realizados..."
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Observações do Técnico
-            </label>
-            <textarea
-              value={formData.observacoes_tecnico}
-              onChange={e =>
-                handleInputChange('observacoes_tecnico', e.target.value)
-              }
-              disabled={readonly}
-              rows={3}
-              placeholder="Observações técnicas adicionais, recomendações, etc..."
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-            />
-          </div>
-        </div>
-
-        {/* Peças Utilizadas */}
-        <div className="space-y-4">
           <PecasOrdemServico
-            ordemServicoId={'nova-os'}
+            ordemServicoId={ordemServico?.id || 'nova-os'}
             pecasUtilizadas={pecasUtilizadas}
-            onPecasChange={handlePecasChange}
+            onPecasChange={setPecasUtilizadas}
             readonly={readonly}
           />
         </div>
 
-        {/* Valores */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <Calculator className="h-5 w-5 text-gray-600" />
-            <h3 className="text-lg font-medium text-gray-900">Valores</h3>
+        {/* Section: Valores */}
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+          <div className="flex items-center gap-2 text-blue-700 mb-6">
+            <Calculator className="h-5 w-5" />
+            <h3 className="font-semibold text-lg">Valores e Garantia</h3>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Valor do Serviço
-              </label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <FormField label="Mão de Obra (R$)">
               <input
-                type="number"
-                min="0"
-                step="0.01"
+                type="number" step="0.01" min="0"
+                className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm font-medium"
                 value={formData.valor_servico}
-                onChange={e =>
-                  handleInputChange('valor_servico', e.target.value)
-                }
+                onChange={e => handleInputChange('valor_servico', e.target.value)}
                 disabled={readonly}
-                className={`w-full rounded-lg border px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${erros.valor_servico ? 'border-red-500' : 'border-gray-300'
-                  }`}
               />
-              {erros.valor_servico && (
-                <p className="mt-1 text-sm text-red-600">
-                  {erros.valor_servico}
-                </p>
-              )}
-            </div>
+            </FormField>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Valor das Peças
-              </label>
-              <div className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2">
-                {formatarMoeda(
-                  pecasUtilizadas.reduce(
-                    (total: number, peca: PecaUtilizada) =>
-                      total + peca.valor_total,
-                    0
-                  )
-                )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-500">Valor Peças</label>
+              <div className="w-full px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg">
+                {formatarMoeda(parseFloat(formData.valor_pecas || '0'))}
               </div>
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Valor Total
-              </label>
-              <div className="rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 font-semibold text-blue-900">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-900">Valor Total</label>
+              <div className="w-full px-3 py-2 text-lg font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-lg">
                 {formatarMoeda(valorTotal)}
               </div>
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Garantia (dias)
-              </label>
-              <input
-                type="number"
-                min="0"
+            <FormField label="Garantia Serviço (Dias)">
+              <input type="number"
+                className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm"
                 value={formData.garantia_servico_dias}
-                onChange={e =>
-                  handleInputChange('garantia_servico_dias', e.target.value)
-                }
+                onChange={e => handleInputChange('garantia_servico_dias', e.target.value)}
                 disabled={readonly}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
               />
-            </div>
+            </FormField>
           </div>
         </div>
 
-        {/* Botões de Ação */}
+        {/* Actions */}
         {!readonly && (
-          <div className="flex items-center justify-end gap-4 border-t border-gray-200 pt-6">
-            <button
+          <div className="flex items-center justify-end gap-4 pt-6 border-t border-gray-200">
+            <Button
               type="button"
+              variant="outline"
               onClick={onCancel}
-              className="rounded-lg border border-gray-300 px-6 py-2 text-gray-700 transition-colors hover:bg-gray-50"
             >
               Cancelar
-            </button>
+            </Button>
 
-            <button
+            <Button
               type="submit"
               disabled={carregando}
-              className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2 text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="bg-blue-600 hover:bg-blue-700 text-white min-w-[150px]"
             >
               {carregando ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Salvando...
-                </>
+                <>Salvando...</>
               ) : (
                 <>
-                  <Save className="h-4 w-4" />
-                  Salvar Ordem de Serviço
+                  <Save className="mr-2 h-4 w-4" />
+                  Salvar OS
                 </>
               )}
-            </button>
+            </Button>
           </div>
         )}
+
       </form>
     </div>
   );

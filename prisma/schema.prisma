@@ -64,6 +64,7 @@ model Cliente {
 
   // Relacionamentos
   ordensServico OrdemServico[]
+  equipamentos  Equipamento[]
   sessions      ClientSession[]
   createdByUser User?          @relation("ClienteCreatedBy", fields: [createdBy], references: [id])
 
@@ -111,6 +112,9 @@ model OrdemServico {
   dataInicio    DateTime? @map("data_inicio") @db.Timestamptz
   dataConclusao DateTime? @map("data_conclusao") @db.Timestamptz
   dataPrevisaoConclusao DateTime? @map("data_previsao_conclusao") @db.Timestamptz
+
+  equipamentoId String?      @map("equipamento_id") @db.Uuid
+  equipamento   Equipamento? @relation(fields: [equipamentoId], references: [id])
 
   // Campos adicionais de diagnóstico
   diagnosticoTecnico String?   @map("diagnostico_tecnico") @db.Text
@@ -405,4 +409,28 @@ model Peca {
   usos PecaUtilizada[]
 
   @@map("pecas")
+}
+
+// 📱 Modelo de Equipamento
+model Equipamento {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clienteId     String    @map("cliente_id") @db.Uuid
+  tipo          String    @db.VarChar(100) // Smartphone, Notebook, etc.
+  marca         String?   @db.VarChar(100)
+  modelo        String    @db.VarChar(100)
+  numeroSerie   String?   @map("numero_serie") @db.VarChar(100)
+  imei          String?   @db.VarChar(50)
+  senha         String?   @db.VarChar(100)
+  acessorios    String?   @db.Text
+  estado        String?   @db.Text
+  observacoes   String?   @db.Text
+  
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  cliente       Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  ordensServico OrdemServico[]
+
+  @@map("equipamentos")
+  @@index([clienteId])
 }

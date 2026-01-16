@@ -1,645 +1,341 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-
+import React, { useState, useEffect } from 'react';
 import {
-  AlertTriangle,
-  Calendar,
-  DollarSign,
-  Edit,
-  Filter,
-  Hash,
-  MapPin,
   Package,
-  Plus,
   Search,
+  Plus,
+  MoreVertical,
+  Edit,
   Trash2,
-  TrendingUp,
-  User,
+  AlertTriangle,
+  ArrowUpCircle,
+  ArrowDownCircle
 } from 'lucide-react';
-
-import PecaForm from '@/components/PecaForm';
-import { EnhancedSidebar } from '@/components/navigation/enhanced-sidebar';
-import { SiteHeader } from '@/components/site-header';
-import { BackButton } from '@/components/ui/back-button';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DataField } from '@/components/ui/data-display';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { PageLoading } from '@/components/ui/loading';
-import { useLoadingState } from '@/components/ui/loading-states';
 import {
-  ResponsiveContainer,
-  ResponsiveStack,
-  ResponsiveText,
-  ShowHide,
-  useBreakpoint,
-} from '@/components/ui/responsive-utils';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { StatusBadge } from '@/components/ui/status-badge';
-import { useToast } from '@/components/ui/toast-system';
-import {
-  CATEGORIA_PECA_LABELS,
-  CategoriaPeca,
-  Fornecedor,
-  Peca,
-  STATUS_PECA_LABELS,
-  StatusPeca,
-} from '@/types/pecas';
-import { calcularMargemLucro } from '@/lib/utils/pricing';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Card, CardContent } from '@/components/ui/card';
 
-// 🎯 Determinar status badge baseado no status da peça
-function getStatusBadge(status: StatusPeca): 'success' | 'warning' | 'error' | 'pending' | 'info' {
-  if (status === 'disponivel') return 'success';
-  if (status === 'baixo_estoque') return 'warning';
-  if (status === 'sem_estoque') return 'error';
-  if (status === 'em_pedido') return 'pending';
-  return 'info';
+interface Peca {
+  id: string;
+  nome: string;
+  codigo: string;
+  marca: string;
+  quantidade: number;
+  minimo: number;
+  precoCusto: number;
+  precoVenda: number;
+  localizacao: string;
 }
 
-// Dados mock para demonstração
-const mockPecas: Peca[] = [
-  {
-    id: '1',
-    part_number: 'APL-SCR-13-M1',
-    nome: 'Tela LCD MacBook Air 13" M1',
-    descricao: 'Tela LCD completa para MacBook Air 13" M1 2020-2022',
-    categoria: 'tela',
-    marca: 'Apple',
-    modelo_compativel: ['MacBook Air 13" M1'],
-    preco_custo: 450.0,
-    preco_venda: 650.0,
-    margem_lucro: calcularMargemLucro(450.0, 650.0),
-    quantidade_estoque: 15,
-    estoque_minimo: 5,
-    status: 'disponivel',
-    localizacao_estoque: 'A1-B2',
-    fornecedor_id: '1',
-    codigo_fornecedor: 'LCD-MBA13-M1',
-    garantia_meses: 12,
-    ativo: true,
-    created_at: new Date('2024-01-15'),
-    updated_at: new Date('2024-01-15'),
-    created_by: 'admin',
-  },
-  {
-    id: '2',
-    part_number: 'APL-BAT-13-M2',
-    nome: 'Bateria MacBook Air 13" M2',
-    descricao: 'Bateria original para MacBook Air 13" M2 2022-2024',
-    categoria: 'bateria',
-    marca: 'Apple',
-    modelo_compativel: ['MacBook Air 13" M2'],
-    preco_custo: 180.0,
-    preco_venda: 280.0,
-    margem_lucro: calcularMargemLucro(180.0, 280.0),
-    quantidade_estoque: 8,
-    estoque_minimo: 10,
-    status: 'baixo_estoque',
-    localizacao_estoque: 'B2-C1',
-    fornecedor_id: '1',
-    codigo_fornecedor: 'BAT-MBA13-M2',
-    garantia_meses: 6,
-    ativo: true,
-    created_at: new Date('2024-01-10'),
-    updated_at: new Date('2024-01-10'),
-    created_by: 'admin',
-  },
-  {
-    id: '3',
-    part_number: 'APL-KB-14-M3',
-    nome: 'Teclado MacBook Pro 14" M3',
-    descricao: 'Teclado completo com backlight para MacBook Pro 14" M3',
-    categoria: 'outros',
-    marca: 'Apple',
-    modelo_compativel: ['MacBook Pro 14" M3'],
-    preco_custo: 320.0,
-    preco_venda: 480.0,
-    margem_lucro: calcularMargemLucro(320.0, 480.0),
-    quantidade_estoque: 0,
-    estoque_minimo: 3,
-    status: 'sem_estoque',
-    localizacao_estoque: 'C1-D2',
-    fornecedor_id: '2',
-    codigo_fornecedor: 'KB-MBP14-M3',
-    garantia_meses: 12,
-    ativo: true,
-    created_at: new Date('2024-01-05'),
-    updated_at: new Date('2024-01-05'),
-    created_by: 'admin',
-  },
-];
+export default function InventoryPage() {
+  const [pecas, setPecas] = useState<Peca[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingPeca, setEditingPeca] = useState<Peca | null>(null);
 
-const mockFornecedores: Fornecedor[] = [
-  {
-    id: '1',
-    nome: 'TechParts Brasil',
-    cnpj: '12.345.678/0001-90',
-    contato: 'João Silva',
-    email: 'joao@techparts.com.br',
-    telefone: '(11) 99999-9999',
-    ativo: true,
-    created_at: new Date('2024-01-01'),
-    updated_at: new Date('2024-01-01'),
-  },
-  {
-    id: '2',
-    nome: 'Apple Parts Supply',
-    cnpj: '98.765.432/0001-10',
-    contato: 'Maria Santos',
-    email: 'maria@appleparts.com.br',
-    telefone: '(11) 88888-8888',
-    ativo: true,
-    created_at: new Date('2024-01-01'),
-    updated_at: new Date('2024-01-01'),
-  },
-];
-
-export default function PecasPage() {
-  const [pecas, setPecas] = useState<Peca[]>(mockPecas);
-  const [fornecedores] = useState<Fornecedor[]>(mockFornecedores);
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [pecaEditando, setPecaEditando] = useState<Peca | undefined>();
-  const { isLoading, startLoading, stopLoading } = useLoadingState();
-  const { success, error } = useToast();
-  const { isMobile } = useBreakpoint();
-
-  // Filtros
-  const [busca, setBusca] = useState('');
-  const [filtroCategoria, setFiltroCategoria] = useState<
-    CategoriaPeca | 'todas'
-  >('todas');
-  const [filtroStatus, setFiltroStatus] = useState<StatusPeca | 'todos'>(
-    'todos'
-  );
-
-  // Filtrar peças
-  const pecasFiltradas = pecas.filter(peca => {
-    const matchBusca =
-      busca === '' ||
-      peca.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      peca.part_number.toLowerCase().includes(busca.toLowerCase()) ||
-      peca.descricao.toLowerCase().includes(busca.toLowerCase());
-
-    const matchCategoria =
-      filtroCategoria === 'todas' || peca.categoria === filtroCategoria;
-    const matchStatus =
-      filtroStatus === 'todos' || peca.status === filtroStatus;
-
-    return matchBusca && matchCategoria && matchStatus;
+  const [formData, setFormData] = useState({
+    nome: '',
+    codigo: '',
+    marca: '',
+    modelo: '',
+    quantidade: 0,
+    minimo: 5,
+    precoCusto: 0,
+    precoVenda: 0,
+    localizacao: ''
   });
 
-  // Métricas
-  const metricas = {
-    totalPecas: pecas.length,
-    valorTotalEstoque: pecas.reduce(
-      (total, peca) => total + peca.preco_custo * peca.quantidade_estoque,
-      0
-    ),
-    pecasBaixoEstoque: pecas.filter(peca => peca.status === 'baixo_estoque')
-      .length,
-    pecasSemEstoque: pecas.filter(peca => peca.status === 'sem_estoque').length,
-    margemLucroMedia:
-      pecas.reduce((total, peca) => total + peca.margem_lucro, 0) /
-      pecas.length,
-  };
+  useEffect(() => {
+    fetchPecas();
+  }, [search]);
 
-  // Handlers
-  const handleSubmitPeca = async (data: any) => {
-    startLoading();
-
+  const fetchPecas = async () => {
+    setLoading(true);
     try {
-      // Simular salvamento
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      if (pecaEditando) {
-        // Editar peça existente
-        setPecas(prev =>
-          prev.map(peca =>
-            peca.id === pecaEditando.id
-              ? {
-                ...peca,
-                ...data,
-                preco_custo: parseFloat(data.preco_custo),
-                preco_venda: parseFloat(data.preco_venda),
-                margem_lucro: calcularMargemLucro(
-                  parseFloat(data.preco_custo),
-                  parseFloat(data.preco_venda)
-                ),
-                updated_at: new Date(),
-              }
-              : peca
-          )
-        );
-        success('Peça atualizada com sucesso!');
-      } else {
-        // Adicionar nova peça
-        const novaPeca: Peca = {
-          id: Date.now().toString(),
-          part_number: data.part_number,
-          nome: data.nome,
-          descricao: data.descricao,
-          categoria: data.categoria,
-          marca: data.marca || '',
-          preco_custo: parseFloat(data.preco_custo),
-          preco_venda: parseFloat(data.preco_venda),
-          margem_lucro: calcularMargemLucro(
-            parseFloat(data.preco_custo),
-            parseFloat(data.preco_venda)
-          ),
-          quantidade_estoque: parseInt(data.estoque_atual) || 0,
-          estoque_minimo: parseInt(data.estoque_minimo) || 0,
-          status: data.status,
-          localizacao_estoque: data.localizacao,
-          fornecedor_id: data.fornecedor_id,
-          codigo_fornecedor: data.codigo_fornecedor,
-          garantia_meses: parseInt(data.garantia_meses) || 12,
-          ativo: true,
-          created_at: new Date(),
-          updated_at: new Date(),
-          created_by: 'admin',
-        };
-        setPecas(prev => [...prev, novaPeca]);
-        success('Peça cadastrada com sucesso!');
+      const res = await fetch(`/api/pecas?search=${search}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPecas(data);
       }
-
-      setMostrarFormulario(false);
-      setPecaEditando(undefined);
-    } catch (err) {
-      console.error('Erro ao salvar peça:', err);
-      error('Erro ao salvar peça', 'Tente novamente mais tarde');
+    } catch (error) {
+      console.error('Failed to fetch', error);
     } finally {
-      stopLoading();
+      setLoading(false);
     }
   };
 
-  const handleEditarPeca = (peca: Peca) => {
-    setPecaEditando(peca);
-    setMostrarFormulario(true);
+  const resetForm = () => {
+    setEditingPeca(null);
+    setFormData({
+      nome: '',
+      codigo: '',
+      marca: '',
+      modelo: '',
+      quantidade: 0,
+      minimo: 5,
+      precoCusto: 0,
+      precoVenda: 0,
+      localizacao: ''
+    });
   };
 
-  const handleExcluirPeca = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir esta peça?')) {
-      setPecas(prev => prev.filter(peca => peca.id !== id));
+  const handleSave = async () => {
+    try {
+      const url = editingPeca ? `/api/pecas/${editingPeca.id}` : '/api/pecas';
+      const method = editingPeca ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (res.ok) {
+        setIsDialogOpen(false);
+        fetchPecas();
+        resetForm();
+      } else {
+        alert('Erro ao salvar.');
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
-  const formatarMoeda = (valor: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(valor);
+  const handleDelete = async (id: string) => {
+    if (!confirm('Excluir peça?')) return;
+    await fetch(`/api/pecas/${id}`, { method: 'DELETE' });
+    fetchPecas();
   };
 
-  if (mostrarFormulario) {
-    return (
-      <SidebarProvider>
-        <EnhancedSidebar />
-        <div className="flex w-full flex-1 flex-col bg-background">
-          <SiteHeader />
-          <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
-            <PecaForm
-              peca={pecaEditando}
-              onSubmit={handleSubmitPeca}
-              onCancel={() => {
-                setMostrarFormulario(false);
-                setPecaEditando(undefined);
-              }}
-              fornecedores={fornecedores}
-              isLoading={isLoading}
-            />
-          </ResponsiveContainer>
-        </div>
-      </SidebarProvider>
-    );
-  }
+  const openValid = (peca: Peca) => {
+    setEditingPeca(peca);
+    setFormData({
+      nome: peca.nome,
+      codigo: peca.codigo || '',
+      marca: peca.marca || '',
+      modelo: '', // missing in list type but okay
+      quantidade: peca.quantidade,
+      minimo: peca.minimo,
+      precoCusto: Number(peca.precoCusto),
+      precoVenda: Number(peca.precoVenda),
+      localizacao: peca.localizacao || ''
+    });
+    setIsDialogOpen(true);
+  };
 
   return (
-    <SidebarProvider>
-      <EnhancedSidebar />
-      <div className="flex w-full flex-1 flex-col bg-background">
-        <SiteHeader />
-        <ResponsiveContainer padding="md" className="flex-1 space-y-6 pt-6">
-          {/* Cabeçalho */}
-          <ResponsiveStack
-            direction="responsive"
-            align="center"
-            className="justify-between"
-          >
-            <div className="flex items-center gap-4">
-              <BackButton href="/dashboard" />
-              <div className="space-y-2">
-                <ResponsiveText
-                  size={isMobile ? '2xl' : '3xl'}
-                  className="font-bold tracking-tight"
-                >
-                  Gerenciamento de Peças
-                </ResponsiveText>
-                <ResponsiveText
-                  size={isMobile ? 'sm' : 'base'}
-                  className="text-muted-foreground"
-                >
-                  Cadastro e controle de estoque de peças para assistência
-                  técnica Apple
-                </ResponsiveText>
-              </div>
+    <div className="space-y-6 p-6 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Package className="h-6 w-6 text-blue-600" />
+            Estoque de Peças
+          </h1>
+          <p className="text-gray-500">Gerencie componentes, preços e alertas de estoque</p>
+        </div>
+        <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="bg-blue-600">
+          <Plus className="mr-2 h-4 w-4" />
+          Nova Peça
+        </Button>
+      </div>
+
+      {/* Filters & Search */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Buscar por nome, código ou marca..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Stats Cards (Optional future enhancement) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-orange-50 border-orange-100">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="p-3 bg-white rounded-full text-orange-600 shadow-sm">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 font-medium">Estoque Baixo</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {pecas.filter(p => p.quantidade <= p.minimo).length}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+        <table className="w-full text-sm text-left">
+          <thead className="bg-gray-50 text-gray-700 font-medium">
+            <tr>
+              <th className="px-6 py-3">Item</th>
+              <th className="px-6 py-3">Código/Marca</th>
+              <th className="px-6 py-3">Preço Venda</th>
+              <th className="px-6 py-3">Estoque</th>
+              <th className="px-6 py-3">Local</th>
+              <th className="px-6 py-3 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {loading ? (
+              <tr><td colSpan={6} className="p-8 text-center text-gray-500">Carregando...</td></tr>
+            ) : pecas.length === 0 ? (
+              <tr><td colSpan={6} className="p-8 text-center text-gray-500">Nenhuma peça cadastrada.</td></tr>
+            ) : (
+              pecas.map(peca => {
+                const isLow = peca.quantidade <= peca.minimo;
+                return (
+                  <tr key={peca.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 font-medium text-gray-900">{peca.nome}</td>
+                    <td className="px-6 py-4 text-gray-500">
+                      <div className="text-xs">{peca.codigo}</div>
+                      <div>{peca.marca}</div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-900 font-medium">
+                      R$ {Number(peca.precoVenda).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className={`flex items-center gap-2 ${isLow ? 'text-orange-600 font-bold' : 'text-green-600'}`}>
+                        {peca.quantidade} un.
+                        {isLow && <AlertTriangle className="h-4 w-4" />}
+                      </div>
+                      <div className="text-xs text-gray-400">Min: {peca.minimo}</div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-500">{peca.localizacao || '-'}</td>
+                    <td className="px-6 py-4 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openValid(peca)}>
+                            <Edit className="mr-2 h-4 w-4" /> Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(peca.id)}>
+                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modal */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingPeca ? 'Editar Peça' : 'Nova Peça'}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="col-span-2 space-y-2">
+              <label className="text-sm font-medium">Nome do Item</label>
+              <input
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                value={formData.nome}
+                onChange={e => setFormData({ ...formData, nome: e.target.value })}
+              />
             </div>
 
-            {/* Ações */}
-            <button
-              onClick={() => {
-                console.log('🔵 Clique em Nova Peça');
-                setMostrarFormulario(true);
-                setPecaEditando(undefined);
-              }}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              type="button"
-              style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
-            >
-              <Plus className="h-4 w-4" />
-              Nova Peça
-            </button>
-          </ResponsiveStack>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Código (SKU)</label>
+              <input
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                value={formData.codigo}
+                onChange={e => setFormData({ ...formData, codigo: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Marca</label>
+              <input
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                value={formData.marca}
+                onChange={e => setFormData({ ...formData, marca: e.target.value })}
+              />
+            </div>
 
-          {/* Métricas */}
-          <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total de Peças
-                </CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{metricas.totalPecas}</div>
-              </CardContent>
-            </Card>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Preço Custo</label>
+              <input
+                type="number" step="0.01"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                value={formData.precoCusto}
+                onChange={e => setFormData({ ...formData, precoCusto: Number(e.target.value) })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Preço Venda</label>
+              <input
+                type="number" step="0.01"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                value={formData.precoVenda}
+                onChange={e => setFormData({ ...formData, precoVenda: Number(e.target.value) })}
+              />
+            </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Valor do Estoque
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatarMoeda(metricas.valorTotalEstoque)}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Quantidade Atual</label>
+              <input
+                type="number"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                value={formData.quantidade}
+                onChange={e => setFormData({ ...formData, quantidade: Number(e.target.value) })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Estoque Mínimo (Alerta)</label>
+              <input
+                type="number"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                value={formData.minimo}
+                onChange={e => setFormData({ ...formData, minimo: Number(e.target.value) })}
+              />
+            </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Margem Média
-                </CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {metricas.margemLucroMedia.toFixed(1)}%
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Baixo Estoque
-                </CardTitle>
-                <AlertTriangle className="h-4 w-4 text-yellow-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">
-                  {metricas.pecasBaixoEstoque}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Sem Estoque
-                </CardTitle>
-                <AlertTriangle className="h-4 w-4 text-red-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
-                  {metricas.pecasSemEstoque}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="col-span-2 space-y-2">
+              <label className="text-sm font-medium">Localização Física</label>
+              <input
+                placeholder="Ex: Prateleira A, Gaveta 2"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                value={formData.localizacao}
+                onChange={e => setFormData({ ...formData, localizacao: e.target.value })}
+              />
+            </div>
           </div>
-
-          {/* Filtros */}
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <div className="flex flex-col gap-4 md:flex-row">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-                    <Input
-                      placeholder="Buscar por nome, part number ou descrição..."
-                      value={busca}
-                      onChange={e => setBusca(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                <Select
-                  value={filtroCategoria}
-                  onValueChange={value =>
-                    setFiltroCategoria(value as CategoriaPeca | 'todas')
-                  }
-                >
-                  <SelectTrigger className="w-full md:w-48">
-                    <SelectValue placeholder="Categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas as categorias</SelectItem>
-                    {Object.entries(CATEGORIA_PECA_LABELS).map(
-                      ([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
-                      )
-                    )}
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={filtroStatus}
-                  onValueChange={value =>
-                    setFiltroStatus(value as StatusPeca | 'todos')
-                  }
-                >
-                  <SelectTrigger className="w-full md:w-48">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos os status</SelectItem>
-                    {Object.entries(STATUS_PECA_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Lista de Peças */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Peças Cadastradas ({pecasFiltradas.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {pecasFiltradas.length === 0 ? (
-                <div className="py-8 text-center">
-                  <Package className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-                  <p className="text-gray-500">Nenhuma peça encontrada</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="px-4 py-3 text-left font-medium">
-                          Part Number
-                        </th>
-                        <th className="px-4 py-3 text-left font-medium">
-                          Nome
-                        </th>
-                        <th className="px-4 py-3 text-left font-medium">
-                          Categoria
-                        </th>
-                        <th className="px-4 py-3 text-left font-medium">
-                          Estoque
-                        </th>
-                        <th className="px-4 py-3 text-left font-medium">
-                          Custo
-                        </th>
-                        <th className="px-4 py-3 text-left font-medium">
-                          Venda
-                        </th>
-                        <th className="px-4 py-3 text-left font-medium">
-                          Lucro
-                        </th>
-                        <th className="px-4 py-3 text-left font-medium">
-                          Status
-                        </th>
-                        <th className="px-4 py-3 text-left font-medium">
-                          Ações
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pecasFiltradas.map(peca => (
-                        <tr key={peca.id} className="border-b hover:bg-gray-50">
-                          <td className="px-4 py-3">
-                            <div className="font-medium">
-                              {peca.part_number}
-                            </div>
-                            <DataField
-                              label="Código Fornecedor"
-                              icon="hash"
-                              value={peca.codigo_fornecedor}
-                              className="text-sm"
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="font-medium">{peca.nome}</div>
-                            <div className="max-w-xs truncate text-sm text-gray-500">
-                              {peca.descricao}
-                            </div>
-                            <DataField
-                              label="Localização"
-                              icon="mapPin"
-                              value={peca.localizacao_estoque}
-                              className="mt-1 text-sm"
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <Badge variant="outline">
-                              {CATEGORIA_PECA_LABELS[peca.categoria]}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="font-medium">
-                              {peca.quantidade_estoque}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              Min: {peca.estoque_minimo}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 font-medium">
-                            {formatarMoeda(peca.preco_custo)}
-                          </td>
-                          <td className="px-4 py-3 font-medium">
-                            {formatarMoeda(peca.preco_venda)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="font-medium text-green-600">
-                              {peca.margem_lucro.toFixed(1)}%
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {formatarMoeda(
-                                peca.preco_venda - peca.preco_custo
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <StatusBadge
-                              status={getStatusBadge(peca.status)}
-                              text={STATUS_PECA_LABELS[peca.status]}
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditarPeca(peca)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleExcluirPeca(peca.id)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </ResponsiveContainer>
-      </div>
-    </SidebarProvider>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
