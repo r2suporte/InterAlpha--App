@@ -1,5 +1,4 @@
 import { cnpj, cpf } from 'cpf-cnpj-validator';
-// import { logger } from './services/logger-service';
 
 /**
  * Implementar debounce para evitar muitas chamadas de API
@@ -441,9 +440,6 @@ export const buscarDadosCPF = async (
       message: 'O CPF fornecido não é válido',
     };
   }
-
-  // Simulação: Adicionar delay para parecer uma busca real
-  await new Promise(resolve => setTimeout(resolve, 500));
 
   console.info('✅ CPF validado localmente');
 

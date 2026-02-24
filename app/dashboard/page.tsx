@@ -89,7 +89,8 @@ export default function Page() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => console.log('🔵 Clique em Período')}
+                      disabled
+                      title="Filtro por período — em breve"
                       className="border-slate-200 dark:border-slate-700"
                     >
                       <Calendar className="mr-2 h-4 w-4" />
@@ -98,7 +99,8 @@ export default function Page() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => console.log('🔵 Clique em Filtros')}
+                      disabled
+                      title="Filtros avançados — em breve"
                       className="border-slate-200 dark:border-slate-700"
                     >
                       <Filter className="mr-2 h-4 w-4" />
@@ -127,13 +129,13 @@ export default function Page() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => console.log('🔵 Clique em Período (Mobile)')}>
+                        <DropdownMenuItem disabled>
                           <Calendar className="mr-2 h-4 w-4" />
-                          Período
+                          Período (em breve)
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => console.log('🔵 Clique em Filtros (Mobile)')}>
+                        <DropdownMenuItem disabled>
                           <Filter className="mr-2 h-4 w-4" />
-                          Filtros
+                          Filtros (em breve)
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -222,6 +224,7 @@ export default function Page() {
                         <Button
                           variant="outline"
                           className="h-12 w-full justify-start border-slate-200 hover:bg-emerald-50 dark:border-slate-700 dark:hover:bg-emerald-950/50"
+                          onClick={() => router.push('/dashboard/relatorios')}
                         >
                           <TrendingUp className="mr-3 h-4 w-4" />
                           <ResponsiveText size={isMobile ? 'sm' : 'base'}>
@@ -231,6 +234,7 @@ export default function Page() {
                         <Button
                           variant="outline"
                           className="h-12 w-full justify-start border-slate-200 hover:bg-violet-50 dark:border-slate-700 dark:hover:bg-violet-950/50"
+                          onClick={() => router.push('/dashboard/relatorios')}
                         >
                           <Download className="mr-3 h-4 w-4" />
                           <ResponsiveText size={isMobile ? 'sm' : 'base'}>

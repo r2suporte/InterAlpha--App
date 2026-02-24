@@ -259,19 +259,27 @@ export function useIsAdmin(): boolean {
 }
 
 // Hook para verificar se é gerente (qualquer tipo)
+// Nota: Não chame outros hooks aqui — violaria as Rules of Hooks
 export function useIsManager(): boolean {
   const { user } = usePermissions();
   return (
+    user?.role === 'admin' ||
+    user?.role === 'diretor' ||
     user?.role === 'gerente_adm' ||
-    user?.role === 'gerente_financeiro' ||
-    useIsAdmin()
+    user?.role === 'gerente_financeiro'
   );
 }
 
 // Hook para verificar se é supervisor ou acima
 export function useIsSupervisor(): boolean {
   const { user } = usePermissions();
-  return user?.role === 'supervisor_tecnico' || useIsManager();
+  return (
+    user?.role === 'supervisor_tecnico' ||
+    user?.role === 'gerente_adm' ||
+    user?.role === 'gerente_financeiro' ||
+    user?.role === 'admin' ||
+    user?.role === 'diretor'
+  );
 }
 
 // Hook para verificar se é técnico

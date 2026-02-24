@@ -128,7 +128,8 @@ export function useCacheList<T>(
         await cacheResult.setData(newData);
       }
     },
-    [cacheResult]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cacheResult.data, cacheResult.setData]
   );
 
   const updateItem = useCallback(
@@ -139,7 +140,8 @@ export function useCacheList<T>(
         await cacheResult.setData(newData);
       }
     },
-    [cacheResult]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cacheResult.data, cacheResult.setData]
   );
 
   const removeItem = useCallback(
@@ -149,7 +151,8 @@ export function useCacheList<T>(
         await cacheResult.setData(newData);
       }
     },
-    [cacheResult]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cacheResult.data, cacheResult.setData]
   );
 
   return {

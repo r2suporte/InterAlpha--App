@@ -35,7 +35,6 @@ export function BackButton({ href, className, children, onClick }: BackButtonPro
       className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className || ''}`}
       type="button"
       aria-label="Voltar"
-      style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
     >
       <ArrowLeft className="h-4 w-4" />
       {children || 'Voltar'}

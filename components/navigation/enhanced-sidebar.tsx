@@ -270,14 +270,7 @@ export const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({
       )}
 
       {/* Quick Actions */}
-      {!isCollapsed && (
-        <div className="px-4 pb-4">
-          <Button className="w-full justify-start gap-2" size="sm">
-            <Plus className="h-4 w-4" />
-            Criar Novo
-          </Button>
-        </div>
-      )}
+      {/* Quick Actions - Removido conforme solicitação */}
 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto px-4">

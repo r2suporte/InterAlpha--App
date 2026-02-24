@@ -11,8 +11,10 @@ import {
   securityAuditMiddleware,
 } from './lib/middleware/security-audit';
 
-const JWT_SECRET =
-  process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET não definido. Configure a variável de ambiente JWT_SECRET antes de iniciar em produção.');
+}
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-insecure-jwt-secret';
 
 // Define public routes (no Clerk authentication required)
 const isPublicRoute = createRouteMatcher([

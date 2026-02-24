@@ -306,6 +306,43 @@ async function updateCliente(request: NextRequest) {
   }
 }
 
+// DELETE - Remover cliente
+async function deleteCliente(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID do cliente é obrigatório' },
+        { status: 400 }
+      );
+    }
+
+    const clienteExistente = await prisma.cliente.findUnique({ where: { id } });
+
+    if (!clienteExistente) {
+      return NextResponse.json(
+        { error: 'Cliente não encontrado' },
+        { status: 404 }
+      );
+    }
+
+    await prisma.cliente.delete({ where: { id } });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Cliente excluído com sucesso',
+    });
+  } catch (error) {
+    console.error('Erro ao excluir cliente:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+
 // Exportações com cache, logging e métricas aplicados
 export const GET = withUserCache(CACHE_TTL.MEDIUM)(getClientes);
 export const POST = withAuthenticatedApiMetrics(
@@ -313,4 +350,7 @@ export const POST = withAuthenticatedApiMetrics(
 );
 export const PUT = withAuthenticatedApiMetrics(
   withAuthenticatedApiLogging(updateCliente)
+);
+export const DELETE = withAuthenticatedApiMetrics(
+  withAuthenticatedApiLogging(deleteCliente)
 );
