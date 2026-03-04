@@ -18,6 +18,7 @@ interface WebSocketState {
 }
 
 export function useWebSocket(options: UseWebSocketOptions = {}) {
+  const { userId, technicianId, isAdmin } = options;
   const [state, setState] = useState<WebSocketState>({
     isConnected: false,
     reconnectAttempts: 0,
@@ -39,8 +40,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         socketId: status.socketId,
         reconnectAttempts: status.reconnectAttempts,
       });
-    } catch (error) {
-      console.warn('Erro ao atualizar estado do WebSocket:', error);
+    } catch {
       setState({
         isConnected: false,
         reconnectAttempts: 0,
@@ -50,8 +50,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
   // Join appropriate rooms based on user role
   useEffect(() => {
-    const { userId, technicianId, isAdmin } = options;
-
     if (userId) {
       webSocketService.joinUserRoom(userId);
     }
@@ -72,9 +70,9 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       clearInterval(interval);
     };
   }, [
-    options.userId,
-    options.technicianId,
-    options.isAdmin,
+    userId,
+    technicianId,
+    isAdmin,
     updateConnectionState,
   ]);
 
@@ -114,8 +112,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const emitOrderStatusUpdate = useCallback((data: OrderStatusUpdate) => {
     try {
       webSocketService.emitOrderStatusUpdate(data);
-    } catch (error) {
-      console.warn('Erro ao emitir atualização de status:', error);
+    } catch {
+      // Mantém fluxo de UI mesmo sem conexão ativa
     }
   }, []);
 
@@ -123,8 +121,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const emitNewOrderCreated = useCallback((data: NewOrderNotification) => {
     try {
       webSocketService.emitNewOrderCreated(data);
-    } catch (error) {
-      console.warn('Erro ao emitir nova ordem:', error);
+    } catch {
+      // Mantém fluxo de UI mesmo sem conexão ativa
     }
   }, []);
 

@@ -1,10 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { type FormEvent, useState } from 'react';
 
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { DocumentSelector } from '@/components/ui/document-selector';
 import { Input } from '@/components/ui/input';
@@ -16,28 +15,16 @@ import {
   ResponsiveStack,
   useBreakpoint,
 } from '@/components/ui/responsive-utils';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  type CNPJResponse,
-  type EnderecoCompleto,
   type TipoPessoa,
-  type ViaCepResponse,
   buscarDadosCNPJ,
   buscarEnderecoPorCEP,
   determinarTipoPessoa,
   formatarCEP,
   formatarCpfCnpj,
-  getMascaraCpfCnpj,
   limparDocumento,
   validarCEP,
-  validarCamposObrigatorios,
   validarCpfCnpj,
   validarEmail,
 } from '@/lib/validators';
@@ -120,8 +107,8 @@ export function ClienteForm({
             estado: endereco.uf || '',
           }));
         }
-      } catch (error) {
-        console.error('Erro ao buscar CEP:', error);
+      } catch {
+        // Não interrompe o preenchimento manual em caso de falha de consulta
       } finally {
         setIsLoadingCep(false);
       }
@@ -163,8 +150,8 @@ export function ClienteForm({
             estado: dadosCnpj.endereco?.uf || prev.estado,
           }));
         }
-      } catch (error) {
-        console.error('Erro ao buscar CNPJ:', error);
+      } catch {
+        // Não interrompe o preenchimento manual em caso de falha de consulta
       } finally {
         setIsLoadingCnpj(false);
       }
@@ -199,7 +186,7 @@ export function ClienteForm({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -208,8 +195,8 @@ export function ClienteForm({
 
     try {
       await onSubmit(formData);
-    } catch (error) {
-      console.error('Erro ao salvar cliente:', error);
+    } catch {
+      // Erro tratado no componente pai via retorno da ação
     }
   };
 

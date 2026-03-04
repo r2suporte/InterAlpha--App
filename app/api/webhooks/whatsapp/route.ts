@@ -136,7 +136,7 @@ async function processIncomingMessage(
         telefone: from,
         mensagem: text?.body || '',
         whatsapp_message_id: messageId,
-        timestamp: new Date(parseInt(timestamp) * 1000).toISOString(),
+        timestamp: new Date(parseInt(timestamp, 10) * 1000).toISOString(),
         metadata: JSON.stringify(metadata),
       });
 
@@ -164,7 +164,7 @@ async function processIncomingMessage(
       mensagem: text?.body || '',
       status: 'recebida',
       whatsapp_message_id: messageId,
-      recebido_em: new Date(parseInt(timestamp) * 1000).toISOString(),
+      recebido_em: new Date(parseInt(timestamp, 10) * 1000).toISOString(),
       metadata: JSON.stringify({
         ...metadata,
         cliente_nome: cliente.nome,
@@ -197,7 +197,7 @@ async function processMessageStatus(supabase: any, status: any) {
       .update({
         status: messageStatus,
         status_atualizado_em: new Date(
-          parseInt(timestamp) * 1000
+          parseInt(timestamp, 10) * 1000
         ).toISOString(),
       })
       .eq('whatsapp_message_id', messageId);

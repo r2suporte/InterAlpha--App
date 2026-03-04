@@ -76,6 +76,7 @@ export function withCache(options: CacheOptions = {}) {
 
         return response;
       } catch (error) {
+        console.error('Erro no middleware de cache:', error);
         logger.error('❌ Erro no middleware de cache:', error as Error);
         // Em caso de erro, executa o handler sem cache
         return handler(req, ...args);

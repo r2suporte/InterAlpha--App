@@ -135,7 +135,7 @@ describe('WhatsApp Webhook Configuration', () => {
 
     test('deve formatar timestamp corretamente', () => {
       const timestamp = '1640995200'; // Unix timestamp
-      const date = new Date(parseInt(timestamp) * 1000);
+      const date = new Date(parseInt(timestamp, 10) * 1000);
       const isoString = date.toISOString();
 
       expect(isoString).toMatch(

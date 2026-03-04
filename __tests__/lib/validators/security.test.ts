@@ -672,7 +672,7 @@ describe('Validadores de Segurança', () => {
     });
 
     it('deve sanitizar todos os caracteres especiais', () => {
-      const input = '&<>"\'\/';
+      const input = "&<>\"'/";
       const expected = '&amp;&lt;&gt;&quot;&#x27;&#x2F;';
       expect(sanitizeHtml(input)).toBe(expected);
     });

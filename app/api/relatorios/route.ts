@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     // Data de início baseada no período
     const dataInicio = new Date();
-    dataInicio.setDate(dataInicio.getDate() - parseInt(periodo));
+    dataInicio.setDate(dataInicio.getDate() - parseInt(periodo, 10));
 
     const relatorio: any = {};
 
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
 
     // Adicionar metadados do relatório
     relatorio.metadata = {
-      periodo_dias: parseInt(periodo),
+      periodo_dias: parseInt(periodo, 10),
       data_inicio: dataInicio.toISOString(),
       data_fim: new Date().toISOString(),
       tipo_relatorio: tipo,

@@ -13,7 +13,7 @@ const createFornecedorSchema = z.object({
 
 export async function GET(request: NextRequest) {
     try {
-        const searchParams = request.nextUrl.searchParams;
+        const { searchParams } = request.nextUrl;
         const search = searchParams.get('search');
 
         const where: any = {};

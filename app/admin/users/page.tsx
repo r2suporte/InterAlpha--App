@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -53,12 +53,7 @@ export default function AdminUsersPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  useEffect(() => {
-    checkAuth();
-    loadUsers();
-  }, []);
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const {
         data: { user },
@@ -91,9 +86,9 @@ export default function AdminUsersPage() {
       console.error('Erro ao verificar autenticação:', error);
       router.push('/auth/login');
     }
-  };
+  }, [router, supabase]);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/users');
 
@@ -109,7 +104,12 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void checkAuth();
+    void loadUsers();
+  }, [checkAuth, loadUsers]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -116,7 +116,7 @@ function detectSQLInjection(request: NextRequest): boolean {
   const sqlPatterns = [
     /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b)/i,
     /(\b(OR|AND)\s+\d+\s*=\s*\d+)/i,
-    /('|\"|;|--|\*|\/\*|\*\/)/,
+    /('|"|;|--|\*|\/\*|\*\/)/,
     /(\b(SCRIPT|JAVASCRIPT|VBSCRIPT|ONLOAD|ONERROR)\b)/i,
   ];
 

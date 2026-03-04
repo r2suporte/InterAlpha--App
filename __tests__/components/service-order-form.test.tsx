@@ -49,8 +49,10 @@ describe('ServiceOrderForm', () => {
 
   beforeAll(async () => {
     try {
-      const module = await import('../../components/service-order-form');
-      ServiceOrderForm = module.ServiceOrderForm;
+      const { ServiceOrderForm: ImportedServiceOrderForm } = await import(
+        '../../components/service-order-form'
+      );
+      ServiceOrderForm = ImportedServiceOrderForm;
     } catch (error) {
       console.error('Erro ao importar ServiceOrderForm:', error);
     }

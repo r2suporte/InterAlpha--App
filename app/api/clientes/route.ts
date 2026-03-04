@@ -2,29 +2,59 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { withUserCache } from '@/lib/middleware/cache-middleware';
 import {
-  ApiLogger,
   withAuthenticatedApiLogging,
 } from '@/lib/middleware/logging-middleware';
 import {
-  ApiMetricsCollector,
   withAuthenticatedApiMetrics,
 } from '@/lib/middleware/metrics-middleware';
 import { CACHE_TTL } from '@/lib/services/cache-service';
 import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 10;
+const MAX_LIMIT = 50;
+const SORT_FIELD_MAP: Record<string, keyof Prisma.ClienteOrderByWithRelationInput> = {
+  created_at: 'createdAt',
+  updated_at: 'updatedAt',
+  nome: 'nome',
+  email: 'email',
+};
+
+function parsePositiveInteger(value: string | null, fallback: number): number {
+  const parsed = Number.parseInt(value ?? '', 10);
+  return Number.isNaN(parsed) || parsed < 1 ? fallback : parsed;
+}
+
+function mapClienteToResponse<
+  T extends {
+    cpfCnpj: string | null;
+    numeroCliente: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  },
+>(cliente: T) {
+  return {
+    ...cliente,
+    cpf_cnpj: cliente.cpfCnpj,
+    numero_cliente: cliente.numeroCliente,
+    created_at: cliente.createdAt,
+    updated_at: cliente.updatedAt,
+  };
+}
+
 // GET - Listar clientes (com cache)
 async function getClientes(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const page = parsePositiveInteger(searchParams.get('page'), DEFAULT_PAGE);
+    const limit = parsePositiveInteger(searchParams.get('limit'), DEFAULT_LIMIT);
     const search = searchParams.get('search') || '';
     const sortField = searchParams.get('sortField') || 'createdAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
-    const safeLimit = Math.min(limit, 50);
+    const safeLimit = Math.min(limit, MAX_LIMIT);
     const skip = (page - 1) * safeLimit;
 
     // Construir filtro de busca
@@ -39,15 +69,7 @@ async function getClientes(request: NextRequest) {
       }
       : {};
 
-    // Mapear campos de ordenação (snake_case -> camelCase)
-    const orderByMap: Record<string, string> = {
-      created_at: 'createdAt',
-      updated_at: 'updatedAt',
-      nome: 'nome',
-      email: 'email',
-    };
-
-    const mappedSortField = orderByMap[sortField] || sortField;
+    const mappedSortField = SORT_FIELD_MAP[sortField] || 'createdAt';
 
     const [clientes, total] = await Promise.all([
       prisma.cliente.findMany({
@@ -72,14 +94,7 @@ async function getClientes(request: NextRequest) {
       prisma.cliente.count({ where }),
     ]);
 
-    // Mapear retorno para manter compatibilidade com frontend (snake_case)
-    const clientesMapped = clientes.map(c => ({
-      ...c,
-      cpf_cnpj: c.cpfCnpj,
-      numero_cliente: c.numeroCliente,
-      created_at: c.createdAt,
-      updated_at: c.updatedAt,
-    }));
+    const clientesMapped = clientes.map(mapClienteToResponse);
 
     return NextResponse.json({
       clientes: clientesMapped,
@@ -174,8 +189,10 @@ async function createCliente(request: NextRequest) {
 
     let nextNumber = 1;
     if (lastCliente?.numeroCliente) {
-      const lastNumber = parseInt(lastCliente.numeroCliente.substring(6));
-      nextNumber = lastNumber + 1;
+      const lastNumber = Number.parseInt(lastCliente.numeroCliente.substring(6), 10);
+      if (!Number.isNaN(lastNumber)) {
+        nextNumber = lastNumber + 1;
+      }
     }
 
     const numeroCliente = `CL${currentYear}${nextNumber.toString().padStart(6, '0')}`;
@@ -195,15 +212,7 @@ async function createCliente(request: NextRequest) {
       },
     });
 
-    // Map response to snake_case for compatibility if needed, though pure Prisma return is usually fine
-    // But frontend expects numero_cliente
-    const responseData = {
-      ...novoCliente,
-      numero_cliente: novoCliente.numeroCliente,
-      cpf_cnpj: novoCliente.cpfCnpj,
-      created_at: novoCliente.createdAt,
-      updated_at: novoCliente.updatedAt,
-    };
+    const responseData = mapClienteToResponse(novoCliente);
 
     return NextResponse.json(
       {
@@ -284,13 +293,7 @@ async function updateCliente(request: NextRequest) {
       },
     });
 
-    const responseData = {
-      ...clienteAtualizado,
-      numero_cliente: clienteAtualizado.numeroCliente,
-      cpf_cnpj: clienteAtualizado.cpfCnpj,
-      created_at: clienteAtualizado.createdAt,
-      updated_at: clienteAtualizado.updatedAt,
-    };
+    const responseData = mapClienteToResponse(clienteAtualizado);
 
     return NextResponse.json({
       success: true,

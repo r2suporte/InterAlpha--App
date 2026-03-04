@@ -15,7 +15,7 @@ const createDespesaSchema = z.object({
 
 export async function GET(request: NextRequest) {
     try {
-        const searchParams = request.nextUrl.searchParams;
+        const { searchParams } = request.nextUrl;
         const categoria = searchParams.get('categoria');
         const status = searchParams.get('status');
         const search = searchParams.get('search');

@@ -63,7 +63,7 @@ export const LazyOrdensServicoPage = createLazyComponent(
 );
 
 // Exportação padrão com todos os componentes lazy
-export default {
+const lazyComponents = {
   DashboardFinanceiro: LazyDashboardFinanceiro,
   OrdemServicoForm: LazyOrdemServicoForm,
   EquipamentoForm: LazyEquipamentoForm,
@@ -76,3 +76,5 @@ export default {
   PagamentosPage: LazyPagamentosPage,
   OrdensServicoPage: LazyOrdensServicoPage,
 };
+
+export default lazyComponents;

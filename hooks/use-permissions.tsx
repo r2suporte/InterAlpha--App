@@ -7,6 +7,7 @@
 'use client';
 
 import {
+  type ReactNode,
   createContext,
   useCallback,
   useContext,
@@ -53,7 +54,7 @@ const PermissionsContext = createContext<PermissionsContextType | undefined>(
 export function PermissionsProvider({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const { user: clerkUser, isLoaded } = useUser();
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
@@ -329,8 +330,8 @@ export function PermissionGate({
   role?: UserRole;
   roles?: UserRole[];
   resource?: string;
-  fallback?: React.ReactNode;
-  children: React.ReactNode;
+  fallback?: ReactNode;
+  children: ReactNode;
 }) {
   const { user, hasPermission, canAccessResource } = usePermissions();
 

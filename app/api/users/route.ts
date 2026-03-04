@@ -84,7 +84,7 @@ async function createUser(request: NextRequest) {
             await client.invitations.createInvitation({
                 emailAddress: email,
                 publicMetadata: {
-                    role: role,
+                    role,
                     internalId: newUser.id
                 },
                 redirectUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',

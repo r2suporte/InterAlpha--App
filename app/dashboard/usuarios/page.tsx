@@ -1,15 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     Users,
     Search,
-    Plus,
     MoreVertical,
     Edit,
     Trash2,
     UserPlus,
-    Shield,
     CheckCircle,
     XCircle
 } from 'lucide-react';
@@ -25,7 +23,6 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
     DialogFooter,
 } from '@/components/ui/dialog';
 
@@ -54,7 +51,7 @@ export default function UsersPage() {
         active: true
     });
 
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         setLoading(true);
         try {
             const res = await fetch(`/api/users?search=${search}`);
@@ -62,16 +59,16 @@ export default function UsersPage() {
                 const data = await res.json();
                 setUsers(data);
             }
-        } catch (error) {
-            console.error('Failed to fetch users', error);
+        } catch {
+            setUsers([]);
         } finally {
             setLoading(false);
         }
-    };
+    }, [search]);
 
     useEffect(() => {
-        fetchUsers();
-    }, [search]);
+        void fetchUsers();
+    }, [fetchUsers]);
 
     const handleSave = async () => {
         try {
@@ -92,8 +89,8 @@ export default function UsersPage() {
                 const err = await res.json();
                 alert(err.error || 'Erro ao salvar usuário');
             }
-        } catch (error) {
-            console.error('Save error', error);
+        } catch {
+            alert('Erro ao salvar usuário');
         }
     };
 
@@ -102,8 +99,8 @@ export default function UsersPage() {
         try {
             const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
             if (res.ok) fetchUsers();
-        } catch (error) {
-            console.error('Delete error', error);
+        } catch {
+            alert('Erro ao excluir usuário');
         }
     };
 
@@ -182,11 +179,13 @@ export default function UsersPage() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {loading ? (
+                        {loading && (
                             <tr><td colSpan={5} className="p-8 text-center text-gray-500">Carregando...</td></tr>
-                        ) : users.length === 0 ? (
+                        )}
+                        {!loading && users.length === 0 && (
                             <tr><td colSpan={5} className="p-8 text-center text-gray-500">Nenhum usuário encontrado.</td></tr>
-                        ) : (
+                        )}
+                        {!loading && users.length > 0 && (
                             users.map(user => (
                                 <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4 font-medium text-gray-900">{user.name}</td>

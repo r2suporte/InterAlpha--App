@@ -3,11 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import {
     Smartphone,
-    Wrench,
     History,
     User,
-    Calendar,
-    FileText,
     ArrowLeft,
     Printer,
     Package,
@@ -18,15 +15,16 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // @ts-ignore
 import jsPDF from 'jspdf';
 // @ts-ignore
 import autoTable from 'jspdf-autotable';
 
-// Extend jsPDF type to include autoTable manually if needed or just use any
-interface jsPDFWithAutoTable extends jsPDF {
-    lastAutoTable: { finalY: number };
+interface WarrantyStatus {
+    active: boolean;
+    expireDate: Date | null;
+    daysLeft: number | null;
 }
 
 interface EquipmentDetail {
@@ -98,9 +96,14 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
         return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[status] || 'bg-gray-100'}`}>{status}</span>;
     };
 
-    // Calculate warranty expiration
-    const checkWarranty = (completionDate?: string) => {
-        if (!completionDate) return { active: false, status: 'No Warranty' };
+    const checkWarranty = (completionDate?: string): WarrantyStatus => {
+        if (!completionDate) {
+            return {
+                active: false,
+                expireDate: null,
+                daysLeft: null,
+            };
+        }
 
         const WARRANTY_DAYS = 90;
         const complete = new Date(completionDate);
@@ -116,6 +119,18 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
             expireDate: expire,
             daysLeft
         };
+    };
+
+    const getWarrantyMessage = (warranty: WarrantyStatus): string => {
+        if (!warranty.expireDate) {
+            return 'Garantia sem data de conclusão';
+        }
+
+        if (warranty.active) {
+            return `Garantia válida até ${warranty.expireDate.toLocaleDateString()} (${warranty.daysLeft} dias restantes)`;
+        }
+
+        return `Garantia expirou em ${warranty.expireDate.toLocaleDateString()}`;
     };
 
     const generatePDF = () => {
@@ -155,7 +170,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
             // Warranty Check in PDF
             const warranty = checkWarranty(os.dataConclusao);
             const warrantyText = os.status === 'concluida'
-                ? (warranty.active ? `Garantia até ${warranty.expireDate.toLocaleDateString()}` : 'Garantia Expirada')
+                ? getWarrantyMessage(warranty)
                 : '-';
 
             return [
@@ -185,12 +200,12 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                 5: { cellWidth: 25 }, // Warranty
                 6: { cellWidth: 20, halign: 'right' }
             },
-            didParseCell: function (data: any) {
+            didParseCell(data: any) {
                 // Add red color to Expired
-                if (data.column.index === 5 && data.cell.text[0] === 'Garantia Expirada') {
+                if (data.column.index === 5 && data.cell.text[0].startsWith('Garantia expirou em')) {
                     data.cell.styles.textColor = [200, 0, 0];
                 }
-                if (data.column.index === 5 && data.cell.text[0].startsWith('Garantia até')) {
+                if (data.column.index === 5 && data.cell.text[0].startsWith('Garantia válida até')) {
                     data.cell.styles.textColor = [0, 150, 0];
                 }
             }
@@ -313,10 +328,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                                                     <div className={`mb-3 flex items-center gap-2 text-sm p-2 rounded ${warranty.active ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                                                         {warranty.active ? <ShieldCheck className="h-4 w-4" /> : <ShieldAlert className="h-4 w-4" />}
                                                         <span className="font-medium">
-                                                            {warranty.active
-                                                                ? `Garantia válida até ${warranty.expireDate.toLocaleDateString()} (${warranty.daysLeft} dias restantes)`
-                                                                : `Garantia expirou em ${warranty.expireDate.toLocaleDateString()}`
-                                                            }
+                                                            {getWarrantyMessage(warranty)}
                                                         </span>
                                                     </div>
                                                 )}

@@ -30,13 +30,13 @@ function checkEnvVariables() {
   const requiredVars = [
     'JWT_SECRET',
     'NEXTAUTH_SECRET',
-    'NEXT_PUBLIC_SUPABASE_URL',
-    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
     'DATABASE_URL',
+    'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
+    'CLERK_SECRET_KEY',
   ];
 
   const sensitiveVars = [
-    'SUPABASE_SERVICE_ROLE_KEY',
+    'CLERK_WEBHOOK_SECRET',
     'STRIPE_SECRET_KEY',
     'TWILIO_AUTH_TOKEN',
     'WHATSAPP_ACCESS_TOKEN',
@@ -192,17 +192,17 @@ function checkDatabase() {
 
   const issues = [];
 
-  // Verificar se está usando Supabase (mais seguro que DB local)
+  // Verificar se está usando Neon (recomendado em produção)
   if (
     process.env.DATABASE_URL &&
-    process.env.DATABASE_URL.includes('supabase.co')
+    process.env.DATABASE_URL.includes('neon.tech')
   ) {
-    log('✅ Usando Supabase (recomendado)', 'green');
+    log('✅ Usando Neon PostgreSQL', 'green');
   } else if (
     process.env.DATABASE_URL &&
     process.env.DATABASE_URL.includes('localhost')
   ) {
-    issues.push('⚠️  Usando banco local - considere Supabase para produção');
+    issues.push('⚠️  Usando banco local - considere Neon para produção');
   }
 
   // Verificar se RLS está habilitado (através da presença de políticas)
@@ -231,7 +231,7 @@ function checkDatabase() {
 
 function generateReport(allIssues) {
   log('\n📊 Relatório de Segurança', 'bold');
-  log('=' * 50, 'blue');
+  log('='.repeat(50), 'blue');
 
   const criticalIssues = allIssues.filter(issue => issue.includes('❌'));
   const warnings = allIssues.filter(issue => issue.includes('⚠️'));

@@ -357,7 +357,7 @@ class EmailService {
           destinatario: dados.destinatario,
           status: dados.status,
           messageId: dados.message_id,
-          // erro: dados.erro, // Check if 'erro' column exists, otherwise might go in metadata or metadata json
+          erro: dados.erro,
         },
       });
       // console.log('📧 Email log:', dados);

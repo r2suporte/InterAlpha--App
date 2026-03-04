@@ -7,7 +7,7 @@
     "dev:turbo": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "npm run lint:check",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

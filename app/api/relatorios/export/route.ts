@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     // Data de início baseada no período
     const dataInicio = new Date();
-    dataInicio.setDate(dataInicio.getDate() - parseInt(periodo));
+    dataInicio.setDate(dataInicio.getDate() - parseInt(periodo, 10));
 
     const dados: any = {};
 
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
         metadata: {
           tipo_relatorio: tipo,
           formato,
-          periodo_dias: parseInt(periodo),
+          periodo_dias: parseInt(periodo, 10),
           data_inicio: dataInicio.toISOString(),
           data_fim: new Date().toISOString(),
           exportado_em: new Date().toISOString(),
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
 
     // Data de início baseada no período
     const dataInicio = new Date();
-    dataInicio.setDate(dataInicio.getDate() - parseInt(periodo));
+    dataInicio.setDate(dataInicio.getDate() - parseInt(periodo, 10));
 
     // Implementar lógica de exportação com filtros personalizados
     // Esta é uma implementação básica que pode ser expandida
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
         metadata: {
           tipo_relatorio: tipo,
           formato,
-          periodo_dias: parseInt(periodo),
+          periodo_dias: parseInt(periodo, 10),
           data_inicio: dataInicio.toISOString(),
           data_fim: new Date().toISOString(),
           exportado_em: new Date().toISOString(),

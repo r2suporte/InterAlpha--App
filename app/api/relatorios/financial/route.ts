@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     // Data de início baseada no período
     const dataInicio = new Date();
-    dataInicio.setDate(dataInicio.getDate() - parseInt(periodo));
+    dataInicio.setDate(dataInicio.getDate() - parseInt(periodo, 10));
 
     // Buscar dados financeiros
     const { data: ordens, error: errorOrdens } = await supabase
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         receita_total: receitaTotal,
         ordens_finalizadas: ordensFinalizadas.length,
         ticket_medio: ticketMedio,
-        periodo_dias: parseInt(periodo),
+        periodo_dias: parseInt(periodo, 10),
       },
       receita_por_mes: receitaPorMes,
       ordens_por_status: ordens?.reduce((acc: any, ordem: any) => {
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
         return acc;
       }, {}),
       metadata: {
-        periodo_dias: parseInt(periodo),
+        periodo_dias: parseInt(periodo, 10),
         data_inicio: dataInicio.toISOString(),
         data_fim: new Date().toISOString(),
         tipo_relatorio: 'financial',

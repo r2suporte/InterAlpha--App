@@ -146,7 +146,7 @@ export function SearchAndFilter({
             <div className="flex flex-wrap gap-2">
               {searchValue && (
                 <div className="flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-sm text-secondary-foreground">
-                  <span>Busca: "{searchValue}"</span>
+                  <span>Busca: &quot;{searchValue}&quot;</span>
                   <Button
                     variant="ghost"
                     size="sm"

@@ -167,6 +167,8 @@ export function useLazyData<T>(
     } finally {
       setLoading(false);
     }
+    // Dependências dinâmicas são controladas pelo chamador do hook.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependencies);
 
   React.useEffect(() => {
@@ -212,13 +214,15 @@ export function LazySection({
       }
     );
 
-    if (ref.current) {
-      observer.observe(ref.current);
+    const refCurrent = ref.current;
+
+    if (refCurrent) {
+      observer.observe(refCurrent);
     }
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
+      if (refCurrent) {
+        observer.unobserve(refCurrent);
       }
     };
   }, [threshold, rootMargin, hasLoaded]);
@@ -287,10 +291,12 @@ export const LazyPresets = {
   },
 };
 
-export default {
+const lazyLoadingUtils = {
   createLazyComponent,
   useLazyData,
   LazySection,
   withLazyLoading,
   LazyPresets,
 };
+
+export default lazyLoadingUtils;

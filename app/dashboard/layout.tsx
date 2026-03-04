@@ -2,12 +2,12 @@
 
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { type ReactNode, useEffect } from 'react';
 
 export default function DashboardLayout({
     children,
 }: {
-    children: React.ReactNode;
+    children: ReactNode;
 }) {
     const { isLoaded, userId } = useAuth();
     const router = useRouter();

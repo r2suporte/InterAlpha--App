@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Criar sessão no banco
-    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const ipAddress = request.headers.get('x-forwarded-for') || 'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
     // Expira em 24h
     const expiresAt = new Date();
@@ -73,10 +73,10 @@ export async function POST(request: NextRequest) {
     await prisma.clientSession.create({
       data: {
         clienteId: cliente.id,
-        token: token,
-        ipAddress: ip,
-        userAgent: userAgent,
-        expiresAt: expiresAt
+        token,
+        ipAddress,
+        userAgent,
+        expiresAt
       }
     });
 
@@ -135,7 +135,7 @@ export async function DELETE(request: NextRequest) {
       // Remover sessão do banco
       try {
         await prisma.clientSession.deleteMany({
-          where: { token: token }
+          where: { token }
         });
       } catch (e) {
         console.error('Erro ao remover sessão:', e);

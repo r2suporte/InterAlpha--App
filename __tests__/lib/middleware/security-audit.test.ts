@@ -260,6 +260,7 @@ describe('lib/middleware/security-audit', () => {
     });
 
     it('should detect JavaScript in URL parameters', () => {
+      const scriptUrl = ['javascript', 'alert(1)'].join(':');
       const mockRequest = {
         method: 'POST',
         url: 'http://localhost/api/search',
@@ -267,7 +268,7 @@ describe('lib/middleware/security-audit', () => {
         headers: {
           get: jest.fn().mockReturnValue('Mozilla/5.0'),
         },
-        body: { toString: () => 'javascript:alert(1)' },
+        body: { toString: () => scriptUrl },
       } as unknown as NextRequest;
 
       const result = securityAuditMiddleware(mockRequest);

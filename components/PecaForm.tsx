@@ -119,7 +119,7 @@ export default function PecaForm({
         status: peca.status,
         peso: '', // Add mapping if available
         dimensoes: '', // Add mapping if available
-        garantia_meses: (peca.garantia_meses || parseInt(DEFAULT_WARRANTY_MONTHS)).toString(),
+        garantia_meses: (peca.garantia_meses || parseInt(DEFAULT_WARRANTY_MONTHS, 10)).toString(),
       });
     }
   }, [peca]);

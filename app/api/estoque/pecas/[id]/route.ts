@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
+import { normalizePecaNumericFields } from '../normalize-payload';
 
 const updatePecaSchema = z.object({
     nome: z.string().min(1, 'Nome é obrigatório').optional(),
@@ -21,13 +22,9 @@ export async function PUT(
 ) {
     try {
         const { id } = await params;
-        const body = await request.json();
-
-        // Parse numeric values if strings
-        if (typeof body.quantidade === 'string') body.quantidade = parseInt(body.quantidade);
-        if (typeof body.minimo === 'string') body.minimo = parseInt(body.minimo);
-        if (typeof body.preco_custo === 'string') body.preco_custo = parseFloat(body.preco_custo);
-        if (typeof body.preco_venda === 'string') body.preco_venda = parseFloat(body.preco_venda);
+        const body = normalizePecaNumericFields(
+            (await request.json()) as Record<string, unknown>
+        );
 
         const validatedData = updatePecaSchema.parse(body);
 

@@ -267,7 +267,7 @@ async function getMetrics(request: NextRequest) {
 async function deleteOldMetrics(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const daysOld = parseInt(searchParams.get('daysOld') || '30');
+    const daysOld = parseInt(searchParams.get('daysOld') || '30', 10);
 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);

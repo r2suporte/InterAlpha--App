@@ -1,23 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     Smartphone,
     Search,
-    Filter,
-    Eye,
-    MoreVertical,
-    Plus
+    Eye
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 interface Equipamento {
     id: string;
@@ -38,11 +28,7 @@ export default function EquipamentosPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
 
-    useEffect(() => {
-        fetchEquipamentos();
-    }, [search]);
-
-    const fetchEquipamentos = async () => {
+    const fetchEquipamentos = useCallback(async () => {
         setLoading(true);
         try {
             const res = await fetch(`/api/equipamentos?search=${search}`);
@@ -50,12 +36,16 @@ export default function EquipamentosPage() {
                 const data = await res.json();
                 setEquipamentos(data);
             }
-        } catch (error) {
-            console.error('Failed to fetch equipamentos', error);
+        } catch {
+            setEquipamentos([]);
         } finally {
             setLoading(false);
         }
-    };
+    }, [search]);
+
+    useEffect(() => {
+        void fetchEquipamentos();
+    }, [fetchEquipamentos]);
 
     return (
         <div className="space-y-6 p-6 max-w-7xl mx-auto">
@@ -68,13 +58,6 @@ export default function EquipamentosPage() {
                     </h1>
                     <p className="text-gray-500">Visualize e gerencie todos os dispositivos cadastrados</p>
                 </div>
-                {/*
-        <Button className="bg-blue-600">
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Equipamento
-        </Button>
-        // Currently we create equipments via OS or Client page, but could add here too.
-        */}
             </div>
 
             {/* Filters */}
@@ -103,11 +86,13 @@ export default function EquipamentosPage() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {loading ? (
+                        {loading && (
                             <tr><td colSpan={5} className="p-8 text-center text-gray-500">Carregando...</td></tr>
-                        ) : equipamentos.length === 0 ? (
+                        )}
+                        {!loading && equipamentos.length === 0 && (
                             <tr><td colSpan={5} className="p-8 text-center text-gray-500">Nenhum equipamento encontrado.</td></tr>
-                        ) : (
+                        )}
+                        {!loading && equipamentos.length > 0 && (
                             equipamentos.map(eq => (
                                 <tr key={eq.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4">

@@ -50,10 +50,10 @@ async function testAuthSchema() {
         const session = await prisma.clientSession.create({
             data: {
                 clienteId: testCliente.id,
-                token: token,
+                token,
                 ipAddress: '127.0.0.1',
                 userAgent: 'TestScript/1.0',
-                expiresAt: expiresAt
+                expiresAt
             }
         });
 
@@ -66,7 +66,7 @@ async function testAuthSchema() {
         // 3. Verify Session exists
         console.log('3. Verificando sessão no banco...');
         const savedSession = await prisma.clientSession.findUnique({
-            where: { token: token }
+            where: { token }
         });
 
         if (savedSession && savedSession.clienteId === testCliente.id) {
@@ -78,12 +78,12 @@ async function testAuthSchema() {
         // 4. Delete Session (Logout)
         console.log('4. Removendo sessão (Logout)...');
         await prisma.clientSession.deleteMany({
-            where: { token: token }
+            where: { token }
         });
 
         // 5. Verify Deletion
         const deletedSession = await prisma.clientSession.findUnique({
-            where: { token: token }
+            where: { token }
         });
 
         if (!deletedSession) {

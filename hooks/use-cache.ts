@@ -15,7 +15,7 @@ interface UseCacheReturn<T> {
   error: Error | null;
   refetch: () => Promise<void>;
   invalidate: () => Promise<void>;
-  setData: (data: T) => Promise<void>;
+  setData: (_data: T) => Promise<void>;
 }
 
 /**
@@ -53,7 +53,7 @@ export function useCache<T>(
 
             // Se staleWhileRevalidate está ativo, busca dados frescos em background
             if (staleWhileRevalidate) {
-              fetchData(false).catch(console.error);
+              fetchData(false).catch(() => undefined);
             }
             setIsLoading(false);
             return;
@@ -70,7 +70,6 @@ export function useCache<T>(
         const error =
           err instanceof Error ? err : new Error('Erro desconhecido');
         setError(error);
-        console.error('Erro ao buscar dados:', error);
       } finally {
         setIsLoading(false);
       }
@@ -175,16 +174,17 @@ export function useCacheMetrics<T>(
     ttl: CACHE_TTL.SHORT,
     staleWhileRevalidate: true,
   });
+  const { refetch } = cacheResult;
 
   useEffect(() => {
-    if (!refreshInterval) return;
+    if (!refreshInterval) return undefined;
 
     const interval = setInterval(() => {
-      cacheResult.refetch();
+      refetch();
     }, refreshInterval);
 
     return () => clearInterval(interval);
-  }, [cacheResult.refetch, refreshInterval]);
+  }, [refetch, refreshInterval]);
 
   return cacheResult;
 }
@@ -205,6 +205,8 @@ export function useCacheWithDeps<T>(
 
   useEffect(() => {
     cacheResult.refetch();
+    // Dependências dinâmicas são controladas pelo chamador deste hook.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
   return cacheResult;

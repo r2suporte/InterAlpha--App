@@ -316,8 +316,45 @@ export function ServiceOrderForm({
     }
   };
 
+  const nextButtonClass = currentStep === 4
+    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-green-200'
+    : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:shadow-blue-200';
+
+  const renderNextButtonContent = () => {
+    if (isSubmitting) {
+      return (
+        <div className="flex items-center gap-2">
+          <Spinner className="h-5 w-5 animate-spin" />
+          <span>Salvat...</span>
+        </div>
+      );
+    }
+
+    if (currentStep === 4) {
+      return (
+        <div className="flex items-center gap-2">
+          <Save className="h-5 w-5" />
+          <span>{ordemId ? 'Atualizar OS' : 'Finalizar OS'}</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center gap-2">
+        <span>Próximo</span>
+        <ChevronRight className="h-5 w-5" />
+      </div>
+    );
+  };
+
   return (
     <div className="mx-auto w-full max-w-4xl space-y-8 p-4">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          Ordem de Serviço
+        </h1>
+      </div>
+
       {/* Stepper Header */}
       <div className="relative">
         <div className="absolute left-0 top-1/2 -z-10 h-1 w-full -translate-y-1/2 bg-gray-100" />
@@ -394,29 +431,9 @@ export function ServiceOrderForm({
           <Button
             onClick={handleNextStep}
             disabled={isSubmitting}
-            className={`h-12 min-w-[140px] rounded-xl px-8 text-lg font-semibold shadow-lg transition-all hover:-translate-y-0.5 ${currentStep === 4
-              ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-green-200'
-              : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:shadow-blue-200'
-              }`}
+            className={`h-12 min-w-[140px] rounded-xl px-8 text-lg font-semibold shadow-lg transition-all hover:-translate-y-0.5 ${nextButtonClass}`}
           >
-            {isSubmitting ? (
-              <div className="flex items-center gap-2">
-                <Spinner className="h-5 w-5 animate-spin" />
-                <span>Salvat...</span>
-              </div>
-            ) : (
-              currentStep === 4 ? (
-                <div className="flex items-center gap-2">
-                  <Save className="h-5 w-5" />
-                  <span>{ordemId ? 'Atualizar OS' : 'Finalizar OS'}</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span>Próximo</span>
-                  <ChevronRight className="h-5 w-5" />
-                </div>
-              )
-            )}
+            {renderNextButtonContent()}
           </Button>
         </div>
       </div>

@@ -1,35 +1,18 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 // Icons
 import {
-  BarChart3,
-  Bell,
   Building2,
-  Calculator,
   ChevronRight,
-  ClipboardList,
-  CreditCard,
-  DollarSign,
-  FileText,
-  HelpCircle,
-  Home,
-  LayoutDashboard,
-  Package,
-  Plus,
   Search,
-  Settings,
-  TrendingUp,
-  Users,
-  Wrench,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Collapsible,
   CollapsibleContent,
@@ -37,7 +20,6 @@ import {
 } from '@/components/ui/collapsible';
 // UI Components
 import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import {
   Tooltip,
   TooltipContent,

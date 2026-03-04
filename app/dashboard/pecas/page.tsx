@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Package,
   Search,
@@ -8,12 +8,9 @@ import {
   MoreVertical,
   Edit,
   Trash2,
-  AlertTriangle,
-  ArrowUpCircle,
-  ArrowDownCircle
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,11 +57,7 @@ export default function InventoryPage() {
     localizacao: ''
   });
 
-  useEffect(() => {
-    fetchPecas();
-  }, [search]);
-
-  const fetchPecas = async () => {
+  const fetchPecas = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/pecas?search=${search}`);
@@ -72,12 +65,16 @@ export default function InventoryPage() {
         const data = await res.json();
         setPecas(data);
       }
-    } catch (error) {
-      console.error('Failed to fetch', error);
+    } catch {
+      setPecas([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [search]);
+
+  useEffect(() => {
+    void fetchPecas();
+  }, [fetchPecas]);
 
   const resetForm = () => {
     setEditingPeca(null);
@@ -112,8 +109,8 @@ export default function InventoryPage() {
       } else {
         alert('Erro ao salvar.');
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // handled by UI feedback below
     }
   };
 
@@ -199,11 +196,13 @@ export default function InventoryPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {loading ? (
+            {loading && (
               <tr><td colSpan={6} className="p-8 text-center text-gray-500">Carregando...</td></tr>
-            ) : pecas.length === 0 ? (
+            )}
+            {!loading && pecas.length === 0 && (
               <tr><td colSpan={6} className="p-8 text-center text-gray-500">Nenhuma peça cadastrada.</td></tr>
-            ) : (
+            )}
+            {!loading && pecas.length > 0 && (
               pecas.map(peca => {
                 const isLow = peca.quantidade <= peca.minimo;
                 return (

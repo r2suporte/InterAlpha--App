@@ -60,17 +60,29 @@ interface DashboardReportResponse {
   };
 }
 
+const DEFAULT_PERIOD_DAYS = 30;
+const MAX_PERIOD_DAYS = 365;
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
 // 🔧 Função para Calcular Crescimento Percentual
 function calculateGrowth(current: number, previous: number): number {
   if (previous === 0) return current > 0 ? 100 : 0;
   return Math.round(((current - previous) / previous) * 100);
 }
 
+function parsePeriodoDias(value: string | null): number {
+  const parsed = Number.parseInt(value ?? `${DEFAULT_PERIOD_DAYS}`, 10);
+  if (Number.isNaN(parsed) || parsed < 1) {
+    return DEFAULT_PERIOD_DAYS;
+  }
+  return Math.min(parsed, MAX_PERIOD_DAYS);
+}
+
 // 📊 Função Principal para Gerar Relatórios do Dashboard
 async function getDashboardReports(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const periodo = searchParams.get('periodo') || '30'; // dias
+    const periodoDias = parsePeriodoDias(searchParams.get('periodo'));
     const includeCharts = searchParams.get('charts') !== 'false';
     const includeTrends = searchParams.get('trends') !== 'false';
 
@@ -80,10 +92,10 @@ async function getDashboardReports(request: NextRequest) {
     const now = new Date();
     const dataFim = now;
     const dataInicio = new Date(
-      now.getTime() - parseInt(periodo) * 24 * 60 * 60 * 1000
+      now.getTime() - periodoDias * DAY_IN_MS
     );
     const periodoAnterior = new Date(
-      dataInicio.getTime() - parseInt(periodo) * 24 * 60 * 60 * 1000
+      dataInicio.getTime() - periodoDias * DAY_IN_MS
     );
 
     // 📈 RESUMO EXECUTIVO
@@ -261,7 +273,7 @@ async function getDashboardReports(request: NextRequest) {
       trends: trends as any,
       alerts,
       metadata: {
-        periodo: `${periodo} dias`,
+        periodo: `${periodoDias} dias`,
         dataInicio: dataInicio.toISOString(),
         dataFim: dataFim.toISOString(),
         geradoEm: now.toISOString(),

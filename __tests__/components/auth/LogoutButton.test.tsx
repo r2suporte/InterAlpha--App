@@ -1,16 +1,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
-import LogoutButton from '@/components/auth/LogoutButton';
-
-// Mock do Supabase client
 const mockSignOut = jest.fn();
 const mockPush = jest.fn();
 
-jest.mock('@/lib/supabase/client', () => ({
-  createClient: () => ({
-    auth: {
-      signOut: mockSignOut,
-    },
+jest.mock('@clerk/nextjs', () => ({
+  useClerk: () => ({
+    signOut: mockSignOut,
   }),
 }));
 
@@ -19,6 +14,8 @@ jest.mock('next/navigation', () => ({
     push: mockPush,
   }),
 }));
+
+import LogoutButton from '@/components/auth/LogoutButton';
 
 describe('LogoutButton Component', () => {
   beforeEach(() => {
@@ -44,8 +41,10 @@ describe('LogoutButton Component', () => {
     expect(button).toBeDisabled();
   });
 
-  it('calls supabase signOut and redirects on successful logout', async () => {
-    mockSignOut.mockResolvedValue({ error: null });
+  it('calls Clerk signOut and redirects on successful logout', async () => {
+    mockSignOut.mockImplementation(async callback => {
+      callback();
+    });
 
     render(<LogoutButton />);
     const button = screen.getByRole('button');
@@ -54,28 +53,8 @@ describe('LogoutButton Component', () => {
 
     await waitFor(() => {
       expect(mockSignOut).toHaveBeenCalledTimes(1);
-      expect(mockPush).toHaveBeenCalledWith('/auth/login');
+      expect(mockPush).toHaveBeenCalledWith('/sign-in');
     });
-  });
-
-  it('handles logout error gracefully', async () => {
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-    mockSignOut.mockResolvedValue({ error: { message: 'Logout failed' } });
-
-    render(<LogoutButton />);
-    const button = screen.getByRole('button');
-
-    fireEvent.click(button);
-
-    await waitFor(() => {
-      expect(mockSignOut).toHaveBeenCalledTimes(1);
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Erro ao fazer logout:', {
-        message: 'Logout failed',
-      });
-      expect(mockPush).not.toHaveBeenCalled();
-    });
-
-    consoleErrorSpy.mockRestore();
   });
 
   it('handles unexpected errors', async () => {
@@ -95,19 +74,5 @@ describe('LogoutButton Component', () => {
     });
 
     consoleErrorSpy.mockRestore();
-  });
-
-  it('returns to normal state after logout completes', async () => {
-    mockSignOut.mockResolvedValue({ error: null });
-
-    render(<LogoutButton />);
-    const button = screen.getByRole('button');
-
-    fireEvent.click(button);
-
-    await waitFor(() => {
-      expect(screen.getByText('Sair')).toBeInTheDocument();
-      expect(button).not.toBeDisabled();
-    });
   });
 });

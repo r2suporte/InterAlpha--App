@@ -1,20 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-
-import { useRouter } from 'next/navigation';
+import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
 
 import {
   AlertCircle,
   Calendar,
   CheckCircle,
   Edit,
-  Filter,
   Loader2,
-  MoreVertical,
-  Phone,
   Plus,
-  Search,
   Trash2,
   Users,
 } from 'lucide-react';
@@ -32,7 +26,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ContactInfo, DataField, DataGrid } from '@/components/ui/data-display';
+import { DataField, DataGrid } from '@/components/ui/data-display';
 import {
   Dialog,
   DialogContent,
@@ -41,12 +35,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { DocumentSelector } from '@/components/ui/document-selector';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { InputMask } from '@/components/ui/input-mask';
 import { Label } from '@/components/ui/label';
@@ -54,7 +42,6 @@ import {
   ResponsiveContainer,
   ResponsiveStack,
   ResponsiveText,
-  ShowHide,
   useBreakpoint,
 } from '@/components/ui/responsive-utils';
 import { SearchAndFilter } from '@/components/ui/search-and-filter';
@@ -171,7 +158,6 @@ function getInitials(nome: string): string {
 // ─────────────────────────────────────────────
 
 export default function ClientesPage() {
-  const router = useRouter();
   const { isMobile } = useBreakpoint();
 
   // ── State ───────────────────────────────────
@@ -290,7 +276,7 @@ export default function ClientesPage() {
 
   // ── Form submission ──────────────────────────
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setErrors([]);
     setSuccess('');
@@ -372,9 +358,14 @@ export default function ClientesPage() {
     setErrors([]);
   };
 
+  const openModalSafely = () => {
+    // Avoid immediate close from the same click event cycle in Radix Dialog.
+    window.setTimeout(() => setShowModal(true), 0);
+  };
+
   const openCreateModal = () => {
     resetForm();
-    setShowModal(true);
+    openModalSafely();
   };
 
   const handleEdit = (cliente: Cliente) => {
@@ -400,7 +391,7 @@ export default function ClientesPage() {
       estado: cliente.estado || '',
       observacoes: cliente.observacoes || '',
     });
-    setShowModal(true);
+    openModalSafely();
   };
 
   const handleDelete = async (id: string) => {
@@ -495,33 +486,6 @@ export default function ClientesPage() {
                 </ResponsiveText>
               </div>
 
-              {/* Desktop: Botão Novo Cliente */}
-              <ShowHide hide={['sm']}>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    type="button"
-                    onClick={openCreateModal}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Novo Cliente
-                  </Button>
-                </div>
-              </ShowHide>
-
-              {/* Mobile: Menu com botão de novo cliente */}
-              <ShowHide on={['sm']}>
-                <div className="flex w-full items-center space-x-2">
-                  <Button
-                    type="button"
-                    onClick={openCreateModal}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Novo Cliente
-                  </Button>
-                </div>
-              </ShowHide>
             </ResponsiveStack>
 
             <div className="space-y-6">
@@ -848,7 +812,7 @@ export default function ClientesPage() {
                   <InputMask
                     mask="(99) 99999-9999"
                     value={formData.telefone}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
                       setFormData(prev => ({ ...prev, telefone: e.target.value }))
                     }
                     id="telefone"
@@ -869,7 +833,7 @@ export default function ClientesPage() {
                     <InputMask
                       mask="99999-999"
                       value={formData.cep}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
                         handleCepChange(e.target.value)
                       }
                       id="cep"

@@ -1,17 +1,26 @@
 import nodemailer from 'nodemailer';
 
 import EmailService from '@/lib/services/email-service';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 
 // Mock do nodemailer
 jest.mock('nodemailer');
 const mockNodemailer = nodemailer as jest.Mocked<typeof nodemailer>;
 
-// Mock do Supabase
-jest.mock('@/lib/supabase/server');
-const mockCreateClient = createClient as jest.MockedFunction<
-  typeof createClient
->;
+// Mock do Prisma
+jest.mock('@/lib/prisma', () => ({
+  __esModule: true,
+  default: {
+    comunicacaoCliente: {
+      create: jest.fn(),
+    },
+  },
+}));
+const mockPrisma = prisma as unknown as {
+  comunicacaoCliente: {
+    create: jest.Mock;
+  };
+};
 
 // Mock das variáveis de ambiente
 const originalEnv = process.env;
@@ -35,7 +44,6 @@ afterEach(() => {
 describe('EmailService', () => {
   let emailService: EmailService;
   let mockTransporter: any;
-  let mockSupabase: any;
 
   beforeEach(() => {
     // Mock do transporter
@@ -45,12 +53,8 @@ describe('EmailService', () => {
     };
     mockNodemailer.createTransport.mockReturnValue(mockTransporter);
 
-    // Mock do Supabase
-    mockSupabase = {
-      from: jest.fn().mockReturnThis(),
-      insert: jest.fn().mockReturnValue({ error: null }),
-    };
-    mockCreateClient.mockResolvedValue(mockSupabase);
+    // Mock do Prisma
+    mockPrisma.comunicacaoCliente.create.mockResolvedValue({ id: 'comm-1' });
 
     emailService = new EmailService();
   });
@@ -148,16 +152,16 @@ describe('EmailService', () => {
 
       await emailService.sendOrdemServicoEmail(mockOrdemServico);
 
-      expect(mockSupabase.from).toHaveBeenCalledWith('comunicacoes_cliente');
-      expect(mockSupabase.insert).toHaveBeenCalledWith({
-        cliente_portal_id: 'os-123',
-        ordem_servico_id: 'os-123',
-        tipo: 'email',
-        conteudo: expect.stringContaining('Nova Ordem de Serviço'),
-        destinatario: 'joao@exemplo.com',
-        status: 'enviado',
-        message_id: 'msg-125',
-        enviado_em: expect.any(String),
+      expect(mockPrisma.comunicacaoCliente.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          clientePortalId: 'os-123',
+          ordemServicoId: 'os-123',
+          tipo: 'email',
+          conteudo: expect.stringContaining('Nova Ordem de Serviço'),
+          destinatario: 'joao@exemplo.com',
+          status: 'enviado',
+          messageId: 'msg-125',
+        }),
       });
     });
 
@@ -170,15 +174,16 @@ describe('EmailService', () => {
       ).rejects.toThrow('SMTP connection failed');
 
       // Verifica se o erro foi registrado no banco
-      expect(mockSupabase.insert).toHaveBeenCalledWith({
-        cliente_portal_id: 'os-123',
-        ordem_servico_id: 'os-123',
-        tipo: 'email',
-        conteudo: expect.stringContaining('Nova Ordem de Serviço'),
-        destinatario: 'joao@exemplo.com',
-        status: 'erro',
-        erro: 'SMTP connection failed',
-        enviado_em: expect.any(String),
+      expect(mockPrisma.comunicacaoCliente.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          clientePortalId: 'os-123',
+          ordemServicoId: 'os-123',
+          tipo: 'email',
+          conteudo: expect.stringContaining('Nova Ordem de Serviço'),
+          destinatario: 'joao@exemplo.com',
+          status: 'erro',
+          erro: 'SMTP connection failed',
+        }),
       });
     });
 
@@ -326,7 +331,7 @@ describe('EmailService', () => {
   });
 
   describe('registrarComunicacao', () => {
-    it('registra comunicação no Supabase com sucesso', async () => {
+    it('registra comunicação no Prisma com sucesso', async () => {
       const dados = {
         cliente_portal_id: 'cliente-123',
         ordem_servico_id: 'os-123',
@@ -339,17 +344,24 @@ describe('EmailService', () => {
 
       await (emailService as any).registrarComunicacao(dados);
 
-      expect(mockSupabase.from).toHaveBeenCalledWith('comunicacoes_cliente');
-      expect(mockSupabase.insert).toHaveBeenCalledWith({
-        ...dados,
-        enviado_em: expect.any(String),
+      expect(mockPrisma.comunicacaoCliente.create).toHaveBeenCalledWith({
+        data: {
+          clientePortalId: 'cliente-123',
+          ordemServicoId: 'os-123',
+          tipo: 'email',
+          conteudo: '<html>Email content</html>',
+          destinatario: 'cliente@exemplo.com',
+          status: 'enviado',
+          messageId: 'msg-123',
+          erro: undefined,
+        },
       });
     });
 
     it('trata erro ao registrar comunicação', async () => {
-      mockSupabase.insert.mockReturnValue({
-        error: new Error('Database error'),
-      });
+      mockPrisma.comunicacaoCliente.create.mockRejectedValue(
+        new Error('Database error')
+      );
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
       const dados = {

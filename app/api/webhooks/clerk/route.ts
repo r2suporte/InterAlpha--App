@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { WebhookEvent } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
+import { envServer } from '@/lib/config/env.server';
 import prisma from '@/lib/prisma';
 
 /**
@@ -31,10 +32,9 @@ export async function POST(req: Request) {
 
     // Get the body
     const payload = await req.text();
-    const body = JSON.parse(payload);
 
     // Get the Webhook secret from environment
-    const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+    const WEBHOOK_SECRET = envServer.clerk.webhookSecret();
 
     if (!WEBHOOK_SECRET) {
         console.error('CLERK_WEBHOOK_SECRET is not set');

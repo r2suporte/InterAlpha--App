@@ -13,6 +13,7 @@ import {
     Tag,
     MapPin,
     Box,
+    Truck,
 } from 'lucide-react';
 
 import { EnhancedSidebar } from '@/components/navigation/enhanced-sidebar';

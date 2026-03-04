@@ -8,17 +8,16 @@ import { jest } from '@jest/globals';
 const mockFetch = jest.fn();
 global.fetch = mockFetch as any;
 
-// Mock do Supabase
-const mockSupabaseClient = {
-  from: jest.fn(() => ({
-    insert: jest.fn(() => ({
-      select: jest.fn(() => Promise.resolve({ data: null, error: null }))
-    }))
-  }))
+// Mock do Prisma
+const mockPrisma = {
+  comunicacaoCliente: {
+    create: jest.fn(() => Promise.resolve({ id: 'comm-1' })),
+  },
 };
 
-jest.mock('@/lib/supabase/server', () => ({
-  createClient: jest.fn(() => mockSupabaseClient)
+jest.mock('@/lib/prisma', () => ({
+  __esModule: true,
+  default: mockPrisma,
 }));
 
 // Mock das variáveis de ambiente
@@ -32,9 +31,12 @@ describe('WhatsApp Service Integration Tests', () => {
 
   beforeAll(async () => {
     // Importa o serviço após configurar os mocks
-    const module = await import('../../../lib/services/whatsapp-service');
-    WhatsAppService = module.default;
-    whatsappService = module.whatsappService;
+    const {
+      default: ImportedWhatsAppService,
+      whatsappService: importedWhatsappService,
+    } = await import('../../../lib/services/whatsapp-service');
+    WhatsAppService = ImportedWhatsAppService;
+    whatsappService = importedWhatsappService;
   });
 
   beforeEach(() => {
@@ -154,7 +156,13 @@ describe('WhatsApp Service Integration Tests', () => {
       const resultado = await whatsappService.sendOrdemServicoMessage(ordemServico);
 
       expect(mockFetch).toHaveBeenCalled();
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith('comunicacoes_cliente');
+      expect(mockPrisma.comunicacaoCliente.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          ordemServicoId: '123',
+          tipo: 'whatsapp',
+          status: 'enviado',
+        }),
+      });
       expect(resultado).toEqual(mockResponse);
     });
 

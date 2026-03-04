@@ -32,8 +32,8 @@ function getSocketIOInstance(): SocketIOServer | null {
 async function getOrdensServico(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '10', 10);
     const status = searchParams.get('status') as StatusOrdemServico;
     const cliente_id = searchParams.get('cliente_id');
     const tecnico_id = searchParams.get('tecnico_id');
@@ -240,7 +240,7 @@ async function createOrdemServico(request: NextRequest) {
 
     let proximoNumero = 1;
     if (lastOrder?.numeroOs) {
-      const numeroAtual = parseInt(lastOrder.numeroOs.replace(/\D/g, ''));
+      const numeroAtual = parseInt(lastOrder.numeroOs.replace(/\D/g, ''), 10);
       proximoNumero = numeroAtual + 1;
     }
     const numeroOS = `OS${proximoNumero.toString().padStart(6, '0')}`;

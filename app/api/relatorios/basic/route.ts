@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     // Data de início baseada no período
     const dataInicio = new Date();
-    dataInicio.setDate(dataInicio.getDate() - parseInt(periodo));
+    dataInicio.setDate(dataInicio.getDate() - parseInt(periodo, 10));
 
     // Relatório básico com informações gerais
     const { data: totalClientes, error: errorClientes } = await supabase
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         por_status: statusCount || {},
       },
       metadata: {
-        periodo_dias: parseInt(periodo),
+        periodo_dias: parseInt(periodo, 10),
         data_inicio: dataInicio.toISOString(),
         data_fim: new Date().toISOString(),
         tipo_relatorio: 'basic',

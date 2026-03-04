@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     // Data de início baseada no período
     const dataInicio = new Date();
-    dataInicio.setDate(dataInicio.getDate() - parseInt(periodo));
+    dataInicio.setDate(dataInicio.getDate() - parseInt(periodo, 10));
 
     // Buscar dados técnicos
     const { data: ordens, error: errorOrdens } = await supabase
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
         return acc;
       }, {}),
       metadata: {
-        periodo_dias: parseInt(periodo),
+        periodo_dias: parseInt(periodo, 10),
         data_inicio: dataInicio.toISOString(),
         data_fim: new Date().toISOString(),
         tipo_relatorio: 'technical',

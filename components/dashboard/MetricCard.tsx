@@ -60,7 +60,18 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     };
 
     const progressValue = target ? Math.min((Number(value) / target) * 100, 100) : 0;
-    const progressColor = progressValue >= 100 ? 'bg-green-500' : progressValue >= 75 ? 'bg-blue-500' : progressValue >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+
+    const getTrendStroke = () => {
+        if (trend === 'up') return '#10b981';
+        if (trend === 'down') return '#ef4444';
+        return '#6b7280';
+    };
+
+    const getBadgeVariant = () => {
+        if (status === 'success') return 'default';
+        if (status === 'warning') return 'secondary';
+        return 'destructive';
+    };
 
     return (
         <TooltipProvider>
@@ -122,7 +133,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
                                                 <Line
                                                     type="monotone"
                                                     dataKey="value"
-                                                    stroke={trend === 'up' ? '#10b981' : trend === 'down' ? '#ef4444' : '#6b7280'}
+                                                    stroke={getTrendStroke()}
                                                     strokeWidth={2}
                                                     dot={false}
                                                 />
@@ -134,13 +145,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
                                 {/* Status Badge */}
                                 {status !== 'neutral' && (
                                     <Badge
-                                        variant={
-                                            status === 'success'
-                                                ? 'default'
-                                                : status === 'warning'
-                                                    ? 'secondary'
-                                                    : 'destructive'
-                                        }
+                                        variant={getBadgeVariant()}
                                         className="text-xs"
                                     >
                                         {status === 'success' && 'Excelente'}

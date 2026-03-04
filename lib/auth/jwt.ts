@@ -54,10 +54,9 @@ export async function verifyJWT(token: string): Promise<JWTPayload> {
     jwt.verify(
       token,
       JWT_SECRET,
-      { algorithms: ['HS256'] } as jwt.VerifyOptions,
       (error: jwt.VerifyErrors | null, decoded?: string | jwt.JwtPayload | object) => {
         if (error || !decoded) {
-          reject(new Error('Token inválido ou expirado'));
+          reject(new Error('Token JWT inválido'));
         } else {
           resolve(decoded as JWTPayload);
         }

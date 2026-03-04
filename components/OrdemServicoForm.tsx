@@ -10,7 +10,6 @@ import {
   Smartphone,
 } from 'lucide-react';
 
-import { useClients } from '../hooks/use-clients'; // Keeping for type if needed
 import { useTechnicians } from '../hooks/use-technicians';
 import { formatarMoeda } from '../types/financeiro';
 import {
@@ -22,7 +21,6 @@ import PecasOrdemServico from './PecasOrdemServico';
 import { FormField } from './form/form-field';
 import { ClientSearch } from '@/components/client-search';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 // Equipment Type
 interface Equipamento {
@@ -90,6 +88,21 @@ export default function OrdemServicoForm({
 
   const { loading: loadingTechnicians, getActiveTechnicians } = useTechnicians();
 
+  const fetchEquipamentosCliente = useCallback(async (clienteId: string) => {
+    setCarregandoEquipamentos(true);
+    try {
+      const res = await fetch(`/api/clientes/${clienteId}/equipamentos`);
+      if (res.ok) {
+        const data = await res.json();
+        setEquipamentosCliente(data);
+      }
+    } catch (e) {
+      console.error('Erro ao buscar equipamentos', e);
+    } finally {
+      setCarregandoEquipamentos(false);
+    }
+  }, []);
+
   // Load initial data
   useEffect(() => {
     if (ordemServico) {
@@ -99,7 +112,7 @@ export default function OrdemServicoForm({
         fetchEquipamentosCliente(ordemServico.cliente_id);
       }
     }
-  }, [ordemServico]);
+  }, [ordemServico, fetchEquipamentosCliente]);
 
   // Fetch equipments when client changes
   useEffect(() => {
@@ -108,22 +121,7 @@ export default function OrdemServicoForm({
     } else if (!formData.cliente_id) {
       setEquipamentosCliente([]);
     }
-  }, [formData.cliente_id]);
-
-  const fetchEquipamentosCliente = async (clienteId: string) => {
-    setCarregandoEquipamentos(true);
-    try {
-      const res = await fetch(`/api/clientes/${clienteId}/equipamentos`);
-      if (res.ok) {
-        const data = await res.json();
-        setEquipamentosCliente(data);
-      }
-    } catch (e) {
-      console.error("Erro ao buscar equipamentos", e);
-    } finally {
-      setCarregandoEquipamentos(false);
-    }
-  };
+  }, [formData.cliente_id, ordemServico, fetchEquipamentosCliente]);
 
   // Update total value
   useEffect(() => {
@@ -135,7 +133,7 @@ export default function OrdemServicoForm({
     if (formData.valor_pecas !== valorPecas.toString()) {
       setFormData(prev => ({ ...prev, valor_pecas: valorPecas.toString() }));
     }
-  }, [pecasUtilizadas]);
+  }, [pecasUtilizadas, formData.valor_pecas]);
 
   const valorTotal = React.useMemo(() => {
     const valorPecas = parseFloat(formData.valor_pecas || '0');

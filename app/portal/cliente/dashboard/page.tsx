@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -31,11 +31,7 @@ export default function ClienteDashboard() {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const response = await fetch('/api/auth/cliente/me');
 
@@ -46,12 +42,16 @@ export default function ClienteDashboard() {
       } else {
         router.push('/portal/cliente/login');
       }
-    } catch (error) {
+    } catch {
       setError('Erro ao carregar dados');
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    void checkAuth();
+  }, [checkAuth]);
 
   const handleLogout = async () => {
     try {
@@ -59,8 +59,8 @@ export default function ClienteDashboard() {
         method: 'DELETE',
       });
       router.push('/portal/cliente/login');
-    } catch (error) {
-      console.error('Erro no logout:', error);
+    } catch {
+      setError('Erro ao finalizar sessão');
     }
   };
 

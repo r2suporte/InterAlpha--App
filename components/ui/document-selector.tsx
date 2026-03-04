@@ -12,8 +12,6 @@ import {
 
 import {
   type TipoPessoa,
-  determinarTipoPessoa,
-  getMascaraCpfCnpj,
   getMascaraPorTipo,
   validarCpfCnpj,
 } from '@/lib/validators';
@@ -116,7 +114,7 @@ export function DocumentSelector({
     } else if (value && documentType) {
       validateDocument(value, documentType);
     }
-  }, [value]);
+  }, [value, inputValue, documentType]);
 
   const handleDocumentTypeSelect = (type: 'cpf' | 'cnpj') => {
     setDocumentType(type);

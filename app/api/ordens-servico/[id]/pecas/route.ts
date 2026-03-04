@@ -67,11 +67,11 @@ export async function POST(
             const pecaUtilizada = await tx.pecaUtilizada.create({
                 data: {
                     ordemServicoId: ordemId,
-                    pecaId: pecaId,
+                    pecaId,
                     nome: peca.nome,
-                    quantidade: quantidade,
-                    precoUnitario: precoUnitario,
-                    precoTotal: precoTotal,
+                    quantidade,
+                    precoUnitario,
+                    precoTotal,
                 }
             });
 

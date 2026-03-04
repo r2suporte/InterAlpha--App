@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -73,14 +73,13 @@ export default function OrdemServicoDetalhes() {
   const [processando, setProcessando] = useState<string | null>(null);
   const router = useRouter();
   const params = useParams();
+  const ordemId = typeof params.id === 'string' ? params.id : params.id?.[0];
 
-  useEffect(() => {
-    if (params.id) {
-      carregarDados();
+  const carregarDados = useCallback(async () => {
+    if (!ordemId) {
+      return;
     }
-  }, [params.id]);
 
-  const carregarDados = async () => {
     try {
       startLoading();
 
@@ -95,7 +94,7 @@ export default function OrdemServicoDetalhes() {
       setCliente(authData.cliente);
 
       // Carregar dados da ordem de serviço
-      const response = await fetch(`/api/portal/cliente/ordem/${params.id}`);
+      const response = await fetch(`/api/portal/cliente/ordem/${ordemId}`);
 
       if (response.ok) {
         const data = await response.json();
@@ -115,14 +114,18 @@ export default function OrdemServicoDetalhes() {
         setError(errorMessage);
         showError('Erro', errorMessage);
       }
-  } catch (_error) {
+    } catch {
       const errorMessage = 'Erro ao carregar dados';
       setError(errorMessage);
       showError('Erro', errorMessage);
     } finally {
       stopLoading();
     }
-  };
+  }, [ordemId, router, showError, startLoading, stopLoading]);
+
+  useEffect(() => {
+    void carregarDados();
+  }, [carregarDados]);
 
   const handleAprovacao = async (
     aprovacaoId: string,
@@ -153,7 +156,7 @@ export default function OrdemServicoDetalhes() {
         const errorData = await response.json();
         setError(errorData.error || 'Erro ao processar aprovação');
       }
-  } catch (_error) {
+    } catch {
       setError('Erro ao processar aprovação');
     } finally {
       setProcessando(null);

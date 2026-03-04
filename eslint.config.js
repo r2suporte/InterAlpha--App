@@ -111,9 +111,20 @@ module.exports = [
     rules: {
       'no-console': 'off',
       'no-magic-numbers': 'off',
+      'no-unused-vars': 'off',
       'no-unused-expressions': 'off',
       'prefer-arrow-callback': 'off',
       'no-undef': 'off', // Desativa no-undef em testes pois os globals são definidos no runtime
+    },
+  },
+
+  // Local mock/stub clients used in tests and dev fallback
+  {
+    files: ['lib/supabase/client.ts'],
+    rules: {
+      'no-console': 'off',
+      'no-magic-numbers': 'off',
+      'no-unused-vars': 'off',
     },
   },
 
@@ -132,6 +143,14 @@ module.exports = [
       'no-console': 'off',
       'no-magic-numbers': 'off',
       'no-unused-vars': 'off',
+    },
+  },
+
+  // Server handlers and server actions: structured logs are valid operational output
+  {
+    files: ['app/api/**/*.ts', 'app/api/**/*.tsx', 'app/actions/**/*.ts'],
+    rules: {
+      'no-console': 'off',
     },
   },
 

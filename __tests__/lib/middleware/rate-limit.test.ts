@@ -22,11 +22,9 @@ describe('lib/middleware/rate-limit', () => {
   beforeEach(() => {
     // Reload the module to get fresh rate limit cache
     jest.resetModules();
-    const module = require('../../../lib/middleware/rate-limit');
-    rateLimit = module.rateLimit;
-    authRateLimit = module.authRateLimit;
-    resetRateLimit = module.resetRateLimit;
-    getRateLimitStats = module.getRateLimitStats;
+    const middlewareModule = require('../../../lib/middleware/rate-limit');
+    ({ rateLimit, authRateLimit, resetRateLimit, getRateLimitStats } =
+      middlewareModule);
     jest.clearAllMocks();
   });
 
