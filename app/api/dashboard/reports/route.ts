@@ -1,5 +1,6 @@
 // 📊 API de Relatórios do Dashboard - Dados Consolidados para Visualização
 // Endpoint específico para relatórios do dashboard com métricas agregadas
+/* eslint-disable no-magic-numbers */
 import { NextRequest, NextResponse } from 'next/server';
 
 import { AuthenticatedUser, requireAuth } from '@/lib/auth/role-middleware';

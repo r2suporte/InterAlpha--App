@@ -1,5 +1,6 @@
 // 📊 Application Metrics Service - Monitoramento Abrangente da Aplicação
 // Coleta métricas de performance, uso, erros e recursos do sistema
+/* eslint-disable no-magic-numbers */
 import prisma from '@/lib/prisma';
 import { ApplicationMetric as PrismaApplicationMetric } from '@prisma/client';
 

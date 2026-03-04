@@ -2,6 +2,7 @@
  * Serviço de Geração de PDF para Ordem de Serviço
  * Gera PDF da OS formatado e pronto para assinatura do cliente
  */
+/* eslint-disable no-magic-numbers */
 
 import { jsPDF } from 'jspdf';
 

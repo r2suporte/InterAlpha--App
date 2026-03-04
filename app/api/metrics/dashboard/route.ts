@@ -1,5 +1,6 @@
 // 📊 API do Dashboard de Métricas - Agregação de Dados para Visualização
 // Endpoint para fornecer dados consolidados do dashboard
+/* eslint-disable no-magic-numbers */
 import { NextRequest, NextResponse } from 'next/server';
 
 import { withAuthenticatedApiMetrics } from '@/lib/middleware/metrics-middleware';

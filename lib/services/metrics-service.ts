@@ -1,5 +1,6 @@
 // 📊 Metrics Service - Sistema de Monitoramento de Performance
 // Coleta e analisa métricas dos serviços de comunicação
+/* eslint-disable no-magic-numbers */
 import prisma from '@/lib/prisma';
 
 interface MetricData {

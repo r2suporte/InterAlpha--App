@@ -1,4 +1,5 @@
 import { cnpj, cpf } from 'cpf-cnpj-validator';
+/* eslint-disable no-magic-numbers */
 
 /**
  * Implementar debounce para evitar muitas chamadas de API

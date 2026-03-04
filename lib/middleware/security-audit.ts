@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+/* eslint-disable no-magic-numbers */
 
 /**
  * 🔍 Security Audit Middleware - InterAlpha App

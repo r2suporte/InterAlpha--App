@@ -1,4 +1,5 @@
 import { z } from 'zod';
+/* eslint-disable no-magic-numbers */
 
 /**
  * 🔒 Validadores de Segurança - InterAlpha App

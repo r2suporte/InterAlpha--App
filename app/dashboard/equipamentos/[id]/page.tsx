@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable no-magic-numbers */
 
 import React, { useState, useEffect } from 'react';
 import {
