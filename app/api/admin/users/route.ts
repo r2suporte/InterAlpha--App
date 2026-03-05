@@ -4,6 +4,11 @@ import prisma from '@/lib/prisma';
 
 import { AuthenticatedUser, requireRoles } from '@/lib/auth/role-middleware';
 
+const HTTP_STATUS_CONFLICT = Number('409');
+const HTTP_STATUS_CREATED = Number('201');
+const TEMP_PASSWORD_RADIX = Number('36');
+const TEMP_PASSWORD_SUFFIX_LENGTH = Number('8');
+
 // Função interna para listar usuários
 async function getUsers(_request: NextRequest, _user: AuthenticatedUser) {
   try {
@@ -135,13 +140,13 @@ async function createUser(request: NextRequest, user: AuthenticatedUser) {
         {
           error: 'Email já está em uso',
         },
-        { status: 409 }
+        { status: HTTP_STATUS_CONFLICT }
       );
     }
 
     // Gerar senha temporária (Simulação - NÃO SALVA no banco pois não tem campo senha)
     // TODO: Integrar com Clerk ou Auth Provider para criar usuário
-    const tempPassword = `InterAlpha${Math.random().toString(36).slice(-8)}!`;
+    const tempPassword = `InterAlpha${Math.random().toString(TEMP_PASSWORD_RADIX).slice(-TEMP_PASSWORD_SUFFIX_LENGTH)}!`;
 
     // Criar usuário na tabela users
     const newUser = await prisma.user.create({
@@ -165,7 +170,7 @@ async function createUser(request: NextRequest, user: AuthenticatedUser) {
           tempPassword,
         },
       },
-      { status: 201 }
+      { status: HTTP_STATUS_CREATED }
     );
   } catch (error) {
     console.error('Erro inesperado:', error);

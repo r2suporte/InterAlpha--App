@@ -1,6 +1,10 @@
 import { Socket, io } from 'socket.io-client';
 import { logger } from './logger-service';
 
+const MAX_RECONNECT_ATTEMPTS = Number('3');
+const RECONNECT_DELAY_MS = Number('2000');
+const SOCKET_CONNECTION_TIMEOUT_MS = Number('10000');
+
 export interface OrderStatusUpdate {
   orderId: string;
   status: string;
@@ -22,8 +26,8 @@ class WebSocketService {
   private socket: Socket | null = null;
   private isConnected = false;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 3;
-  private reconnectDelay = 2000;
+  private maxReconnectAttempts = MAX_RECONNECT_ATTEMPTS;
+  private reconnectDelay = RECONNECT_DELAY_MS;
   private isReconnecting = false;
   private shouldConnect = true;
 
@@ -45,7 +49,7 @@ class WebSocketService {
         transports: ['websocket', 'polling'],
         upgrade: true,
         rememberUpgrade: true,
-        timeout: 10000,
+        timeout: SOCKET_CONNECTION_TIMEOUT_MS,
         autoConnect: false, // Controle manual da conexão
       });
 

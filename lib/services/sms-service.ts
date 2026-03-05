@@ -4,6 +4,12 @@ import prisma from '@/lib/prisma';
 
 import { metricsService } from './metrics-service';
 
+const BRAZIL_COUNTRY_CODE = '55';
+const SAO_PAULO_AREA_CODE = '11';
+const MOBILE_PHONE_LENGTH_WITH_AREA_CODE = Number('11');
+const LANDLINE_PHONE_LENGTH_WITH_AREA_CODE = Number('10');
+const PHONE_LENGTH_WITH_COUNTRY_CODE = Number('13');
+
 // 🔧 Interfaces e Tipos
 interface TwilioConfig {
   accountSid: string;
@@ -76,16 +82,22 @@ export class SMSService {
     const cleaned = phone.replace(/\D/g, '');
 
     // Se não tem código do país, adiciona +55 (Brasil)
-    if (cleaned.length === 11 && cleaned.startsWith('11')) {
-      return `+55${cleaned}`;
+    if (
+      cleaned.length === MOBILE_PHONE_LENGTH_WITH_AREA_CODE &&
+      cleaned.startsWith(SAO_PAULO_AREA_CODE)
+    ) {
+      return `+${BRAZIL_COUNTRY_CODE}${cleaned}`;
     }
 
-    if (cleaned.length === 10) {
-      return `+55${cleaned}`;
+    if (cleaned.length === LANDLINE_PHONE_LENGTH_WITH_AREA_CODE) {
+      return `+${BRAZIL_COUNTRY_CODE}${cleaned}`;
     }
 
     // Se já tem código do país
-    if (cleaned.length === 13 && cleaned.startsWith('55')) {
+    if (
+      cleaned.length === PHONE_LENGTH_WITH_COUNTRY_CODE &&
+      cleaned.startsWith(BRAZIL_COUNTRY_CODE)
+    ) {
       return `+${cleaned}`;
     }
 
@@ -94,7 +106,7 @@ export class SMSService {
       return phone;
     }
 
-    return `+55${cleaned}`;
+    return `+${BRAZIL_COUNTRY_CODE}${cleaned}`;
   }
 
   // 🚀 Envio de SMS Simples

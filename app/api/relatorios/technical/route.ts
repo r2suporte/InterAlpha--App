@@ -2,16 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
 
+const DEFAULT_PERIOD_DAYS = Number('30');
+const DECIMAL_BASE = Number('10');
+const MILLISECONDS_IN_DAY = Number('86400000');
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const periodo = searchParams.get('periodo') || '30'; // dias
+    const periodoParam = searchParams.get('periodo');
+    const parsedPeriodo = Number.parseInt(
+      periodoParam ?? `${DEFAULT_PERIOD_DAYS}`,
+      DECIMAL_BASE
+    );
+    const periodo = Number.isNaN(parsedPeriodo)
+      ? DEFAULT_PERIOD_DAYS
+      : parsedPeriodo;
 
     const supabase = await createClient();
 
     // Data de início baseada no período
     const dataInicio = new Date();
-    dataInicio.setDate(dataInicio.getDate() - parseInt(periodo, 10));
+    dataInicio.setDate(dataInicio.getDate() - periodo);
 
     // Buscar dados técnicos
     const { data: ordens, error: errorOrdens } = await supabase
@@ -37,7 +48,7 @@ export async function GET(request: NextRequest) {
     const temposResolucao = ordensFinalizadas.map(ordem => {
       const inicio = new Date(ordem.created_at);
       const fim = new Date(ordem.updated_at);
-      return (fim.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24); // dias
+      return (fim.getTime() - inicio.getTime()) / MILLISECONDS_IN_DAY; // dias
     });
 
     const tempoMedioResolucao =
@@ -82,7 +93,7 @@ export async function GET(request: NextRequest) {
         return acc;
       }, {}),
       metadata: {
-        periodo_dias: parseInt(periodo, 10),
+        periodo_dias: periodo,
         data_inicio: dataInicio.toISOString(),
         data_fim: new Date().toISOString(),
         tipo_relatorio: 'technical',
