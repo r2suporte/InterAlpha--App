@@ -63,7 +63,6 @@ export async function POST(request: NextRequest) {
         cep,
         login: credenciais.login,
         senhaHash,
-        senhaTemporaria: credenciais.senha,
         isActive: true, // ativo -> isActive
         primeiroAcesso: true,
         // createdBy? We don't have user ID in this context usually, assumed self-reg or public
@@ -72,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     // Retornar dados do usuário criado (sem senha hash)
     // Prisma returns object, just sanitize
-    const { senhaHash: _, senhaTemporaria: __, ...usuarioSemSenha } = novoUsuario;
+    const { senhaHash: _, ...usuarioSemSenha } = novoUsuario;
 
     return NextResponse.json(
       {

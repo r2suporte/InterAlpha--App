@@ -123,7 +123,7 @@ describe('lib/auth/jwt - JWT Token Management', () => {
         exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
       };
 
-      (jwt.verify as jest.Mock).mockImplementation((_token, _secret, callback) => {
+      (jwt.verify as jest.Mock).mockImplementation((_token, _secret, _options, callback) => {
         callback(null, mockPayload);
       });
 
@@ -134,6 +134,7 @@ describe('lib/auth/jwt - JWT Token Management', () => {
       expect(jwt.verify).toHaveBeenCalledWith(
         token,
         expect.any(String),
+        expect.objectContaining({ algorithms: ['HS256'] }),
         expect.any(Function)
       );
     });
@@ -141,7 +142,7 @@ describe('lib/auth/jwt - JWT Token Management', () => {
     it('should reject invalid token', async () => {
       const mockError = new Error('invalid token');
       (jwt.verify as jest.Mock).mockImplementation(
-        (_token, _secret, callback) => {
+        (_token, _secret, _options, callback) => {
           callback(mockError);
         }
       );
@@ -153,7 +154,7 @@ describe('lib/auth/jwt - JWT Token Management', () => {
 
     it('should reject when no payload is returned', async () => {
       (jwt.verify as jest.Mock).mockImplementation(
-        (_token, _secret, callback) => {
+        (_token, _secret, _options, callback) => {
           callback(null, undefined);
         }
       );
@@ -172,7 +173,7 @@ describe('lib/auth/jwt - JWT Token Management', () => {
       };
 
       (jwt.verify as jest.Mock).mockImplementation(
-        (_token, _secret, callback) => {
+        (_token, _secret, _options, callback) => {
           // jwt.verify typically throws for expired tokens
           callback(new Error('jwt expired'));
         }
@@ -185,7 +186,7 @@ describe('lib/auth/jwt - JWT Token Management', () => {
   });
 
   describe('createClientToken', () => {
-    it('should create a token for cliente with 30d expiration', async () => {
+    it('should create a token for cliente with 24h expiration', async () => {
       const mockToken = 'client.jwt.token';
       (jwt.sign as jest.Mock).mockImplementation(
         (_payload, _secret, _options, callback) => {
@@ -204,7 +205,7 @@ describe('lib/auth/jwt - JWT Token Management', () => {
           tipo: 'cliente',
         }),
         expect.any(String),
-        expect.objectContaining({ expiresIn: '30d' }),
+        expect.objectContaining({ expiresIn: '24h' }),
         expect.any(Function)
       );
     });
@@ -223,7 +224,7 @@ describe('lib/auth/jwt - JWT Token Management', () => {
   });
 
   describe('createUserToken', () => {
-    it('should create a token for user with 7d expiration', async () => {
+    it('should create a token for user with 8h expiration', async () => {
       const mockToken = 'user.jwt.token';
       (jwt.sign as jest.Mock).mockImplementation(
         (_payload, _secret, _options, callback) => {
@@ -241,7 +242,7 @@ describe('lib/auth/jwt - JWT Token Management', () => {
           role: 'admin',
         }),
         expect.any(String),
-        expect.objectContaining({ expiresIn: '7d' }),
+        expect.objectContaining({ expiresIn: '8h' }),
         expect.any(Function)
       );
     });
@@ -439,7 +440,7 @@ describe('lib/auth/jwt - JWT Token Management', () => {
       };
 
       (jwt.verify as jest.Mock).mockImplementation(
-        (_token, _secret, callback) => {
+        (_token, _secret, _options, callback) => {
           callback(null, verifiedPayload);
         }
       );
@@ -467,7 +468,7 @@ describe('lib/auth/jwt - JWT Token Management', () => {
       };
 
       (jwt.verify as jest.Mock).mockImplementation(
-        (_token, _secret, callback) => {
+        (_token, _secret, _options, callback) => {
           callback(null, verifiedPayload);
         }
       );

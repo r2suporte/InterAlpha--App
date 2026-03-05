@@ -4,7 +4,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sign } from 'jsonwebtoken';
 
 import { verifyPassword } from '@/lib/auth/client-auth';
+import { getJwtSecret } from '@/lib/auth/jwt-secret';
+import { hashSessionToken } from '@/lib/auth/session-token';
 import prisma from '@/lib/prisma';
+
+const CLIENT_SESSION_HOURS = 24;
+const CLIENT_SESSION_MAX_AGE_SECONDS = CLIENT_SESSION_HOURS * 60 * 60;
+
+function getClientIp(request: NextRequest): string {
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim();
+  }
+
+  return request.headers.get('x-real-ip') || 'unknown';
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,9 +68,10 @@ export async function POST(request: NextRequest) {
         email: cliente.email,
         tipo: 'cliente',
       },
-      process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',
-      { expiresIn: '24h' }
+      getJwtSecret(),
+      { expiresIn: `${CLIENT_SESSION_HOURS}h`, algorithm: 'HS256' }
     );
+    const tokenHash = hashSessionToken(token);
 
     // Atualizar último acesso
     await prisma.cliente.update({
@@ -65,16 +80,20 @@ export async function POST(request: NextRequest) {
     });
 
     // Criar sessão no banco
-    const ipAddress = request.headers.get('x-forwarded-for') || 'unknown';
+    const ipAddress = getClientIp(request);
     const userAgent = request.headers.get('user-agent') || 'unknown';
     // Expira em 24h
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24);
+    expiresAt.setHours(expiresAt.getHours() + CLIENT_SESSION_HOURS);
+
+    await prisma.clientSession.deleteMany({
+      where: { clienteId: cliente.id },
+    });
 
     await prisma.clientSession.create({
       data: {
         clienteId: cliente.id,
-        token,
+        token: tokenHash,
         ipAddress,
         userAgent,
         expiresAt
@@ -106,7 +125,6 @@ export async function POST(request: NextRequest) {
         login: cliente.login,
         primeiro_acesso: cliente.primeiroAcesso,
       },
-      token,
       ordens_servico: ordensServico || [],
     });
 
@@ -114,8 +132,9 @@ export async function POST(request: NextRequest) {
     response.cookies.set('cliente-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60, // 24h
+      sameSite: 'strict',
+      maxAge: CLIENT_SESSION_MAX_AGE_SECONDS,
+      path: '/',
     });
 
     return response;
@@ -135,8 +154,9 @@ export async function DELETE(request: NextRequest) {
     if (token) {
       // Remover sessão do banco
       try {
+        const tokenHash = hashSessionToken(token);
         await prisma.clientSession.deleteMany({
-          where: { token }
+          where: { token: tokenHash }
         });
       } catch (e) {
         console.error('Erro ao remover sessão:', e);

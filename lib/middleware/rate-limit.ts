@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 /* eslint-disable no-magic-numbers */
 
+import cacheService from '@/lib/services/cache-service';
+
 /**
- * 🛡️ Rate Limiting Middleware - InterAlpha App
- *
- * Proteção contra ataques de força bruta e spam
- * Implementa rate limiting baseado em IP e endpoint
+ * Rate limiting distribuido com Redis + fallback local em memoria.
  */
 
 interface RateLimitEntry {
@@ -14,35 +13,35 @@ interface RateLimitEntry {
   blocked: boolean;
 }
 
-// Cache em memória para rate limiting (em produção, usar Redis)
-const rateLimitCache = new Map<string, RateLimitEntry>();
+interface RateLimitConfig {
+  requests: number;
+  windowMs: number;
+}
 
-// Configurações de rate limiting por endpoint
+const LOCAL_RATE_LIMIT_CACHE = new Map<string, RateLimitEntry>();
+
 const RATE_LIMITS = {
-  // Endpoints de autenticação - mais restritivos
-  '/api/auth/login': { requests: 5, windowMs: 15 * 60 * 1000 }, // 5 tentativas por 15 min
-  '/api/auth/register': { requests: 3, windowMs: 60 * 60 * 1000 }, // 3 registros por hora
-  '/api/auth/reset-password': { requests: 3, windowMs: 60 * 60 * 1000 }, // 3 resets por hora
-
-  // Endpoints de cliente
+  '/api/auth/login': { requests: 5, windowMs: 15 * 60 * 1000 },
+  '/api/auth/register': { requests: 3, windowMs: 60 * 60 * 1000 },
+  '/api/auth/reset-password': { requests: 3, windowMs: 60 * 60 * 1000 },
   '/api/auth/cliente/login': { requests: 5, windowMs: 15 * 60 * 1000 },
   '/api/auth/cliente/register': { requests: 2, windowMs: 60 * 60 * 1000 },
-
-  // APIs gerais - menos restritivos
-  '/api/clientes': { requests: 100, windowMs: 15 * 60 * 1000 }, // 100 req por 15 min
+  '/api/auth/cliente': { requests: 5, windowMs: 15 * 60 * 1000 },
+  '/api/clientes': { requests: 100, windowMs: 15 * 60 * 1000 },
   '/api/ordens-servico': { requests: 100, windowMs: 15 * 60 * 1000 },
   '/api/pagamentos': { requests: 50, windowMs: 15 * 60 * 1000 },
-
-  // Webhooks - mais permissivos
   '/api/webhooks': { requests: 1000, windowMs: 15 * 60 * 1000 },
-
-  // Default para outros endpoints
   default: { requests: 200, windowMs: 15 * 60 * 1000 },
-};
+} as const;
 
-/**
- * Obtém o IP real do cliente considerando proxies
- */
+const AUTH_ATTEMPTS_WINDOW_SECONDS = 15 * 60;
+const AUTH_BLOCK_LEVEL_1_THRESHOLD = 5;
+const AUTH_BLOCK_LEVEL_2_THRESHOLD = 10;
+const AUTH_BLOCK_LEVEL_3_THRESHOLD = 20;
+const AUTH_BLOCK_LEVEL_1_MS = 15 * 60 * 1000;
+const AUTH_BLOCK_LEVEL_2_MS = 60 * 60 * 1000;
+const AUTH_BLOCK_LEVEL_3_MS = 24 * 60 * 60 * 1000;
+
 function getClientIP(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for');
   const realIP = request.headers.get('x-real-ip');
@@ -55,16 +54,11 @@ function getClientIP(request: NextRequest): string {
   return 'unknown';
 }
 
-/**
- * Obtém a configuração de rate limit para um endpoint
- */
-function getRateLimitConfig(pathname: string) {
-  // Procura por match exato primeiro
+function getRateLimitConfig(pathname: string): RateLimitConfig {
   if (RATE_LIMITS[pathname as keyof typeof RATE_LIMITS]) {
     return RATE_LIMITS[pathname as keyof typeof RATE_LIMITS];
   }
 
-  // Procura por match de padrão
   for (const [pattern, config] of Object.entries(RATE_LIMITS)) {
     if (pattern !== 'default' && pathname.startsWith(pattern)) {
       return config;
@@ -74,210 +68,314 @@ function getRateLimitConfig(pathname: string) {
   return RATE_LIMITS.default;
 }
 
-/**
- * Limpa entradas expiradas do cache
- */
+function createRateLimitedResponse(
+  error: string,
+  message: string,
+  retryAfterSeconds: number,
+  config?: RateLimitConfig,
+  resetAt?: number
+): NextResponse {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Retry-After': retryAfterSeconds.toString(),
+  };
+
+  if (config && resetAt) {
+    headers['X-RateLimit-Limit'] = config.requests.toString();
+    headers['X-RateLimit-Remaining'] = '0';
+    headers['X-RateLimit-Reset'] = resetAt.toString();
+  }
+
+  return new NextResponse(
+    JSON.stringify({
+      error,
+      message,
+      retryAfter: retryAfterSeconds,
+    }),
+    {
+      status: 429,
+      headers,
+    }
+  );
+}
+
+async function evaluateDistributedWindow(
+  key: string,
+  config: RateLimitConfig
+): Promise<{
+  allowed: boolean;
+  count: number;
+  retryAfterSeconds: number;
+  resetAt: number;
+} | null> {
+  if (!cacheService.isRedisConnected()) {
+    return null;
+  }
+
+  const count = await cacheService.increment(key, 1);
+  if (count === null) {
+    return null;
+  }
+
+  const windowSeconds = Math.ceil(config.windowMs / 1000);
+  if (count === 1) {
+    await cacheService.expire(key, windowSeconds);
+  }
+
+  const ttl = await cacheService.getTTL(key);
+  const retryAfterSeconds = ttl && ttl > 0 ? ttl : windowSeconds;
+
+  return {
+    allowed: count <= config.requests,
+    count,
+    retryAfterSeconds,
+    resetAt: Date.now() + retryAfterSeconds * 1000,
+  };
+}
+
 function cleanupExpiredEntries() {
   const now = Date.now();
-  for (const [key, entry] of rateLimitCache.entries()) {
+  for (const [key, entry] of LOCAL_RATE_LIMIT_CACHE.entries()) {
     if (now > entry.resetTime) {
-      rateLimitCache.delete(key);
+      LOCAL_RATE_LIMIT_CACHE.delete(key);
     }
   }
 }
 
-/**
- * Middleware principal de rate limiting
- */
-export function rateLimit(request: NextRequest): NextResponse | null {
-  const ip = getClientIP(request);
-  const {pathname} = request.nextUrl;
-  const config = getRateLimitConfig(pathname);
+function evaluateLocalWindow(
+  key: string,
+  config: RateLimitConfig
+): {
+  allowed: boolean;
+  count: number;
+  retryAfterSeconds: number;
+  resetAt: number;
+} {
   const now = Date.now();
+  const existing = LOCAL_RATE_LIMIT_CACHE.get(key);
 
-  // Limpa entradas expiradas periodicamente
+  if (!existing || now > existing.resetTime) {
+    const resetAt = now + config.windowMs;
+    LOCAL_RATE_LIMIT_CACHE.set(key, {
+      count: 1,
+      resetTime: resetAt,
+      blocked: false,
+    });
+
+    return {
+      allowed: true,
+      count: 1,
+      retryAfterSeconds: Math.ceil(config.windowMs / 1000),
+      resetAt,
+    };
+  }
+
+  existing.count += 1;
+
+  if (existing.count > config.requests) {
+    existing.blocked = true;
+  }
+
+  return {
+    allowed: !existing.blocked,
+    count: existing.count,
+    retryAfterSeconds: Math.max(
+      1,
+      Math.ceil((existing.resetTime - now) / 1000)
+    ),
+    resetAt: existing.resetTime,
+  };
+}
+
+function resolveAuthBlockTimeMs(count: number): number {
+  if (count > AUTH_BLOCK_LEVEL_3_THRESHOLD) return AUTH_BLOCK_LEVEL_3_MS;
+  if (count > AUTH_BLOCK_LEVEL_2_THRESHOLD) return AUTH_BLOCK_LEVEL_2_MS;
+  if (count > AUTH_BLOCK_LEVEL_1_THRESHOLD) return AUTH_BLOCK_LEVEL_1_MS;
+  return 0;
+}
+
+async function evaluateDistributedAuth(
+  ip: string
+): Promise<{ allowed: boolean; retryAfterSeconds: number; count: number } | null> {
+  if (!cacheService.isRedisConnected()) {
+    return null;
+  }
+
+  const now = Date.now();
+  const attemptsKey = `rl:auth:attempts:${ip}`;
+  const blockKey = `rl:auth:block:${ip}`;
+
+  const activeBlock = await cacheService.get<{ blockedUntil: number }>(blockKey);
+  if (activeBlock?.blockedUntil && activeBlock.blockedUntil > now) {
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.ceil((activeBlock.blockedUntil - now) / 1000),
+      count: 0,
+    };
+  }
+
+  const attempts = await cacheService.increment(attemptsKey, 1);
+  if (attempts === null) {
+    return null;
+  }
+
+  if (attempts === 1) {
+    await cacheService.expire(attemptsKey, AUTH_ATTEMPTS_WINDOW_SECONDS);
+  }
+
+  const blockTimeMs = resolveAuthBlockTimeMs(attempts);
+  if (blockTimeMs > 0) {
+    const blockedUntil = now + blockTimeMs;
+    await cacheService.set(
+      blockKey,
+      { blockedUntil },
+      Math.ceil(blockTimeMs / 1000)
+    );
+
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.ceil(blockTimeMs / 1000),
+      count: attempts,
+    };
+  }
+
+  return {
+    allowed: true,
+    retryAfterSeconds: 0,
+    count: attempts,
+  };
+}
+
+function evaluateLocalAuth(ip: string): {
+  allowed: boolean;
+  retryAfterSeconds: number;
+  count: number;
+} {
+  const now = Date.now();
+  const key = `auth:${ip}`;
+  const entry = LOCAL_RATE_LIMIT_CACHE.get(key);
+
+  if (!entry) {
+    LOCAL_RATE_LIMIT_CACHE.set(key, {
+      count: 1,
+      resetTime: now + AUTH_ATTEMPTS_WINDOW_SECONDS * 1000,
+      blocked: false,
+    });
+
+    return {
+      allowed: true,
+      retryAfterSeconds: 0,
+      count: 1,
+    };
+  }
+
+  if (now > entry.resetTime) {
+    entry.count = 1;
+    entry.resetTime = now + AUTH_ATTEMPTS_WINDOW_SECONDS * 1000;
+    entry.blocked = false;
+
+    return {
+      allowed: true,
+      retryAfterSeconds: 0,
+      count: entry.count,
+    };
+  }
+
+  entry.count += 1;
+
+  const blockTimeMs = resolveAuthBlockTimeMs(entry.count);
+  if (blockTimeMs > 0) {
+    entry.blocked = true;
+    entry.resetTime = now + blockTimeMs;
+
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.ceil(blockTimeMs / 1000),
+      count: entry.count,
+    };
+  }
+
+  return {
+    allowed: true,
+    retryAfterSeconds: 0,
+    count: entry.count,
+  };
+}
+
+export async function rateLimit(request: NextRequest): Promise<NextResponse | null> {
+  const ip = getClientIP(request);
+  const { pathname } = request.nextUrl;
+  const config = getRateLimitConfig(pathname);
+
   if (Math.random() < 0.01) {
-    // 1% de chance
     cleanupExpiredEntries();
   }
 
-  const key = `${ip}:${pathname}`;
-  const entry = rateLimitCache.get(key);
+  const distributedKey = `rl:${ip}:${pathname}`;
+  const distributedResult = await evaluateDistributedWindow(distributedKey, config);
 
-  if (!entry) {
-    // Primeira requisição para este IP/endpoint
-    rateLimitCache.set(key, {
-      count: 1,
-      resetTime: now + config.windowMs,
-      blocked: false,
-    });
-    return null; // Permite a requisição
-  }
+  const result =
+    distributedResult || evaluateLocalWindow(`${ip}:${pathname}`, config);
 
-  if (now > entry.resetTime) {
-    // Janela de tempo expirou, reseta o contador
-    entry.count = 1;
-    entry.resetTime = now + config.windowMs;
-    entry.blocked = false;
-    return null; // Permite a requisição
-  }
-
-  if (entry.blocked) {
-    // IP ainda está bloqueado
-    return new NextResponse(
-      JSON.stringify({
-        error: 'Rate limit exceeded',
-        message: 'Muitas tentativas. Tente novamente mais tarde.',
-        retryAfter: Math.ceil((entry.resetTime - now) / 1000),
-      }),
-      {
-        status: 429,
-        headers: {
-          'Content-Type': 'application/json',
-          'Retry-After': Math.ceil((entry.resetTime - now) / 1000).toString(),
-          'X-RateLimit-Limit': config.requests.toString(),
-          'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': entry.resetTime.toString(),
-        },
-      }
-    );
-  }
-
-  entry.count++;
-
-  if (entry.count > config.requests) {
-    // Limite excedido, bloqueia o IP
-    entry.blocked = true;
-
-    // Log do bloqueio para monitoramento
-    console.warn(
-      `Rate limit exceeded for IP ${ip} on ${pathname}. Count: ${entry.count}/${config.requests}`
-    );
-
-    return new NextResponse(
-      JSON.stringify({
-        error: 'Rate limit exceeded',
-        message: 'Muitas tentativas. Tente novamente mais tarde.',
-        retryAfter: Math.ceil((entry.resetTime - now) / 1000),
-      }),
-      {
-        status: 429,
-        headers: {
-          'Content-Type': 'application/json',
-          'Retry-After': Math.ceil((entry.resetTime - now) / 1000).toString(),
-          'X-RateLimit-Limit': config.requests.toString(),
-          'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': entry.resetTime.toString(),
-        },
-      }
-    );
-  }
-
-  // Adiciona headers informativos
-  const response = NextResponse.next();
-  response.headers.set('X-RateLimit-Limit', config.requests.toString());
-  response.headers.set(
-    'X-RateLimit-Remaining',
-    (config.requests - entry.count).toString()
-  );
-  response.headers.set('X-RateLimit-Reset', entry.resetTime.toString());
-
-  return null; // Permite a requisição
-}
-
-/**
- * Middleware específico para endpoints de autenticação
- * Implementa bloqueio progressivo (backoff exponencial)
- */
-export function authRateLimit(request: NextRequest): NextResponse | null {
-  const ip = getClientIP(request);
-  const {pathname} = request.nextUrl;
-  const now = Date.now();
-
-  const key = `auth:${ip}`;
-  const entry = rateLimitCache.get(key);
-
-  if (!entry) {
-    rateLimitCache.set(key, {
-      count: 1,
-      resetTime: now + 15 * 60 * 1000, // 15 minutos
-      blocked: false,
-    });
-    return null;
-  }
-
-  if (now > entry.resetTime) {
-    // Reset após período de bloqueio
-    entry.count = 1;
-    entry.resetTime = now + 15 * 60 * 1000;
-    entry.blocked = false;
-    return null;
-  }
-
-  entry.count++;
-
-  // Bloqueio progressivo baseado no número de tentativas
-  let blockTime = 0;
-  if (entry.count > 5) blockTime = 15 * 60 * 1000; // 15 min após 5 tentativas
-  if (entry.count > 10) blockTime = 60 * 60 * 1000; // 1 hora após 10 tentativas
-  if (entry.count > 20) blockTime = 24 * 60 * 60 * 1000; // 24 horas após 20 tentativas
-
-  if (blockTime > 0) {
-    entry.blocked = true;
-    entry.resetTime = now + blockTime;
-
-    console.warn(
-      `Auth rate limit exceeded for IP ${ip}. Count: ${entry.count}. Blocked for ${blockTime / 1000}s`
-    );
-
-    return new NextResponse(
-      JSON.stringify({
-        error: 'Authentication rate limit exceeded',
-        message:
-          'Muitas tentativas de login falharam. Conta temporariamente bloqueada.',
-        retryAfter: Math.ceil(blockTime / 1000),
-      }),
-      {
-        status: 429,
-        headers: {
-          'Content-Type': 'application/json',
-          'Retry-After': Math.ceil(blockTime / 1000).toString(),
-        },
-      }
+  if (!result.allowed) {
+    return createRateLimitedResponse(
+      'Rate limit exceeded',
+      'Muitas tentativas. Tente novamente mais tarde.',
+      result.retryAfterSeconds,
+      config,
+      result.resetAt
     );
   }
 
   return null;
 }
 
-/**
- * Função para resetar rate limit de um IP (para uso administrativo)
- */
-export function resetRateLimit(ip: string, endpoint?: string) {
-  if (endpoint) {
-    const key = `${ip}:${endpoint}`;
-    rateLimitCache.delete(key);
-  } else {
-    // Remove todas as entradas para este IP
-    for (const key of rateLimitCache.keys()) {
-      if (key.startsWith(`${ip}:`)) {
-        rateLimitCache.delete(key);
-      }
-    }
+export async function authRateLimit(
+  request: NextRequest
+): Promise<NextResponse | null> {
+  const ip = getClientIP(request);
+
+  const distributedResult = await evaluateDistributedAuth(ip);
+  const result = distributedResult || evaluateLocalAuth(ip);
+
+  if (!result.allowed) {
+    return createRateLimitedResponse(
+      'Authentication rate limit exceeded',
+      'Muitas tentativas de login falharam. Conta temporariamente bloqueada.',
+      result.retryAfterSeconds
+    );
   }
+
+  return null;
 }
 
-/**
- * Função para obter estatísticas de rate limiting
- */
+export async function resetRateLimit(ip: string, endpoint?: string): Promise<void> {
+  if (endpoint) {
+    LOCAL_RATE_LIMIT_CACHE.delete(`${ip}:${endpoint}`);
+    await cacheService.delete(`rl:${ip}:${endpoint}`);
+    return;
+  }
+
+  for (const key of LOCAL_RATE_LIMIT_CACHE.keys()) {
+    if (key.startsWith(`${ip}:`) || key === `auth:${ip}`) {
+      LOCAL_RATE_LIMIT_CACHE.delete(key);
+    }
+  }
+
+  await cacheService.deletePattern(`rl:${ip}:*`);
+  await cacheService.delete(`rl:auth:attempts:${ip}`);
+  await cacheService.delete(`rl:auth:block:${ip}`);
+}
+
 export function getRateLimitStats() {
   const stats = {
-    totalEntries: rateLimitCache.size,
+    totalEntries: LOCAL_RATE_LIMIT_CACHE.size,
     blockedIPs: 0,
     topIPs: new Map<string, number>(),
+    distributed: cacheService.isRedisConnected(),
   };
 
-  for (const [key, entry] of rateLimitCache.entries()) {
+  for (const [key, entry] of LOCAL_RATE_LIMIT_CACHE.entries()) {
     if (entry.blocked) {
       stats.blockedIPs++;
     }

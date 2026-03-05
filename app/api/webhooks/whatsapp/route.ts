@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 import { createClient } from '@/lib/supabase/server';
+
+export const runtime = 'nodejs';
 
 interface WhatsAppWebhookEntry {
   id: string;
@@ -42,6 +45,22 @@ interface WhatsAppWebhookPayload {
   entry: WhatsAppWebhookEntry[];
 }
 
+function validateWhatsAppSignature(
+  rawBody: string,
+  signature: string,
+  appSecret: string
+): boolean {
+  const expectedSignature = `sha256=${createHmac('sha256', appSecret).update(rawBody).digest('hex')}`;
+  const providedBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expectedSignature);
+
+  if (providedBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(providedBuffer, expectedBuffer);
+}
+
 // GET - Verificação do webhook (Meta exige isso para configurar o webhook)
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -66,7 +85,32 @@ export async function GET(request: NextRequest) {
 // POST - Receber mensagens e atualizações de status do WhatsApp
 export async function POST(request: NextRequest) {
   try {
-    const body: WhatsAppWebhookPayload = await request.json();
+    const signature = request.headers.get('x-hub-signature-256');
+    const appSecret =
+      process.env.WHATSAPP_WEBHOOK_APP_SECRET || process.env.WHATSAPP_APP_SECRET;
+    if (!appSecret) {
+      return NextResponse.json(
+        { error: 'WHATSAPP_WEBHOOK_APP_SECRET não configurado' },
+        { status: 500 }
+      );
+    }
+
+    if (!signature) {
+      return NextResponse.json(
+        { error: 'Assinatura WhatsApp não encontrada' },
+        { status: 401 }
+      );
+    }
+
+    const rawBody = await request.text();
+    if (!validateWhatsAppSignature(rawBody, signature, appSecret)) {
+      return NextResponse.json(
+        { error: 'Assinatura WhatsApp inválida' },
+        { status: 403 }
+      );
+    }
+
+    const body: WhatsAppWebhookPayload = JSON.parse(rawBody);
 
     // Verificar se é uma notificação do WhatsApp
     if (body.object !== 'whatsapp_business_account') {

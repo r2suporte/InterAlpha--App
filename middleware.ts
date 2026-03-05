@@ -10,11 +10,9 @@ import {
   logSecurityEvent,
   securityAuditMiddleware,
 } from './lib/middleware/security-audit';
+import { getJwtSecret } from './lib/auth/jwt-secret';
 
-if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET não definido. Configure a variável de ambiente JWT_SECRET antes de iniciar em produção.');
-}
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-insecure-jwt-secret';
+const JWT_SECRET = getJwtSecret();
 
 // Define public routes (no Clerk authentication required)
 const isPublicRoute = createRouteMatcher([
@@ -51,7 +49,7 @@ export default clerkMiddleware(async (auth, request: NextRequest) => {
 
   // 2. Rate limiting for API endpoints
   if (pathname.startsWith('/api/')) {
-    const rateLimitResponse = rateLimit(request);
+    const rateLimitResponse = await rateLimit(request);
     if (rateLimitResponse) {
       logSecurityEvent(request, 'rate_limit_exceeded', 'medium', {
         endpoint: pathname,
@@ -67,13 +65,14 @@ export default clerkMiddleware(async (auth, request: NextRequest) => {
     '/api/auth/reset-password',
     '/api/auth/cliente/login',
     '/api/auth/cliente/register',
+    '/api/auth/cliente',
   ];
   const isAuthRateLimitedEndpoint =
     request.method === 'POST' &&
     authRateLimitedEndpoints.some(route => pathname.startsWith(route));
 
   if (isAuthRateLimitedEndpoint) {
-    const authRateLimitResponse = authRateLimit(request);
+    const authRateLimitResponse = await authRateLimit(request);
     if (authRateLimitResponse) {
       logSecurityEvent(request, 'rate_limit_exceeded', 'high', {
         endpoint: pathname,
@@ -88,13 +87,18 @@ export default clerkMiddleware(async (auth, request: NextRequest) => {
   const response = NextResponse.next();
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('X-XSS-Protection', '0');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  response.headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(), payment=()'
+  );
 
   // CSP allowing Clerk domains
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://*.clerk.com; connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: https://*.clerk.accounts.dev https://*.clerk.com; font-src 'self' data:;"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev https://*.clerk.com; connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com wss:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: https://*.clerk.accounts.dev https://*.clerk.com; font-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
   );
 
   // 4. Allow public routes
@@ -124,7 +128,7 @@ export default clerkMiddleware(async (auth, request: NextRequest) => {
     }
 
     try {
-      jwtVerify(clienteToken, JWT_SECRET);
+      jwtVerify(clienteToken, JWT_SECRET, { algorithms: ['HS256'] });
       return response;
     } catch (error) {
       const redirectResponse = NextResponse.redirect(
@@ -140,6 +144,8 @@ export default clerkMiddleware(async (auth, request: NextRequest) => {
 
   return response;
 });
+
+export const runtime = 'nodejs';
 
 export const config = {
   matcher: [

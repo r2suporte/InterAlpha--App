@@ -10,6 +10,11 @@ loadEnvConfig(process.cwd(), true, {
 // Set test-specific environment variables
 process.env.NODE_ENV = 'test';
 process.env.NEXTAUTH_URL = 'http://localhost:3000';
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-only';
+process.env.DATABASE_URL =
+  process.env.DATABASE_URL ||
+  'postgresql://test:test@localhost:5432/interalpha_test';
+process.env.REDIS_DISABLED = 'true';
 
 // Mock external services in test environment
 if (process.env.NODE_ENV === 'test') {

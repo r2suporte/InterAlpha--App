@@ -33,7 +33,17 @@ const DEFAULT_CONFIG: LoggingMiddlewareConfig = {
   logRequestBody: false,
   logResponseBody: false,
   excludePaths: ['/api/health', '/api/metrics'],
-  sensitiveFields: ['password', 'token', 'authorization', 'cookie'],
+  sensitiveFields: [
+    'password',
+    'senha',
+    'senha_atual',
+    'nova_senha',
+    'senha_temporaria',
+    'senhaHash',
+    'token',
+    'authorization',
+    'cookie',
+  ],
 };
 
 /**
@@ -42,12 +52,20 @@ const DEFAULT_CONFIG: LoggingMiddlewareConfig = {
 function sanitizeData(data: any, sensitiveFields: string[]): any {
   if (!data || typeof data !== 'object') return data;
 
-  const sanitized = { ...data };
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeData(item, sensitiveFields));
+  }
 
-  for (const field of sensitiveFields) {
-    if (field in sanitized) {
-      sanitized[field] = '[REDACTED]';
+  const sensitiveSet = new Set(sensitiveFields.map(field => field.toLowerCase()));
+  const sanitized: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(data)) {
+    if (sensitiveSet.has(key.toLowerCase())) {
+      sanitized[key] = '[REDACTED]';
+      continue;
     }
+
+    sanitized[key] = sanitizeData(value, sensitiveFields);
   }
 
   return sanitized;
@@ -243,6 +261,11 @@ export function withAuthenticatedApiLogging<T extends any[]>(
     logResponseBody: false,
     sensitiveFields: [
       'password',
+      'senha',
+      'senha_atual',
+      'nova_senha',
+      'senha_temporaria',
+      'senhaHash',
       'token',
       'authorization',
       'cookie',
@@ -266,6 +289,11 @@ export function withAdminApiLogging<T extends any[]>(
     enablePerformanceLogging: true,
     sensitiveFields: [
       'password',
+      'senha',
+      'senha_atual',
+      'nova_senha',
+      'senha_temporaria',
+      'senhaHash',
       'token',
       'authorization',
       'cookie',

@@ -1,11 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { withAuthenticatedApiLogging } from '@/lib/middleware/logging-middleware';
-import { clerkClient } from '@clerk/nextjs/server';
+import { auth, clerkClient } from '@clerk/nextjs/server';
+
+const ALLOWED_ADMIN_ROLES = new Set(['admin', 'diretor']);
+
+async function enforceAdminAccess(): Promise<NextResponse | null> {
+    const { userId } = await auth();
+    if (!userId) {
+        return NextResponse.json(
+            { error: 'Não autenticado' },
+            { status: 401 }
+        );
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true, isActive: true }
+    });
+
+    if (!user?.isActive || !user.role || !ALLOWED_ADMIN_ROLES.has(user.role)) {
+        return NextResponse.json(
+            { error: 'Acesso negado' },
+            { status: 403 }
+        );
+    }
+
+    return null;
+}
 
 // GET - Listar usuários
 async function getUsers(request: NextRequest) {
     try {
+        const deniedResponse = await enforceAdminAccess();
+        if (deniedResponse) return deniedResponse;
+
         const { searchParams } = new URL(request.url);
         const search = searchParams.get('search') || '';
         const role = searchParams.get('role');
@@ -52,6 +81,9 @@ async function getUsers(request: NextRequest) {
 // POST - Criar usuário e enviar convite Clerk
 async function createUser(request: NextRequest) {
     try {
+        const deniedResponse = await enforceAdminAccess();
+        if (deniedResponse) return deniedResponse;
+
         const data = await request.json();
         const { name, email, role } = data;
 

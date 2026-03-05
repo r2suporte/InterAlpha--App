@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import type { UserRole } from './permissions';
+import { getJwtSecret } from './jwt-secret';
 
 /**
  * 🔐 JWT Utilities - InterAlpha App
@@ -8,8 +9,7 @@ import type { UserRole } from './permissions';
  * Utiliza a biblioteca 'jsonwebtoken' para compatibilidade
  */
 
-const JWT_SECRET =
-  process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_SECRET = getJwtSecret();
 
 export interface JWTPayload {
   userId: string;
@@ -54,6 +54,7 @@ export async function verifyJWT(token: string): Promise<JWTPayload> {
     jwt.verify(
       token,
       JWT_SECRET,
+      { algorithms: ['HS256'] },
       (error: jwt.VerifyErrors | null, decoded?: string | jwt.JwtPayload | object) => {
         if (error || !decoded) {
           reject(new Error('Token JWT inválido'));
@@ -79,8 +80,8 @@ export async function createClientToken(
       role: 'cliente',
       tipo: 'cliente',
     },
-    '30d'
-  ); // Token de cliente dura 30 dias
+    '24h'
+  ); // Token de cliente dura 24 horas
 }
 
 /**
@@ -97,8 +98,8 @@ export async function createUserToken(
       email,
       role,
     },
-    '7d'
-  ); // Token de usuário dura 7 dias
+    '8h'
+  ); // Token de usuário dura 8 horas
 }
 
 /**

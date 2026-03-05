@@ -3,12 +3,44 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   generateClientCredentials,
   hashPassword,
+  validatePassword,
   verifyPassword,
 } from '@/lib/auth/client-auth';
+import { verifyClienteToken } from '@/lib/auth/client-middleware';
 import prisma from '@/lib/prisma';
+import { auth } from '@clerk/nextjs/server';
+
+const ALLOWED_BACKOFFICE_ROLES = new Set(['admin', 'diretor', 'gerente_adm']);
+
+async function enforceBackofficeAccess(): Promise<NextResponse | null> {
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json(
+      { error: 'Não autenticado' },
+      { status: 401 }
+    );
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true, isActive: true },
+  });
+
+  if (!user?.isActive || !user.role || !ALLOWED_BACKOFFICE_ROLES.has(user.role)) {
+    return NextResponse.json(
+      { error: 'Acesso negado' },
+      { status: 403 }
+    );
+  }
+
+  return null;
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const deniedResponse = await enforceBackofficeAccess();
+    if (deniedResponse) return deniedResponse;
+
     const { email, nome, telefone, ordem_servico_id } = await request.json();
 
     if (!email || !nome || !ordem_servico_id) {
@@ -25,21 +57,34 @@ export async function POST(request: NextRequest) {
 
     let cliente;
     let credenciais;
+    let senhaTemporariaGerada: string | null = null;
 
     if (clienteExistente) {
-      // Cliente já existe, retornar credenciais existentes
       cliente = clienteExistente;
-      credenciais = {
-        login: cliente.login,
-        // Since we can't recover hash, logic suggests we might need to reset or just inform?
-        // Original code returned 'senha_temporaria' from DB.
-        // Prisma model now has senhaTemporaria field.
-        senha: cliente.senhaTemporaria || 'Senha já foi alterada',
-      };
+
+      if (!cliente.login || !cliente.senhaHash) {
+        credenciais = generateClientCredentials(email, nome);
+        const senhaHash = await hashPassword(credenciais.senha);
+        senhaTemporariaGerada = credenciais.senha;
+
+        cliente = await prisma.cliente.update({
+          where: { id: cliente.id },
+          data: {
+            login: credenciais.login,
+            senhaHash,
+            primeiroAcesso: true,
+          },
+        });
+      } else {
+        credenciais = {
+          login: cliente.login,
+        };
+      }
     } else {
       // Gerar novas credenciais
       credenciais = generateClientCredentials(email, nome);
       const senhaHash = await hashPassword(credenciais.senha);
+      senhaTemporariaGerada = credenciais.senha;
 
       // Criar novo cliente no portal (Prisma)
       const novoCliente = await prisma.cliente.create({
@@ -49,7 +94,6 @@ export async function POST(request: NextRequest) {
           telefone,
           login: credenciais.login,
           senhaHash,
-          senhaTemporaria: credenciais.senha,
           primeiroAcesso: true,
           isActive: true,
         }
@@ -76,7 +120,8 @@ export async function POST(request: NextRequest) {
       },
       credenciais: {
         login: credenciais.login,
-        senha: credenciais.senha,
+        senha_temporaria: senhaTemporariaGerada,
+        senha_configurada: senhaTemporariaGerada === null,
       },
       primeiro_acesso: cliente.primeiroAcesso,
     });
@@ -91,6 +136,14 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const clienteAutenticado = await verifyClienteToken(request);
+    if (!clienteAutenticado) {
+      return NextResponse.json(
+        { error: 'Acesso não autorizado' },
+        { status: 401 }
+      );
+    }
+
     const { login, senha_atual, nova_senha } = await request.json();
 
     if (!login || !senha_atual || !nova_senha) {
@@ -112,10 +165,25 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    if (cliente.login !== clienteAutenticado.login) {
+      return NextResponse.json(
+        { error: 'Operação não permitida para este usuário' },
+        { status: 403 }
+      );
+    }
+
     // Need to handle null password (legacy/not set)
     if (!cliente.senhaHash) {
       return NextResponse.json(
         { error: 'Senha não configurada.' },
+        { status: 400 }
+      );
+    }
+
+    const passwordValidation = validatePassword(nova_senha);
+    if (!passwordValidation.valid) {
+      return NextResponse.json(
+        { error: passwordValidation.message || 'Senha inválida' },
         { status: 400 }
       );
     }
@@ -136,7 +204,6 @@ export async function PUT(request: NextRequest) {
       where: { id: cliente.id },
       data: {
         senhaHash: novaSenhaHash,
-        senhaTemporaria: null,
         primeiroAcesso: false,
         updatedAt: new Date(),
       }

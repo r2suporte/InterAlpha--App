@@ -17,7 +17,7 @@ describe('Client Auth Functions', () => {
       expect(credentials).toHaveProperty('login');
       expect(credentials).toHaveProperty('senha');
       expect(credentials.login).toBe('joao_joo');
-      expect(credentials.senha).toHaveLength(8);
+      expect(credentials.senha).toHaveLength(12);
     });
 
     it('generates different senhas on multiple calls', () => {
@@ -40,7 +40,7 @@ describe('Client Auth Functions', () => {
       );
 
       expect(credentials.login).toMatch(/^[a-z0-9_]+$/);
-      expect(credentials.senha).toHaveLength(8);
+      expect(credentials.senha).toHaveLength(12);
     });
 
     it('generates senha with valid characters', () => {

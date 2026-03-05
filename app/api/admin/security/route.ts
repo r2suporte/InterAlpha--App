@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
         }
 
         const { resetRateLimit } = await import('@/lib/middleware/rate-limit');
-        resetRateLimit(ip, endpoint);
+        await resetRateLimit(ip, endpoint);
 
         return NextResponse.json({
           success: true,

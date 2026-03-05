@@ -8,6 +8,10 @@ interface CacheConfig {
   db?: number;
   retryDelayOnFailover: number;
   maxRetriesPerRequest: number;
+  connectTimeout: number;
+  lazyConnect: boolean;
+  enableOfflineQueue: boolean;
+  retryStrategy?: (times: number) => number | null;
 }
 
 class CacheService {
@@ -19,6 +23,10 @@ class CacheService {
   }
 
   private initializeRedis() {
+    if (process.env.NODE_ENV === 'test' || process.env.REDIS_DISABLED === 'true') {
+      return;
+    }
+
     try {
       const config: CacheConfig = {
         host: process.env.REDIS_HOST || 'localhost',
@@ -26,7 +34,14 @@ class CacheService {
         password: process.env.REDIS_PASSWORD,
         db: parseInt(process.env.REDIS_DB || '0', 10),
         retryDelayOnFailover: 100,
-        maxRetriesPerRequest: 3,
+        maxRetriesPerRequest: 1,
+        connectTimeout: 2000,
+        lazyConnect: false,
+        enableOfflineQueue: false,
+        retryStrategy(times: number) {
+          if (times > 1) return null;
+          return 100;
+        },
       };
 
       this.redis = new Redis(config);
@@ -168,6 +183,22 @@ class CacheService {
     } catch (error) {
       logger.error('❌ Erro ao definir TTL:', error as Error);
       return false;
+    }
+  }
+
+  /**
+   * Obtém o TTL (em segundos) de uma chave
+   */
+  async getTTL(key: string): Promise<number | null> {
+    if (!this.isRedisConnected()) {
+      return null;
+    }
+
+    try {
+      return await this.redis!.ttl(key);
+    } catch (error) {
+      logger.error('❌ Erro ao obter TTL:', error as Error);
+      return null;
     }
   }
 

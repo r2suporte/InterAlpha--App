@@ -1,5 +1,10 @@
 import bcrypt from 'bcryptjs';
 
+const GENERATED_PASSWORD_LENGTH = 12;
+const PASSWORD_SALT_ROUNDS = 12;
+const MIN_PASSWORD_LENGTH = 10;
+const MAX_PASSWORD_LENGTH = 128;
+
 export interface ClientCredentials {
   login: string;
   senha: string;
@@ -26,13 +31,13 @@ export function generateClientCredentials(
 }
 
 /**
- * Gera uma senha aleatória de 8 caracteres
+ * Gera uma senha aleatória de 12 caracteres
  */
 function generateRandomPassword(): string {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
   let senha = '';
 
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < GENERATED_PASSWORD_LENGTH; i++) {
     senha += chars.charAt(Math.floor(Math.random() * chars.length));
   }
 
@@ -43,8 +48,7 @@ function generateRandomPassword(): string {
  * Cria hash da senha
  */
 export async function hashPassword(senha: string): Promise<string> {
-  const saltRounds = 12;
-  return await bcrypt.hash(senha, saltRounds);
+  return await bcrypt.hash(senha, PASSWORD_SALT_ROUNDS);
 }
 
 /**
@@ -73,22 +77,30 @@ export function validatePassword(senha: string): {
   valid: boolean;
   message?: string;
 } {
-  if (senha.length < 6) {
-    return { valid: false, message: 'Senha deve ter pelo menos 6 caracteres' };
-  }
-
-  if (senha.length > 50) {
-    return { valid: false, message: 'Senha deve ter no máximo 50 caracteres' };
-  }
-
-  // Verificar se tem pelo menos uma letra e um número
-  const hasLetter = /[a-zA-Z]/.test(senha);
-  const hasNumber = /[0-9]/.test(senha);
-
-  if (!hasLetter || !hasNumber) {
+  if (senha.length < MIN_PASSWORD_LENGTH) {
     return {
       valid: false,
-      message: 'Senha deve conter pelo menos uma letra e um número',
+      message: `Senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres`,
+    };
+  }
+
+  if (senha.length > MAX_PASSWORD_LENGTH) {
+    return {
+      valid: false,
+      message: `Senha deve ter no máximo ${MAX_PASSWORD_LENGTH} caracteres`,
+    };
+  }
+
+  // Verificar se tem pelo menos uma letra maiúscula, uma minúscula e um número
+  const hasUppercase = /[A-Z]/.test(senha);
+  const hasLowercase = /[a-z]/.test(senha);
+  const hasNumber = /[0-9]/.test(senha);
+
+  if (!hasUppercase || !hasLowercase || !hasNumber) {
+    return {
+      valid: false,
+      message:
+        'Senha deve conter pelo menos uma letra maiúscula, uma minúscula e um número',
     };
   }
 

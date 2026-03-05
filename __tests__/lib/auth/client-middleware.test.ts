@@ -6,6 +6,15 @@ jest.mock('jsonwebtoken', () => ({
   verify: jest.fn(),
 }));
 
+jest.mock('@/lib/prisma', () => ({
+  __esModule: true,
+  default: {
+    clientSession: {
+      findFirst: jest.fn(),
+    },
+  },
+}));
+
 import { NextRequest } from 'next/server';
 import {
   verifyClienteToken,
@@ -13,13 +22,20 @@ import {
   type ClienteAuth,
 } from '../../../lib/auth/client-middleware';
 import { verify } from 'jsonwebtoken';
+import prisma from '@/lib/prisma';
 
 const mockVerify = verify as jest.Mock;
+const mockPrisma = prisma as unknown as {
+  clientSession: {
+    findFirst: jest.Mock;
+  };
+};
 
 describe('lib/auth/client-middleware - Cliente Authentication', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.JWT_SECRET = 'test-jwt-secret';
+    mockPrisma.clientSession.findFirst.mockResolvedValue({ id: 'session-123' });
   });
 
   afterEach(() => {
@@ -56,8 +72,10 @@ describe('lib/auth/client-middleware - Cliente Authentication', () => {
       expect(result).toBeNull();
       expect(mockVerify).toHaveBeenCalledWith(
         'invalid.token.jwt',
-        'test-jwt-secret'
+        'test-jwt-secret',
+        { algorithms: ['HS256'] }
       );
+      expect(mockPrisma.clientSession.findFirst).not.toHaveBeenCalled();
     });
 
     it('should return null when decoded token tipo is not cliente', async () => {
@@ -79,6 +97,7 @@ describe('lib/auth/client-middleware - Cliente Authentication', () => {
       const result = await verifyClienteToken(mockRequest);
 
       expect(result).toBeNull();
+      expect(mockPrisma.clientSession.findFirst).not.toHaveBeenCalled();
     });
 
     it('should return decoded token when token is valid and tipo is cliente', async () => {
@@ -100,6 +119,7 @@ describe('lib/auth/client-middleware - Cliente Authentication', () => {
       const result = await verifyClienteToken(mockRequest);
 
       expect(result).toEqual(decodedPayload);
+      expect(mockPrisma.clientSession.findFirst).toHaveBeenCalledTimes(1);
     });
 
     it('should use default JWT_SECRET when env var is not set', async () => {
@@ -119,7 +139,8 @@ describe('lib/auth/client-middleware - Cliente Authentication', () => {
 
       expect(mockVerify).toHaveBeenCalledWith(
         'token',
-        'your-super-secret-jwt-key-change-in-production'
+        'dev-local-only-jwt-secret-change-me',
+        { algorithms: ['HS256'] }
       );
     });
   });

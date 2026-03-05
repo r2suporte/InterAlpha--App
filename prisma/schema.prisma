@@ -56,7 +56,6 @@ model Cliente {
   // Auth Fields for Client Portal
   login           String?   @unique @db.VarChar(50)
   senhaHash       String?   @map("senha_hash") @db.VarChar(255)
-  senhaTemporaria String?   @map("senha_temporaria") @db.VarChar(255)
   ultimoAcesso    DateTime? @map("ultimo_acesso") @db.Timestamptz
   primeiroAcesso  Boolean?  @default(true) @map("primeiro_acesso")
   

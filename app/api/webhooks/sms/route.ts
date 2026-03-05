@@ -1,8 +1,26 @@
 // 📱 Webhook SMS - Status de Entrega
 // Webhook para receber atualizações de status do Twilio
 import { NextRequest, NextResponse } from 'next/server';
+import twilio from 'twilio';
 
 import { createClient } from '@/lib/supabase/server';
+
+function validateTwilioSignature(
+  request: NextRequest,
+  signature: string,
+  params: Record<string, string>
+): boolean {
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  if (!authToken) {
+    throw new Error('TWILIO_AUTH_TOKEN não configurado para validação do webhook');
+  }
+
+  const webhookUrl =
+    process.env.TWILIO_STATUS_WEBHOOK_URL ||
+    process.env.TWILIO_WEBHOOK_URL ||
+    request.url;
+  return twilio.validateRequest(authToken, signature, webhookUrl, params);
+}
 
 // 📥 POST - Receber status de entrega do SMS
 export async function POST(request: NextRequest) {
@@ -17,15 +35,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse do body como form data (Twilio envia como application/x-www-form-urlencoded)
-    const formData = await request.formData();
+    const rawBody = await request.text();
+    const parsedBody = new URLSearchParams(rawBody);
+    const params = Object.fromEntries(parsedBody.entries());
 
-    const messageId = formData.get('MessageSid') as string;
-    const messageStatus = formData.get('MessageStatus') as string;
-    const to = formData.get('To') as string;
-    const from = formData.get('From') as string;
-    const errorCode = formData.get('ErrorCode') as string;
-    const errorMessage = formData.get('ErrorMessage') as string;
+    const isValidSignature = validateTwilioSignature(
+      request,
+      twilioSignature,
+      params
+    );
+    if (!isValidSignature) {
+      return NextResponse.json(
+        { error: 'Assinatura Twilio inválida' },
+        { status: 403 }
+      );
+    }
+
+    const messageId = params.MessageSid;
+    const messageStatus = params.MessageStatus;
+    const to = params.To;
+    const errorCode = params.ErrorCode;
+    const errorMessage = params.ErrorMessage;
 
     if (!messageId || !messageStatus) {
       return NextResponse.json(
