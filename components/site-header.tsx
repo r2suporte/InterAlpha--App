@@ -33,12 +33,12 @@ export function SiteHeader() {
   const router = useRouter();
 
   const handleNewOS = () => {
-    router.push('/dashboard/ordem-servico');
+    router.push('/dashboard/ordens-servico');
   };
   return (
     <header className="group-has-data-[collapsible=icon]/sidebar-wrapper:h-16 flex h-16 shrink-0 items-center gap-2 border-b border-slate-200/40 bg-gradient-to-r from-white/90 via-slate-50/95 to-white/90 shadow-sm backdrop-blur-md transition-[width,height] ease-linear dark:border-slate-700/40 dark:from-slate-950/90 dark:via-slate-900/95 dark:to-slate-950/90">
       <div className="flex w-full items-center justify-between gap-4 px-4 lg:px-6">
-          {/* Left Section */}
+        {/* Left Section */}
         <div className="flex items-center gap-4">
           <SidebarTrigger className="-ml-1 rounded-lg transition-all duration-200 hover:bg-slate-100/70 dark:hover:bg-slate-800/70" />
           <Separator
@@ -50,7 +50,7 @@ export function SiteHeader() {
           <SearchBar />
         </div>
 
-          {/* Right Section */}
+        {/* Right Section */}
         <div className="flex items-center gap-3">
           {/* Quick Actions */}
           <QuickCreateButton />

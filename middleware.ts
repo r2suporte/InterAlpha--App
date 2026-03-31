@@ -94,7 +94,7 @@ export default clerkMiddleware(async (auth, request: NextRequest) => {
   // CSP allowing Clerk domains
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://*.clerk.com; connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: https://*.clerk.accounts.dev https://*.clerk.com; font-src 'self' data:;"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://*.clerk.com; worker-src 'self' blob:; connect-src 'self' ws://localhost:3000 wss://localhost:3000 ws://127.0.0.1:3000 wss://127.0.0.1:3000 https://*.clerk.accounts.dev https://*.clerk.com https://clerk-telemetry.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: https://*.clerk.accounts.dev https://*.clerk.com; font-src 'self' data:;"
   );
 
   // 4. Allow public routes

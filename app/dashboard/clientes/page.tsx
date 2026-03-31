@@ -358,14 +358,9 @@ export default function ClientesPage() {
     setErrors([]);
   };
 
-  const openModalSafely = () => {
-    // Avoid immediate close from the same click event cycle in Radix Dialog.
-    window.setTimeout(() => setShowModal(true), 0);
-  };
-
   const openCreateModal = () => {
     resetForm();
-    openModalSafely();
+    setShowModal(true);
   };
 
   const handleEdit = (cliente: Cliente) => {
@@ -391,7 +386,7 @@ export default function ClientesPage() {
       estado: cliente.estado || '',
       observacoes: cliente.observacoes || '',
     });
-    openModalSafely();
+    setShowModal(true);
   };
 
   const handleDelete = async (id: string) => {

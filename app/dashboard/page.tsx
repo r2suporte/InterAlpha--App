@@ -52,7 +52,7 @@ export default function Page() {
   const { isMobile } = useBreakpoint();
 
   const handleNewOS = () => {
-    router.push('/dashboard/ordem-servico');
+    router.push('/dashboard/ordens-servico');
   };
 
   return (
