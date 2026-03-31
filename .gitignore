@@ -81,3 +81,5 @@ backups/
 # Debug and test HTML files
 debug-*.html
 test-*.html
+# clerk configuration (can include secrets)
+/.clerk/
