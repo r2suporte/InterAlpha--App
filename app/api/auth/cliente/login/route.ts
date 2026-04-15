@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { createHash } from 'crypto';
 import { sign } from 'jsonwebtoken';
 
 import { verifyPassword } from '@/lib/auth/client-auth';
+import { getJwtSecret } from '@/lib/auth/jwt-secret';
 import prisma from '@/lib/prisma';
+
+function hashSessionToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,7 +59,7 @@ export async function POST(request: NextRequest) {
         email: cliente.email,
         tipo: 'cliente',
       },
-      process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',
+      getJwtSecret(),
       { expiresIn: '24h' }
     );
 
@@ -73,7 +79,7 @@ export async function POST(request: NextRequest) {
     await prisma.clientSession.create({
       data: {
         clienteId: cliente.id,
-        token,
+        token: hashSessionToken(token),
         ipAddress,
         userAgent,
         expiresAt
@@ -132,10 +138,11 @@ export async function DELETE(request: NextRequest) {
     const token = request.cookies.get('cliente-token')?.value;
 
     if (token) {
+      const tokenHash = hashSessionToken(token);
       // Remover sessão do banco
       try {
         await prisma.clientSession.deleteMany({
-          where: { token }
+          where: { token: tokenHash }
         });
       } catch (e) {
         console.error('Erro ao remover sessão:', e);

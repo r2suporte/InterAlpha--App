@@ -8,11 +8,15 @@ module.exports = {
   ],
   theme: {
     extend: {
-
+      fontFamily: {
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        xl: 'calc(var(--radius) + 4px)',
+        '2xl': 'calc(var(--radius) + 8px)',
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -74,13 +78,25 @@ module.exports = {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
+        // 🎨 Tokens pastel nomeados para uso semântico
+        pastel: {
+          lavender: '#C4B5FD',    // violet-300
+          lilac: '#E9D5FF',       // purple-200
+          mint: '#6EE7B7',        // emerald-300
+          peach: '#FDBA74',       // orange-300
+          rose: '#FDA4AF',        // rose-300
+          aqua: '#7DD3FC',        // sky-300
+          lemon: '#FDE68A',       // amber-200
+          blush: '#FBCFE8',       // pink-200
+        },
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic':
-          'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
         'gradient-primary': 'var(--gradient-primary)',
         'gradient-secondary': 'var(--gradient-secondary)',
+        'gradient-surface': 'var(--gradient-surface)',
+        'gradient-card': 'var(--gradient-card)',
       },
       boxShadow: {
         sm: 'var(--shadow-sm)',
@@ -88,6 +104,13 @@ module.exports = {
         md: 'var(--shadow-md)',
         lg: 'var(--shadow-lg)',
         xl: 'var(--shadow-xl)',
+        'glow-primary': 'var(--glow-primary)',
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+        'slide-up': 'slideUp 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+        'pulse-pastel': 'pulsePastel 2s ease-in-out infinite',
+        'spin-slow': 'spin 3s linear infinite',
       },
     },
   },

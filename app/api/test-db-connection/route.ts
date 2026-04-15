@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    }
+
     const supabase = await createClient();
 
     // Teste simples de conexão - buscar uma linha de uma tabela básica

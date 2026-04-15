@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 
 import { Server as NetServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import { verifyJWT } from '@/lib/auth/jwt';
 
 export const runtime = 'nodejs';
 
@@ -34,24 +35,71 @@ const SocketHandler = (req: NextRequest, res: any) => {
     global.io.on('connection', socket => {
       console.log('Cliente conectado:', socket.id);
 
+      const withTokenValidation = async <T>(
+        token: string | undefined,
+        handler: (payload: Awaited<ReturnType<typeof verifyJWT>>, data: T) => void,
+        data: T
+      ) => {
+        if (!token) {
+          socket.emit('socket-error', { message: 'Token ausente' });
+          return;
+        }
+
+        try {
+          const payload = await verifyJWT(token);
+          handler(payload, data);
+        } catch (_error) {
+          socket.emit('socket-error', { message: 'Token inválido' });
+        }
+      };
+
       // Join user to their specific room for targeted notifications
-      socket.on('join-user-room', (userId: string) => {
-        socket.join(`user-${userId}`);
-        console.log(`Usuário ${userId} entrou na sala user-${userId}`);
+      socket.on('join-user-room', async ({ userId, token }: { userId: string; token?: string }) => {
+        await withTokenValidation(token, (payload, roomData) => {
+          if (payload.userId !== roomData.userId) {
+            socket.emit('socket-error', { message: 'Acesso negado para esta sala' });
+            return;
+          }
+
+          socket.join(`user-${roomData.userId}`);
+          console.log(`Usuário ${roomData.userId} entrou na sala user-${roomData.userId}`);
+        }, { userId });
       });
 
       // Join technician to technician room for work order notifications
-      socket.on('join-technician-room', (technicianId: string) => {
-        socket.join(`technician-${technicianId}`);
-        console.log(
-          `Técnico ${technicianId} entrou na sala technician-${technicianId}`
-        );
+      socket.on('join-technician-room', async ({ technicianId, token }: { technicianId: string; token?: string }) => {
+        await withTokenValidation(token, (payload, roomData) => {
+          const allowedRoles = new Set([
+            'technician',
+            'supervisor_tecnico',
+            'gerente_adm',
+            'diretor',
+            'admin',
+          ]);
+          if (payload.userId !== roomData.technicianId || !allowedRoles.has(payload.role)) {
+            socket.emit('socket-error', { message: 'Acesso negado para sala de técnico' });
+            return;
+          }
+
+          socket.join(`technician-${roomData.technicianId}`);
+          console.log(
+            `Técnico ${roomData.technicianId} entrou na sala technician-${roomData.technicianId}`
+          );
+        }, { technicianId });
       });
 
       // Join admin to admin room for all notifications
-      socket.on('join-admin-room', () => {
-        socket.join('admin');
-        console.log('Admin entrou na sala admin');
+      socket.on('join-admin-room', async ({ token }: { token?: string }) => {
+        await withTokenValidation(token, payload => {
+          const allowedRoles = new Set(['admin', 'diretor']);
+          if (!allowedRoles.has(payload.role)) {
+            socket.emit('socket-error', { message: 'Acesso negado para sala admin' });
+            return;
+          }
+
+          socket.join('admin');
+          console.log('Admin entrou na sala admin');
+        }, {});
       });
 
       // Handle order status updates

@@ -1,6 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse, type NextRequest } from 'next/server';
 import { verify as jwtVerify } from 'jsonwebtoken';
+import { getJwtSecret } from './lib/auth/jwt-secret';
 
 import {
   authRateLimit,
@@ -11,10 +12,27 @@ import {
   securityAuditMiddleware,
 } from './lib/middleware/security-audit';
 
-if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET não definido. Configure a variável de ambiente JWT_SECRET antes de iniciar em produção.');
+const JWT_SECRET = getJwtSecret();
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+function buildCspHeader(): string {
+  const scriptSrc = IS_PRODUCTION
+    ? "script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev https://*.clerk.com;"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://*.clerk.com;";
+  const connectSrc = IS_PRODUCTION
+    ? "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://clerk-telemetry.com;"
+    : "connect-src 'self' ws://localhost:3000 wss://localhost:3000 ws://127.0.0.1:3000 wss://127.0.0.1:3000 https://*.clerk.accounts.dev https://*.clerk.com https://clerk-telemetry.com;";
+
+  return [
+    "default-src 'self';",
+    scriptSrc,
+    "worker-src 'self' blob:;",
+    connectSrc,
+    "style-src 'self' 'unsafe-inline';",
+    "img-src 'self' data: https: https://*.clerk.accounts.dev https://*.clerk.com;",
+    "font-src 'self' data:;",
+  ].join(' ');
 }
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-insecure-jwt-secret';
 
 // Define public routes (no Clerk authentication required)
 const isPublicRoute = createRouteMatcher([
@@ -94,7 +112,7 @@ export default clerkMiddleware(async (auth, request: NextRequest) => {
   // CSP allowing Clerk domains
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://*.clerk.com; worker-src 'self' blob:; connect-src 'self' ws://localhost:3000 wss://localhost:3000 ws://127.0.0.1:3000 wss://127.0.0.1:3000 https://*.clerk.accounts.dev https://*.clerk.com https://clerk-telemetry.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: https://*.clerk.accounts.dev https://*.clerk.com; font-src 'self' data:;"
+    buildCspHeader()
   );
 
   // 4. Allow public routes

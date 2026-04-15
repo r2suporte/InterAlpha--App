@@ -1,40 +1,15 @@
-'use client';
+import { type ReactNode } from 'react';
 
-import { useAuth } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
-import { type ReactNode, useEffect } from 'react';
-
+/**
+ * Layout do Dashboard
+ * A autenticação é gerenciada pelo middleware.ts via Clerk.
+ * Não é necessário verificar auth aqui — o middleware já protege 
+ * todas as rotas /dashboard/* antes mesmo de chegar neste layout.
+ */
 export default function DashboardLayout({
     children,
 }: {
     children: ReactNode;
 }) {
-    const { isLoaded, userId } = useAuth();
-    const router = useRouter();
-
-    useEffect(() => {
-        if (isLoaded && !userId) {
-            router.push('/sign-in');
-        }
-    }, [isLoaded, userId, router]);
-
-    // Show loading state while checking authentication
-    if (!isLoaded) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50/30">
-                <div className="text-center">
-                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-300 border-t-indigo-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Verificando autenticação...</p>
-                </div>
-            </div>
-        );
-    }
-
-    // If not authenticated, show nothing (will redirect)
-    if (!userId) {
-        return null;
-    }
-
-    // User is authenticated, show the dashboard
     return <>{children}</>;
 }

@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import type { UserRole } from './permissions';
+import { getJwtSecret } from './jwt-secret';
 
 /**
  * 🔐 JWT Utilities - InterAlpha App
@@ -8,8 +9,7 @@ import type { UserRole } from './permissions';
  * Utiliza a biblioteca 'jsonwebtoken' para compatibilidade
  */
 
-const JWT_SECRET =
-  process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_SECRET = getJwtSecret();
 
 export interface JWTPayload {
   userId: string;

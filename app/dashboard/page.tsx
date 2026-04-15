@@ -1,16 +1,14 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import {
   Calendar,
-  Database,
   Download,
   Filter,
   MoreVertical,
   Plus,
-  RefreshCw,
-  Server,
   TrendingUp,
 } from 'lucide-react';
 
@@ -19,14 +17,11 @@ import { DataTable } from '@/components/data-table';
 import { EnhancedSidebar } from '@/components/navigation/enhanced-sidebar';
 import { SectionCards } from '@/components/section-cards';
 import { SiteHeader } from '@/components/site-header';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import { DataField } from '@/components/ui/data-display';
 import {
@@ -44,12 +39,22 @@ import {
 } from '@/components/ui/responsive-utils';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { StatusBadge } from '@/components/ui/status-badge';
-
-import data from './data.json';
+import { useQuery } from '@tanstack/react-query';
 
 export default function Page() {
   const router = useRouter();
   const { isMobile } = useBreakpoint();
+  const [dateFilter, setDateFilter] = useState<'7d' | '30d' | '90d'>('30d');
+
+  const { data: ordensData = [], isLoading: loadingOrdens } = useQuery({
+    queryKey: ['recent-orders', dateFilter],
+    queryFn: async () => {
+      const res = await fetch(`/api/ordens-servico?limit=10&page=1&period=${dateFilter}`);
+      if (!res.ok) throw new Error('Falha ao buscar ordens');
+      const json = await res.json();
+      return Array.isArray(json) ? json : (json.data ?? []);
+    },
+  });
 
   const handleNewOS = () => {
     router.push('/dashboard/ordens-servico');
@@ -87,14 +92,17 @@ export default function Page() {
                 <ShowHide hide={['sm']}>
                   <div className="flex items-center gap-3">
                     <Button
-                      variant="outline"
+                      variant={dateFilter === '7d' ? 'default' : 'outline'}
                       size="sm"
-                      disabled
-                      title="Filtro por período — em breve"
-                      className="border-slate-200 dark:border-slate-700"
+                      onClick={() => setDateFilter(prev => prev === '7d' ? '30d' : prev === '30d' ? '90d' : '7d')}
+                      title="Alternar período"
+                      className="border-slate-200 dark:border-slate-700 w-32 justify-between"
                     >
-                      <Calendar className="mr-2 h-4 w-4" />
-                      Período
+                      <div className="flex items-center">
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Período
+                      </div>
+                      <span className="text-xs opacity-70 border px-1.5 rounded-md ml-1 bg-background/50">{dateFilter}</span>
                     </Button>
                     <Button
                       variant="outline"
@@ -295,7 +303,13 @@ export default function Page() {
                     </ResponsiveText>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <DataTable data={data} />
+                    {loadingOrdens ? (
+                      <div className="flex h-32 items-center justify-center text-sm text-slate-500 dark:text-slate-400">
+                        Carregando ordens...
+                      </div>
+                    ) : (
+                      <DataTable data={ordensData} />
+                    )}
                   </CardContent>
                 </Card>
               </div>

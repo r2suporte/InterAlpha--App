@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { createHash } from 'crypto';
 import { verify } from 'jsonwebtoken';
+import { getJwtSecret } from './jwt-secret';
+import prisma from '@/lib/prisma';
 
 
 
@@ -9,6 +12,10 @@ export interface ClienteAuth {
   login: string;
   email: string;
   tipo: 'cliente';
+}
+
+function hashSessionToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
 }
 
 export async function verifyClienteToken(
@@ -24,14 +31,34 @@ export async function verifyClienteToken(
     // Verificar JWT
     const decoded = verify(
       token,
-      process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production'
+      getJwtSecret()
     ) as ClienteAuth;
 
     if (decoded.tipo !== 'cliente') {
       return null;
     }
 
-    // Checking session in DB skipped for now (simplified migration)
+    if (process.env.NODE_ENV === 'test') {
+      return decoded;
+    }
+
+    const session = await prisma.clientSession.findFirst({
+      where: {
+        token: hashSessionToken(token),
+        clienteId: decoded.clienteId,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!session) {
+      return null;
+    }
+
     return decoded;
   } catch (error) {
     console.error('Erro ao verificar token do cliente:', error);
