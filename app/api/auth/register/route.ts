@@ -4,10 +4,33 @@ import {
   generateClientCredentials,
   hashPassword,
 } from '@/lib/auth/client-auth';
+import { authorizeApiRequest } from '@/lib/auth/api-authorization';
 import prisma from '@/lib/prisma';
+import { shouldExposeTemporaryCredentials } from '@/lib/security/credential-policy';
+import { ensureTrustedOrigin } from '@/lib/security/http-security';
+
+const CLIENT_AUTH_MANAGEMENT_ROLES = [
+  'admin',
+  'diretor',
+  'gerente_adm',
+  'atendente',
+  'supervisor_tecnico',
+] as const;
 
 export async function POST(request: NextRequest) {
   try {
+    const originValidation = ensureTrustedOrigin(request);
+    if (originValidation) {
+      return originValidation;
+    }
+
+    const auth = await authorizeApiRequest(request, [
+      ...CLIENT_AUTH_MANAGEMENT_ROLES,
+    ]);
+    if (!auth.authorized) {
+      return auth.response;
+    }
+
     const { email, nome, telefone, cpf_cnpj, endereco, cidade, estado, cep } =
       await request.json();
 
@@ -21,7 +44,10 @@ export async function POST(request: NextRequest) {
 
     // Validação de formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    const emailNormalizado = String(email).trim().toLowerCase();
+    const nomeNormalizado = String(nome).trim();
+
+    if (!emailRegex.test(emailNormalizado)) {
       return NextResponse.json(
         { error: 'Formato de email inválido' },
         { status: 400 }
@@ -32,9 +58,9 @@ export async function POST(request: NextRequest) {
     const usuarioExistente = await prisma.cliente.findFirst({
       where: {
         OR: [
-          { email },
-          { email2: email }, // Check alt emails too if generic
-          { login: email }   // Check against login just in case
+          { email: emailNormalizado },
+          { email2: emailNormalizado }, // Check alt emails too if generic
+          { login: emailNormalizado }   // Check against login just in case
         ]
       }
     });
@@ -47,14 +73,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Gerar credenciais para o novo usuário
-    const credenciais = generateClientCredentials(email, nome);
+    const credenciais = generateClientCredentials(emailNormalizado, nomeNormalizado);
     const senhaHash = await hashPassword(credenciais.senha);
 
     // Criar novo usuário no portal
     const novoUsuario = await prisma.cliente.create({
       data: {
-        email,
-        nome,
+        email: emailNormalizado,
+        nome: nomeNormalizado,
         telefone: telefone || null,
         cpfCnpj: cpf_cnpj, // Mapping snake_case from body to camelCase in Prisma
         endereco,
@@ -72,20 +98,37 @@ export async function POST(request: NextRequest) {
 
     // Retornar dados do usuário criado (sem senha hash)
     // Prisma returns object, just sanitize
-    const { senhaHash: _, senhaTemporaria: __, ...usuarioSemSenha } = novoUsuario;
+    const {
+      senhaHash: senhaHashPersistida,
+      senhaTemporaria: senhaTemporariaPersistida,
+      ...usuarioSemSenha
+    } = novoUsuario;
+    void senhaHashPersistida;
+    void senhaTemporariaPersistida;
+    const exposeCredentials = shouldExposeTemporaryCredentials();
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: true,
         message: 'Usuário registrado com sucesso',
         usuario: usuarioSemSenha,
-        credenciais: {
-          login: credenciais.login,
-          senha_temporaria: credenciais.senha,
-        },
+        credenciais: exposeCredentials
+          ? {
+              login: credenciais.login,
+              senha_temporaria: credenciais.senha,
+            }
+          : {
+              login: credenciais.login,
+              senha_temporaria: null,
+              message:
+                'Senha temporária não é retornada por segurança. Defina ALLOW_PLAINTEXT_CREDENTIALS=true para habilitar explicitamente.',
+            },
       },
       { status: 201 }
     );
+    response.headers.set('Cache-Control', 'no-store');
+
+    return response;
   } catch (error) {
     console.error('Erro no registro:', error);
     return NextResponse.json(

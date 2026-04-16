@@ -1,10 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { withAuthenticatedApiLogging } from '@/lib/middleware/logging-middleware';
+import { authorizeApiRequest } from '@/lib/auth/api-authorization';
+
+const PECAS_READ_ROLES = [
+    'admin',
+    'diretor',
+    'gerente_adm',
+    'gerente_financeiro',
+    'supervisor_tecnico',
+    'technician',
+    'atendente',
+] as const;
 
 // GET - Listar peças
 async function getPecas(request: NextRequest) {
     try {
+        const auth = await authorizeApiRequest(request, [...PECAS_READ_ROLES]);
+        if (!auth.authorized) return auth.response;
+
         const { searchParams } = new URL(request.url);
         const search = searchParams.get('search') || '';
         const lowStock = searchParams.get('low_stock');
@@ -49,6 +63,9 @@ async function getPecas(request: NextRequest) {
 // POST - Criar peça
 async function createPeca(request: NextRequest) {
     try {
+        const auth = await authorizeApiRequest(request, ['admin', 'diretor', 'gerente_adm', 'supervisor_tecnico']);
+        if (!auth.authorized) return auth.response;
+
         const data = await request.json();
         const { nome, codigo, marca, modelo, quantidade, minimo, precoCusto, precoVenda, localizacao } = data;
 

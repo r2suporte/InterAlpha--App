@@ -10,12 +10,32 @@ import {
   withAuthenticatedApiMetrics,
   withBusinessMetrics,
 } from '@/lib/middleware/metrics-middleware';
+import { authorizeApiRequest } from '@/lib/auth/api-authorization';
 import prisma from '@/lib/prisma';
 import {
   StatusOrdemServico,
   TipoServico,
   PrioridadeOrdemServico,
 } from '@/types/ordens-servico';
+
+const ORDENS_READ_ROLES = [
+  'admin',
+  'diretor',
+  'gerente_adm',
+  'gerente_financeiro',
+  'supervisor_tecnico',
+  'technician',
+  'atendente',
+] as const;
+
+const ORDENS_WRITE_ROLES = [
+  'admin',
+  'diretor',
+  'gerente_adm',
+  'supervisor_tecnico',
+  'technician',
+  'atendente',
+] as const;
 
 // Função para obter instância do Socket.IO
 function getSocketIOInstance(): SocketIOServer | null {
@@ -31,6 +51,9 @@ function getSocketIOInstance(): SocketIOServer | null {
 // GET - Listar ordens de serviço
 async function getOrdensServico(request: NextRequest) {
   try {
+    const auth = await authorizeApiRequest(request, [...ORDENS_READ_ROLES]);
+    if (!auth.authorized) return auth.response;
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
@@ -153,6 +176,9 @@ async function getOrdensServico(request: NextRequest) {
 // POST - Criar nova ordem de serviço
 async function createOrdemServico(request: NextRequest) {
   try {
+    const auth = await authorizeApiRequest(request, [...ORDENS_WRITE_ROLES]);
+    if (!auth.authorized) return auth.response;
+
     const rawData = await request.json();
 
     // Mapeamento de valores

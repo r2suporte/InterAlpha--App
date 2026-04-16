@@ -45,6 +45,11 @@ export default function Page() {
   const router = useRouter();
   const { isMobile } = useBreakpoint();
   const [dateFilter, setDateFilter] = useState<'7d' | '30d' | '90d'>('30d');
+  const cycleDateFilter = () => {
+    if (dateFilter === '7d') return '30d';
+    if (dateFilter === '30d') return '90d';
+    return '7d';
+  };
 
   const { data: ordensData = [], isLoading: loadingOrdens } = useQuery({
     queryKey: ['recent-orders', dateFilter],
@@ -94,7 +99,7 @@ export default function Page() {
                     <Button
                       variant={dateFilter === '7d' ? 'default' : 'outline'}
                       size="sm"
-                      onClick={() => setDateFilter(prev => prev === '7d' ? '30d' : prev === '30d' ? '90d' : '7d')}
+                      onClick={() => setDateFilter(cycleDateFilter())}
                       title="Alternar período"
                       className="border-slate-200 dark:border-slate-700 w-32 justify-between"
                     >

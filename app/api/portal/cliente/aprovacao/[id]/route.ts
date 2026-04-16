@@ -2,12 +2,33 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { verifyClienteToken } from '@/lib/auth/client-middleware';
 import prisma from '@/lib/prisma';
+import { ensureTrustedOrigin } from '@/lib/security/http-security';
+
+const MAX_OBSERVACOES_LENGTH = 1000;
+
+function normalizeObservacoes(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed.slice(0, MAX_OBSERVACOES_LENGTH);
+}
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const originValidation = ensureTrustedOrigin(request);
+    if (originValidation) {
+      return originValidation;
+    }
+
     // Verificar autenticação do cliente
     const clienteData = await verifyClienteToken(request);
     if (!clienteData) {
@@ -18,6 +39,7 @@ export async function PATCH(
     }
 
     const { acao, observacoes } = await request.json();
+    const observacoesNormalizadas = normalizeObservacoes(observacoes);
 
     if (!acao || !['aprovar', 'rejeitar'].includes(acao)) {
       return NextResponse.json(
@@ -85,13 +107,13 @@ export async function PATCH(
     const agora = new Date();
 
     const aprovacaoAtualizada = await prisma.clienteAprovacao.update({
-      where: { id: aprovacaoId },
-      data: {
-        status: novoStatus,
-        observacoesCliente: observacoes || null,
-        aprovadoEm: agora,
-        updatedAt: agora,
-      }
+        where: { id: aprovacaoId },
+        data: {
+          status: novoStatus,
+          observacoesCliente: observacoesNormalizadas,
+          aprovadoEm: agora,
+          updatedAt: agora,
+        }
     });
 
     // Registrar comunicação
@@ -108,7 +130,7 @@ export async function PATCH(
           ordemServicoId: aprovacao.ordemServicoId,
           tipo: 'aprovacao',
           provider: 'portal', // Mapped to provider (formerly canal if any, but schema calls it provider)
-          conteudo: `${acao === 'aprovar' ? 'Aprovação' : 'Rejeição'} de ${aprovacao.tipo}: ${aprovacao.descricao}${observacoes ? `\nObservações: ${observacoes}` : ''}`,
+          conteudo: `${acao === 'aprovar' ? 'Aprovação' : 'Rejeição'} de ${aprovacao.tipo}: ${aprovacao.descricao}${observacoesNormalizadas ? `\nObservações: ${observacoesNormalizadas}` : ''}`,
           status: 'enviado',
           enviadoEm: agora,
           destinatario: 'sistema',
@@ -122,7 +144,7 @@ export async function PATCH(
 
     // TODO: Enviar notificação para a equipe interna
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: `${aprovacao.tipo} ${acao === 'aprovar' ? 'aprovado' : 'rejeitado'} com sucesso`,
       aprovacao: {
@@ -131,6 +153,9 @@ export async function PATCH(
         aprovado_em: agora.toISOString(),
       },
     });
+    response.headers.set('Cache-Control', 'no-store');
+
+    return response;
 
   } catch (error) {
     console.error('Erro na API de aprovação:', error);
@@ -139,4 +164,11 @@ export async function PATCH(
       { status: 500 }
     );
   }
+}
+
+export async function POST(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  return PATCH(request, context);
 }

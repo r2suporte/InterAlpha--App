@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' }
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       cliente: {
         id: clienteData.id,
         nome: clienteData.nome,
@@ -50,6 +50,9 @@ export async function GET(request: NextRequest) {
       },
       ordens_servico: ordensServico || [],
     });
+    response.headers.set('Cache-Control', 'no-store');
+
+    return response;
   } catch (error) {
     console.error('Erro ao verificar autenticação do cliente:', error);
     return NextResponse.json(

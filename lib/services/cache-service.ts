@@ -19,6 +19,16 @@ class CacheService {
   }
 
   private initializeRedis() {
+    const isTest = process.env.NODE_ENV === 'test';
+    const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+    const isDisabled = process.env.DISABLE_REDIS === 'true';
+
+    if (isTest || isBuildPhase || isDisabled) {
+      this.redis = null;
+      this.isConnected = false;
+      return;
+    }
+
     try {
       const config: CacheConfig = {
         host: process.env.REDIS_HOST || 'localhost',

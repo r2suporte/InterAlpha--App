@@ -9,6 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const dotenv = require('dotenv');
 
 // Cores para output
 const colors = {
@@ -22,6 +23,17 @@ const colors = {
 
 function log(message, color = 'reset') {
   console.log(`${colors[color]}${message}${colors.reset}`);
+}
+
+function loadLocalEnvFiles() {
+  const envFiles = ['.env', '.env.local'];
+
+  envFiles.forEach(file => {
+    const filePath = path.join(process.cwd(), file);
+    if (fs.existsSync(filePath)) {
+      dotenv.config({ path: filePath, override: false });
+    }
+  });
 }
 
 function checkEnvVariables() {
@@ -39,35 +51,43 @@ function checkEnvVariables() {
     'CLERK_WEBHOOK_SECRET',
     'STRIPE_SECRET_KEY',
     'TWILIO_AUTH_TOKEN',
-    'WHATSAPP_ACCESS_TOKEN',
+    'CLOUD_API_ACCESS_TOKEN',
+    'WHATSAPP_APP_SECRET',
   ];
 
   const issues = [];
 
+  const placeholderPatterns = ['fallback', 'your-', 'YOUR_', 'example', 'changeme'];
+
   // Verificar variáveis obrigatórias
   requiredVars.forEach(varName => {
-    if (!process.env[varName]) {
+    const value = process.env[varName];
+
+    if (!value) {
       issues.push(`❌ Variável obrigatória ${varName} não definida`);
-    } else if (
-      process.env[varName].includes('fallback') ||
-      process.env[varName].includes('your-')
-    ) {
+    } else if (placeholderPatterns.some(pattern => value.includes(pattern))) {
       issues.push(`⚠️  Variável ${varName} usando valor padrão inseguro`);
     } else {
       log(`✅ ${varName} configurada`, 'green');
     }
   });
 
+  const jwtSecret = process.env.JWT_SECRET;
+  if (jwtSecret && jwtSecret.trim().length < 32) {
+    issues.push('❌ JWT_SECRET com tamanho insuficiente (mínimo recomendado: 32 caracteres)');
+  }
+
   // Verificar se variáveis sensíveis não estão vazias
   sensitiveVars.forEach(varName => {
-    if (
-      process.env[varName] &&
-      (process.env[varName].includes('YOUR_') ||
-        process.env[varName].includes('your-'))
-    ) {
+    const value = process.env[varName];
+    if (value && placeholderPatterns.some(pattern => value.includes(pattern))) {
       issues.push(`⚠️  Variável sensível ${varName} usando valor placeholder`);
     }
   });
+
+  if (!process.env.APP_TRUSTED_ORIGINS && process.env.NODE_ENV === 'production') {
+    issues.push('⚠️  APP_TRUSTED_ORIGINS não definido para proteção de origem/CSRF');
+  }
 
   return issues;
 }
@@ -75,7 +95,7 @@ function checkEnvVariables() {
 function checkFilePermissions() {
   log('\n📁 Verificando Permissões de Arquivos...', 'blue');
 
-  const sensitiveFiles = ['.env.local', '.env', 'prisma/schema.prisma'];
+  const sensitiveFiles = ['.env.local', '.env', '.env.production'];
 
   const issues = [];
 
@@ -159,28 +179,31 @@ function checkCodeSecurity() {
 
   const issues = [];
 
-  // Verificar uso de fallback secrets
-  const middlewarePath = path.join(process.cwd(), 'middleware.ts');
+  // Verificar uso de fallback secrets no proxy/middleware
+  const middlewarePath = fs.existsSync(path.join(process.cwd(), 'proxy.ts'))
+    ? path.join(process.cwd(), 'proxy.ts')
+    : path.join(process.cwd(), 'middleware.ts');
+
   if (fs.existsSync(middlewarePath)) {
     const content = fs.readFileSync(middlewarePath, 'utf8');
     if (content.includes('fallback-secret')) {
       issues.push('❌ Middleware usando fallback-secret inseguro');
     } else {
-      log('✅ Middleware sem fallback secrets', 'green');
+      log('✅ Proxy/Middleware sem fallback secrets', 'green');
     }
   }
 
-  // Verificar configuração do Next.js
-  const nextConfigPath = path.join(process.cwd(), 'next.config.js');
-  if (fs.existsSync(nextConfigPath)) {
-    const content = fs.readFileSync(nextConfigPath, 'utf8');
+  // Verificar headers de segurança no proxy
+  if (fs.existsSync(middlewarePath)) {
+    const content = fs.readFileSync(middlewarePath, 'utf8');
     if (
       content.includes('X-Frame-Options') &&
-      content.includes('X-Content-Type-Options')
+      content.includes('X-Content-Type-Options') &&
+      content.includes('Content-Security-Policy')
     ) {
       log('✅ Headers de segurança configurados', 'green');
     } else {
-      issues.push('⚠️  Headers de segurança não configurados no Next.js');
+      issues.push('⚠️  Headers de segurança não configurados no proxy/middleware');
     }
   }
 
@@ -264,6 +287,7 @@ function generateReport(allIssues) {
 async function main() {
   log('🔒 InterAlpha Security Check', 'bold');
   log('Verificando configurações de segurança...', 'blue');
+  loadLocalEnvFiles();
 
   const allIssues = [
     ...checkEnvVariables(),

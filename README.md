@@ -14,10 +14,10 @@ Sistema de gestão empresarial completo com integrações avançadas.
 
 ## 🛠️ Tecnologias
 
-- **Frontend**: Next.js 15, React, TypeScript, Tailwind CSS
+- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes, Node.js
 - **Database**: Neon PostgreSQL
-- **Autenticação**: Clerk
+- **Autenticação**: Clerk + JWT para portal de cliente
 - **Pagamentos**: Stripe
 - **Integrações**: WhatsApp Business API, SMS, Email
 
@@ -46,6 +46,15 @@ npm run dev
 2. Configure o banco de dados Neon
 3. Configure as integrações (WhatsApp, SMS, Email)
 4. Configure o Stripe para pagamentos
+
+## ✅ Qualidade e Validação
+
+```bash
+npm run lint:check
+npm run type:check
+npm run test:ci
+npm run build
+```
 
 ## 📚 Documentação
 

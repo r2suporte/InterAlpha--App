@@ -25,7 +25,7 @@ const RATE_LIMITS = {
 
   // Endpoints de cliente
   '/api/auth/cliente/login': { requests: 5, windowMs: 15 * 60 * 1000 },
-  '/api/auth/cliente/register': { requests: 2, windowMs: 60 * 60 * 1000 },
+  '/api/auth/cliente': { requests: 2, windowMs: 60 * 60 * 1000 },
 
   // APIs gerais - menos restritivos
   '/api/clientes': { requests: 100, windowMs: 15 * 60 * 1000 }, // 100 req por 15 min
@@ -190,7 +190,6 @@ export function rateLimit(request: NextRequest): NextResponse | null {
  */
 export function authRateLimit(request: NextRequest): NextResponse | null {
   const ip = getClientIP(request);
-  const {pathname} = request.nextUrl;
   const now = Date.now();
 
   const key = `auth:${ip}`;

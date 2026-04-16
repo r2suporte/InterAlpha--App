@@ -160,6 +160,7 @@ module.exports = [
       '**/*.json',
       'node_modules/**',
       '.next/**',
+      'clerk-nextjs/**',
       'out/**',
       'dist/**',
       'build/**',

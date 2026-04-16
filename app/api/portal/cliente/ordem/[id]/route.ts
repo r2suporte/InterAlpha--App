@@ -92,10 +92,13 @@ export async function GET(
       }
     };
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ordem_servico: responseOrder,
       aprovacoes: aprovacoes || [],
     });
+    response.headers.set('Cache-Control', 'no-store');
+
+    return response;
 
   } catch (error) {
     console.error('Erro na API de detalhes da ordem:', error);

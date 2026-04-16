@@ -1,10 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { withAuthenticatedApiLogging } from '@/lib/middleware/logging-middleware';
+import { authorizeApiRequest } from '@/lib/auth/api-authorization';
+
+const EQUIPAMENTOS_READ_ROLES = [
+  'admin',
+  'diretor',
+  'gerente_adm',
+  'gerente_financeiro',
+  'supervisor_tecnico',
+  'technician',
+  'atendente',
+] as const;
 
 // GET - Listar equipamentos (global ou filtrado)
 async function getEquipamentos(request: NextRequest) {
   try {
+    const auth = await authorizeApiRequest(request, [...EQUIPAMENTOS_READ_ROLES]);
+    if (!auth.authorized) return auth.response;
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const imei = searchParams.get('imei');
@@ -53,6 +67,9 @@ async function getEquipamentos(request: NextRequest) {
 // POST - Criar equipamento
 async function createEquipamento(request: NextRequest) {
   try {
+    const auth = await authorizeApiRequest(request, ['admin', 'diretor', 'gerente_adm', 'supervisor_tecnico', 'technician', 'atendente']);
+    if (!auth.authorized) return auth.response;
+
     const data = await request.json();
     const {
       clienteId,

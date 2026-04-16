@@ -7,9 +7,28 @@ import {
 import {
   withAuthenticatedApiMetrics,
 } from '@/lib/middleware/metrics-middleware';
+import { authorizeApiRequest } from '@/lib/auth/api-authorization';
 import { CACHE_TTL } from '@/lib/services/cache-service';
 import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+
+const CLIENTES_READ_ROLES = [
+  'admin',
+  'diretor',
+  'gerente_adm',
+  'gerente_financeiro',
+  'supervisor_tecnico',
+  'technician',
+  'atendente',
+] as const;
+
+const CLIENTES_WRITE_ROLES = [
+  'admin',
+  'diretor',
+  'gerente_adm',
+  'supervisor_tecnico',
+  'atendente',
+] as const;
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
@@ -46,6 +65,9 @@ function mapClienteToResponse<
 // GET - Listar clientes (com cache)
 async function getClientes(request: NextRequest) {
   try {
+    const auth = await authorizeApiRequest(request, [...CLIENTES_READ_ROLES]);
+    if (!auth.authorized) return auth.response;
+
     const { searchParams } = new URL(request.url);
 
     const page = parsePositiveInteger(searchParams.get('page'), DEFAULT_PAGE);
@@ -117,6 +139,9 @@ async function getClientes(request: NextRequest) {
 // POST - Criar novo cliente
 async function createCliente(request: NextRequest) {
   try {
+    const auth = await authorizeApiRequest(request, [...CLIENTES_WRITE_ROLES]);
+    if (!auth.authorized) return auth.response;
+
     const { nome, email, telefone, cpf_cnpj, endereco, cidade, estado, cep } =
       await request.json();
 
@@ -234,6 +259,9 @@ async function createCliente(request: NextRequest) {
 // PUT - Atualizar cliente existente
 async function updateCliente(request: NextRequest) {
   try {
+    const auth = await authorizeApiRequest(request, [...CLIENTES_WRITE_ROLES]);
+    if (!auth.authorized) return auth.response;
+
     const {
       id,
       nome,
@@ -312,6 +340,9 @@ async function updateCliente(request: NextRequest) {
 // DELETE - Remover cliente
 async function deleteCliente(request: NextRequest) {
   try {
+    const auth = await authorizeApiRequest(request, ['admin', 'diretor', 'gerente_adm']);
+    if (!auth.authorized) return auth.response;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 

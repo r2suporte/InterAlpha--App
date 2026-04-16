@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { authorizeApiRequest } from '@/lib/auth/api-authorization';
 import { withAuthenticatedApiLogging } from '@/lib/middleware/logging-middleware';
 import { withAuthenticatedApiMetrics } from '@/lib/middleware/metrics-middleware';
 import { AlertService } from '@/lib/services/alert-service';
@@ -8,6 +9,14 @@ const alertService = new AlertService();
 
 async function getAlerts(request: NextRequest) {
   try {
+    const auth = await authorizeApiRequest(request, [
+      'admin',
+      'diretor',
+      'gerente_adm',
+      'gerente_financeiro',
+    ]);
+    if (!auth.authorized) return auth.response;
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const severity = searchParams.get('severity');
@@ -49,6 +58,9 @@ async function getAlerts(request: NextRequest) {
 
 async function createAlert(request: NextRequest) {
   try {
+    const auth = await authorizeApiRequest(request, ['admin', 'diretor']);
+    if (!auth.authorized) return auth.response;
+
     const body = await request.json();
 
     // Validar campos obrigatórios
@@ -149,6 +161,9 @@ async function createAlert(request: NextRequest) {
 
 async function checkAlerts(_request: NextRequest) {
   try {
+    const auth = await authorizeApiRequest(_request, ['admin', 'diretor']);
+    if (!auth.authorized) return auth.response;
+
     const triggeredAlerts = await alertService.checkAlerts();
 
     return NextResponse.json({

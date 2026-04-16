@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
 import { ptBR } from '@clerk/localizations';
 import { Analytics } from '@vercel/analytics/react';
@@ -10,12 +9,6 @@ import { ToastProvider } from '@/components/ui/toast-system';
 import { envPublic } from '@/lib/config/env.public';
 
 import './globals.css';
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: 'InterAlpha — Gestão de Serviços',
@@ -31,7 +24,7 @@ export default function RootLayout({
 
   return (
     <ClerkProvider localization={ptBR} publishableKey={clerkPublishableKey}>
-      <html lang="pt-BR" className={inter.variable}>
+      <html lang="pt-BR">
         <body className="font-sans antialiased">
           <Providers>
             <ToastProvider>{children}</ToastProvider>

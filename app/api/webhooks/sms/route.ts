@@ -1,8 +1,23 @@
 // 📱 Webhook SMS - Status de Entrega
 // Webhook para receber atualizações de status do Twilio
 import { NextRequest, NextResponse } from 'next/server';
+import twilio from 'twilio';
 
 import { createClient } from '@/lib/supabase/server';
+
+function validateTwilioWebhook(
+  requestUrl: string,
+  signature: string | null,
+  payload: Record<string, string>
+): boolean {
+  if (!signature) return false;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  if (!authToken) {
+    return process.env.NODE_ENV !== 'production';
+  }
+
+  return twilio.validateRequest(authToken, signature, requestUrl, payload);
+}
 
 // 📥 POST - Receber status de entrega do SMS
 export async function POST(request: NextRequest) {
@@ -19,6 +34,17 @@ export async function POST(request: NextRequest) {
 
     // Parse do body como form data (Twilio envia como application/x-www-form-urlencoded)
     const formData = await request.formData();
+    const payload: Record<string, string> = {};
+    for (const [key, value] of formData.entries()) {
+      payload[key] = String(value);
+    }
+
+    if (!validateTwilioWebhook(request.url, twilioSignature, payload)) {
+      return NextResponse.json(
+        { error: 'Assinatura Twilio inválida' },
+        { status: 401 }
+      );
+    }
 
     const messageId = formData.get('MessageSid') as string;
     const messageStatus = formData.get('MessageStatus') as string;

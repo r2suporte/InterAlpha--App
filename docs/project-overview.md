@@ -32,7 +32,7 @@ O **InterAlpha App** é um sistema completo de gestão de ordens de serviço des
 ## File Structure & Code Organization
 
 - <!-- agent-fill:directory-tests -->`__tests__/` — Suíte completa de testes (23 arquivos) incluindo testes unitários, integração e E2E com Jest e Cypress.<!-- /agent-fill -->
-- <!-- agent-fill:directory-app -->`app/` — Aplicação Next.js 15 com App Router, contendo páginas, APIs e componentes principais do sistema.<!-- /agent-fill -->
+- <!-- agent-fill:directory-app -->`app/` — Aplicação Next.js 16 com App Router, contendo páginas, APIs e componentes principais do sistema.<!-- /agent-fill -->
 - <!-- agent-fill:directory-apply-migration-direct-js -->`apply-migration-direct.js/` — TODO: Describe the purpose of this directory.<!-- /agent-fill -->
 - <!-- agent-fill:directory-apply-schema-js -->`apply-schema.js/` — TODO: Describe the purpose of this directory.<!-- /agent-fill -->
 - <!-- agent-fill:directory-check-constraints-js -->`check-constraints.js/` — TODO: Describe the purpose of this directory.<!-- /agent-fill -->
@@ -122,7 +122,7 @@ O **InterAlpha App** é um sistema completo de gestão de ordens de serviço des
 ## Stack Tecnológico Principal
 
 ### Frontend
-- **Next.js 15** - Framework React com App Router
+- **Next.js 16** - Framework React com App Router
 - **React 19** - Biblioteca de interface de usuário
 - **TypeScript** - Tipagem estática
 - **Tailwind CSS** - Framework de estilização

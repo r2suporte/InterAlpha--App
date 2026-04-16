@@ -6,13 +6,39 @@ import { sign } from 'jsonwebtoken';
 import { verifyPassword } from '@/lib/auth/client-auth';
 import { getJwtSecret } from '@/lib/auth/jwt-secret';
 import prisma from '@/lib/prisma';
+import { ensureTrustedOrigin } from '@/lib/security/http-security';
 
 function hashSessionToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
+function getClientIpAddress(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  const realIp = request.headers.get('x-real-ip');
+  const cfConnectingIp = request.headers.get('cf-connecting-ip');
+
+  if (cfConnectingIp) {
+    return cfConnectingIp;
+  }
+
+  if (realIp) {
+    return realIp;
+  }
+
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+
+  return 'unknown';
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const originValidation = ensureTrustedOrigin(request);
+    if (originValidation) {
+      return originValidation;
+    }
+
     const { login, senha } = await request.json();
 
     if (!login || !senha) {
@@ -70,7 +96,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Criar sessão no banco
-    const ipAddress = request.headers.get('x-forwarded-for') || 'unknown';
+    const ipAddress = getClientIpAddress(request);
     const userAgent = request.headers.get('user-agent') || 'unknown';
     // Expira em 24h
     const expiresAt = new Date();
@@ -111,7 +137,6 @@ export async function POST(request: NextRequest) {
         login: cliente.login,
         primeiro_acesso: cliente.primeiroAcesso,
       },
-      token,
       ordens_servico: ordensServico || [],
     });
 
@@ -119,9 +144,11 @@ export async function POST(request: NextRequest) {
     response.cookies.set('cliente-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
+      path: '/',
       maxAge: 24 * 60 * 60, // 24h
     });
+    response.headers.set('Cache-Control', 'no-store');
 
     return response;
   } catch (error) {
@@ -135,6 +162,11 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const originValidation = ensureTrustedOrigin(request);
+    if (originValidation) {
+      return originValidation;
+    }
+
     const token = request.cookies.get('cliente-token')?.value;
 
     if (token) {
@@ -152,6 +184,7 @@ export async function DELETE(request: NextRequest) {
 
     const response = NextResponse.json({ success: true });
     response.cookies.delete('cliente-token');
+    response.headers.set('Cache-Control', 'no-store');
 
     return response;
   } catch (error) {
